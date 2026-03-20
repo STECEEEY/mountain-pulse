@@ -1,0 +1,309 @@
+openapi: 3.0.3
+info:
+  title: 地脉智眼智能决策接口
+  version: 1.0.0
+  description: |
+    前端与后端对齐的智能决策契约样例。
+    对应前端模块：智能决策分析台（MapView 右侧）。
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: http://localhost:8000
+    description: Local
+paths:
+  /ai/decision:
+    post:
+      tags:
+        - Decision
+      summary: 生成监测点风险决策
+      operationId: createDecision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+            examples:
+              default:
+                summary: 标准请求
+                value:
+                  pointName: 汤山滑坡群
+                  lng: 118.87
+                  lat: 32.05
+                  dutyNote: 巡查记录显示北麓裂缝扩展，近24小时降雨38mm。
+                  scene: workspace
+      responses:
+        '200':
+          description: 成功返回结构化决策
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+              examples:
+                default:
+                  summary: 标准响应
+                  value:
+                    modelVersion: xgboost-lstm-1.3.2
+                    generatedAt: '2026-03-20T08:15:33Z'
+                    summary:
+                      highRiskCount: 1
+                      actionCount: 2
+                      affectedPopulation: 2080人
+                    decisions:
+                      - id: 1
+                        title: 汤山滑坡群应急处置
+                        level: danger
+                        confidence: 93
+                        window: 建议时间窗：未来6小时
+                        action: 启动二级响应，先行转移脆弱人群并布设夜间值守
+                        target: 街道应急办、教育条线、交警中队
+                        status: 待执行
+                        explanation:
+                          featureContributions:
+                            - featureName: InSAR位移速率
+                              currentValue: 25.6
+                              contribution: 0.37
+                              trend: up
+                            - featureName: 24h降雨量
+                              currentValue: 38
+                              contribution: 0.29
+                              trend: up
+                          thresholdHits:
+                            - ruleName: 降雨触发阈值
+                              currentValue: 38
+                              threshold: 30
+                              unit: mm
+                              status: hit
+                            - ruleName: 形变黄色阈值
+                              currentValue: 25.6
+                              threshold: 20
+                              unit: mm
+                              status: hit
+                          dataTimeWindow:
+                            startAt: '2026-03-13 00:00'
+                            endAt: '2026-03-20 08:00'
+                            step: 1h
+                            source: InSAR + 雨量站 + 风险库
+                      - id: 2
+                        title: 宝华山崩塌点巡检加密
+                        level: warning
+                        confidence: 84
+                        window: 建议时间窗：未来24小时
+                        action: 增加无人机巡检频次至每4小时一次
+                        target: 区自然资源局监测组
+                        status: 待执行
+                        explanation:
+                          featureContributions:
+                            - featureName: 形变加速度
+                              currentValue: 1.42
+                              contribution: 0.41
+                              trend: up
+                          thresholdHits:
+                            - ruleName: 风险提升阈值
+                              currentValue: 0.81
+                              threshold: 0.75
+                              unit: ''
+                              status: hit
+                          dataTimeWindow:
+                            startAt: '2026-03-01 00:00'
+                            endAt: '2026-03-20 08:00'
+                            step: 12h
+                            source: InSAR时序 + 历史事件库
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                badRequest:
+                  value:
+                    code: INVALID_PARAMS
+                    message: lng/lat 超出有效范围
+        '500':
+          description: 服务异常
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    DecisionRequest:
+      type: object
+      required:
+        - dutyNote
+      properties:
+        pointName:
+          type: string
+          description: 监测点名称
+        lng:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        lat:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        dutyNote:
+          type: string
+          description: 值班记录、巡查备注、现场文本信息
+          minLength: 1
+        scene:
+          type: string
+          enum: [dashboard, workspace]
+          default: workspace
+    DecisionResponse:
+      type: object
+      required:
+        - modelVersion
+        - generatedAt
+        - summary
+        - decisions
+      properties:
+        modelVersion:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        summary:
+          $ref: '#/components/schemas/DecisionSummary'
+        decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIDecision'
+    DecisionSummary:
+      type: object
+      required:
+        - highRiskCount
+        - actionCount
+        - affectedPopulation
+      properties:
+        highRiskCount:
+          type: integer
+        actionCount:
+          type: integer
+        affectedPopulation:
+          type: string
+    AIDecision:
+      type: object
+      required:
+        - id
+        - title
+        - level
+        - confidence
+        - window
+        - action
+        - target
+        - status
+        - explanation
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        level:
+          type: string
+          enum: [danger, warning, medium, safe]
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+        window:
+          type: string
+        action:
+          type: string
+        target:
+          type: string
+        status:
+          type: string
+          enum: [待执行, 已执行, 人工复核]
+        explanation:
+          $ref: '#/components/schemas/ModelExplanation'
+    ModelExplanation:
+      type: object
+      required:
+        - featureContributions
+        - thresholdHits
+        - dataTimeWindow
+      properties:
+        featureContributions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureContribution'
+        thresholdHits:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThresholdHit'
+        dataTimeWindow:
+          $ref: '#/components/schemas/DataTimeWindow'
+    FeatureContribution:
+      type: object
+      required:
+        - featureName
+        - currentValue
+        - contribution
+        - trend
+      properties:
+        featureName:
+          type: string
+        currentValue:
+          type: number
+          format: double
+        contribution:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        trend:
+          type: string
+          enum: [up, down, neutral]
+    ThresholdHit:
+      type: object
+      required:
+        - ruleName
+        - currentValue
+        - threshold
+        - unit
+        - status
+      properties:
+        ruleName:
+          type: string
+        currentValue:
+          type: number
+          format: double
+        threshold:
+          type: number
+          format: double
+        unit:
+          type: string
+        status:
+          type: string
+          enum: [hit, near, normal]
+    DataTimeWindow:
+      type: object
+      required:
+        - startAt
+        - endAt
+        - step
+        - source
+      properties:
+        startAt:
+          type: string
+        endAt:
+          type: string
+        step:
+          type: string
+        source:
+          type: string
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
