@@ -1,7 +1,10 @@
 <template>
   <div class="ai-cockpit">
     <div class="cockpit-header">
-      <h3>智能决策分析台</h3>
+      <div class="title-wrap">
+        <h3>智能决策分析台</h3>
+        <el-tag size="small" type="warning">模拟数据</el-tag>
+      </div>
       <div class="meta">
         <span class="model-tag">模型 {{ modelVersion }}</span>
         <span class="time-tag">{{ lastUpdated || '尚未生成' }}</span>
@@ -194,6 +197,12 @@ watch(
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
+}
+
+.title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .cockpit-header h3 {

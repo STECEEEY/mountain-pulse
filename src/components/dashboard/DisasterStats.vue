@@ -36,11 +36,15 @@
     <div class="chart-footer">
       <div class="threat-info">
         <span class="threat-icon">POP</span>
-        <span class="threat-text">威胁人口: <strong><AnimatedNumber :value="2.3" :decimals="1" suffix="万" /></strong></span>
+        <span class="threat-text">
+          威胁人口:
+          <strong v-if="threatPopulation >= 0"><AnimatedNumber :value="threatPopulation / 10000" :decimals="1" suffix="万" /></strong>
+          <strong v-else>暂无数据</strong>
+        </span>
       </div>
       <div class="threat-info">
         <span class="threat-icon">ASSET</span>
-        <span class="threat-text">威胁资产: <strong><AnimatedNumber :value="5.6" :decimals="1" suffix="亿" /></strong></span>
+        <span class="threat-text">威胁资产: <strong>暂无数据</strong></span>
       </div>
     </div>
 
@@ -50,17 +54,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
+import { riskService } from '@/services/riskService'
 
 const stats = ref({
-  danger: 3,
-  warning: 12,
-  medium: 28,
-  safe: 45,
+  danger: 0,
+  warning: 0,
+  medium: 0,
+  safe: 0,
 })
+const threatPopulation = ref(-1)
+
+const parseThreatPopulation = (value: string) => {
+  const matched = value.match(/-?\d+(\.\d+)?/)
+  if (!matched) return 0
+  return Number(matched[0])
+}
+
+const loadStats = async () => {
+  try {
+    const response = await riskService.loadRiskPoints()
+    const aggregate = { danger: 0, warning: 0, medium: 0, safe: 0 }
+    let totalThreat = 0
+
+    response.points.forEach((point) => {
+      const level = point.level.trim().toLowerCase()
+      if (level.includes('极高') || level.includes('danger')) aggregate.danger += 1
+      else if (level === '高' || level.includes('warning')) aggregate.warning += 1
+      else if (level === '中' || level.includes('medium')) aggregate.medium += 1
+      else aggregate.safe += 1
+
+      totalThreat += parseThreatPopulation(point.threat)
+    })
+
+    stats.value = aggregate
+    threatPopulation.value = totalThreat
+  } catch {
+    stats.value = { danger: 0, warning: 0, medium: 0, safe: 0 }
+    threatPopulation.value = -1
+  }
+}
 
 const hasAlert = computed(() => stats.value.danger > 0)
+
+onMounted(() => {
+  loadStats()
+})
 </script>
 
 <style scoped>

@@ -28,6 +28,9 @@
       <!-- 历史回溯 -->
       <HistoryReview v-if="activeTab === 'history'" :point="selectedPoint" />
 
+      <!-- 风险分析 -->
+      <RiskAnalysisPanel v-if="activeTab === 'risk-analysis'" />
+
       <!-- 数据详情 -->
       <PointDetail v-if="activeTab === 'detail'" :point="selectedPoint" />
     </div>
@@ -36,12 +39,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Cpu, TrendCharts, Warning, Clock, Document } from '@element-plus/icons-vue'
+import { Cpu, TrendCharts, Warning, Clock, Document, DataAnalysis } from '@element-plus/icons-vue'
 import AIDecisionCockpit from './AIDecisionCockpit.vue'
 import DeformationAnalysis from './DeformationAnalysis.vue'
 import RiskClassification from './RiskClassification.vue'
 import HistoryReview from './HistoryReview.vue'
 import PointDetail from './PointDetail.vue'
+import RiskAnalysisPanel from './RiskAnalysisPanel.vue'
 
 defineProps<{
   selectedPoint: any
@@ -50,9 +54,10 @@ defineProps<{
 const activeTab = ref('decision')
 
 const tabs = [
-  { key: 'decision', label: '决策驾驶舱', icon: Cpu },
+  { key: 'decision', label: '决策驾驶', icon: Cpu },
   { key: 'deformation', label: '形变分析', icon: TrendCharts },
   { key: 'risk', label: '风险分级', icon: Warning },
+  { key: 'risk-analysis', label: '风险分析', icon: DataAnalysis },
   { key: 'history', label: '历史回溯', icon: Clock },
   { key: 'detail', label: '数据详情', icon: Document },
 ]
@@ -64,6 +69,7 @@ const tabs = [
   display: flex;
   flex-direction: column;
   color: #e0f0ff;
+  background: rgba(6, 20, 32, 0.82);
 }
 
 .tab-nav {
@@ -71,22 +77,25 @@ const tabs = [
   border-bottom: 1px solid rgba(0, 200, 255, 0.2);
   padding: 0 8px;
   background: rgba(0, 30, 50, 0.5);
+  overflow: hidden;
 }
 
 .tab-item {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 16px 8px;
+  padding: 12px 8px;
   border: none;
   background: transparent;
   color: #88a0b0;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  white-space: nowrap;
 }
 
 .tab-item:hover {
@@ -111,10 +120,15 @@ const tabs = [
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
 }
 
+.tab-item span {
+  white-space: nowrap;
+}
+
 .tab-content {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  background: rgba(5, 18, 30, 0.68);
 }
 
 /* 滚动条样式 */

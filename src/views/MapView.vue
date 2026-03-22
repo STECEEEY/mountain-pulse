@@ -2,8 +2,18 @@
   <div class="map-view">
     <div class="main-content">
       <div class="map-underlay">
-        <MainMap @select-point="handleSelectPoint" />
-        <MapControls class="controls-animate" />
+        <MainMap
+          :layer-state="layerState"
+          :risk-map-opacity="riskMapOpacity"
+          @select-point="handleSelectPoint"
+        />
+        <MapControls
+          class="controls-animate"
+          :layer-state="layerState"
+          :risk-map-opacity="riskMapOpacity"
+          @update:layer-state="layerState = $event"
+          @update:risk-map-opacity="riskMapOpacity = $event"
+        />
       </div>
 
       <div class="overlay-grid">
@@ -23,6 +33,12 @@ import MapControls from '@/components/workspace/MapControls.vue'
 import SidePanel from '@/components/workspace/SidePanel.vue'
 
 const selectedPoint = ref<any>(null)
+const layerState = ref({
+  riskMap: true,
+  highRiskArea: true,
+  disasterPoints: true,
+})
+const riskMapOpacity = ref(0.45)
 
 const handleSelectPoint = (point: any) => {
   selectedPoint.value = point

@@ -6,16 +6,18 @@
     <div class="region-info">
       <div class="region-name">
         <span class="region-icon">REGION</span>
-        <span>{{ selectedRegion.name }}</span>
+        <span>{{ selectedRegion.name || '暂无数据' }}</span>
       </div>
       <div class="info-grid">
         <div class="info-item">
           <span class="info-label">面积</span>
-          <span class="info-value"><AnimatedNumber :value="selectedRegion.area" :decimals="1" /> km²</span>
+          <span class="info-value" v-if="selectedRegion.area >= 0"><AnimatedNumber :value="selectedRegion.area" :decimals="1" /> km²</span>
+          <span class="info-value" v-else>暂无数据</span>
         </div>
         <div class="info-item">
           <span class="info-label">人口</span>
-          <span class="info-value"><AnimatedNumber :value="selectedRegion.population" :decimals="1" /> 万</span>
+          <span class="info-value" v-if="selectedRegion.population >= 0"><AnimatedNumber :value="selectedRegion.population" :decimals="1" /> 万</span>
+          <span class="info-value" v-else>暂无数据</span>
         </div>
         <div class="info-item">
           <span class="info-label">风险点</span>
@@ -23,13 +25,13 @@
         </div>
         <div class="info-item">
           <span class="info-label">预警等级</span>
-          <span class="info-value warning">{{ selectedRegion.warningLevel }}</span>
+          <span class="info-value warning">{{ selectedRegion.warningLevel || '暂无数据' }}</span>
         </div>
       </div>
     </div>
     <div class="facilities-section">
       <h4>关键设施</h4>
-      <div class="facility-list">
+      <div v-if="facilities.length > 0" class="facility-list">
         <div v-for="facility in facilities" :key="facility.id" class="facility-item">
           <span class="facility-icon">{{ facility.icon }}</span>
           <div class="facility-info">
@@ -39,27 +41,73 @@
           <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
         </div>
       </div>
+      <div v-else class="empty-facility">暂无关键设施数据</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
+import { riskService } from '@/services/riskService'
+import { normalizeRiskLevel } from '@/utils/riskLevel'
+import type { CanonicalRiskLevel } from '@/utils/riskLevel'
 
 const selectedRegion = ref({
-  name: '汤山街道',
-  area: 128.5,
-  population: 8.6,
-  riskPoints: 5,
-  warningLevel: '黄色预警',
+  name: '',
+  area: -1,
+  population: -1,
+  riskPoints: 0,
+  warningLevel: '',
 })
 
-const facilities = ref([
-  { id: 1, icon: 'SCH', name: '汤山小学', detail: '师生850人', risk: '高', riskClass: 'high' },
-  { id: 2, icon: 'HSP', name: '汤山医院', detail: '床位200张', risk: '中', riskClass: 'medium' },
-  { id: 3, icon: 'RD', name: '宁镇高速', detail: '日车流2.3万', risk: '中', riskClass: 'medium' },
-])
+const facilities = ref<Array<{ id: number; icon: string; name: string; detail: string; risk: string; riskClass: string }>>([])
+
+const parseThreatPopulation = (value: string) => {
+  const matched = value.match(/-?\d+(\.\d+)?/)
+  if (!matched) return 0
+  return Number(matched[0])
+}
+
+const loadRegion = async () => {
+  try {
+    const [config, pointsPayload] = await Promise.all([
+      riskService.loadMapConfig(),
+      riskService.loadRiskPoints(),
+    ])
+
+    const widthKm = Math.abs(config.bounds.east - config.bounds.west) * 95
+    const heightKm = Math.abs(config.bounds.north - config.bounds.south) * 111
+    const areaKm2 = widthKm * heightKm
+
+    const totalPopulation = pointsPayload.points.reduce((sum, point) => sum + parseThreatPopulation(point.threat), 0)
+    const rank: Record<CanonicalRiskLevel, number> = { 极高: 4, 高: 3, 中: 2, 低: 1, 未知: 0 }
+    const maxLevel = pointsPayload.points.reduce<CanonicalRiskLevel>((current, point) => {
+      const level = normalizeRiskLevel(point.level)
+      return rank[level] > rank[current] ? level : current
+    }, '未知')
+
+    selectedRegion.value = {
+      name: '宁镇山脉监测区',
+      area: Number(areaKm2.toFixed(1)),
+      population: Number((totalPopulation / 10000).toFixed(1)),
+      riskPoints: pointsPayload.points.length,
+      warningLevel: maxLevel === '未知' ? '' : `${maxLevel}预警`,
+    }
+  } catch {
+    selectedRegion.value = {
+      name: '',
+      area: -1,
+      population: -1,
+      riskPoints: 0,
+      warningLevel: '',
+    }
+  }
+}
+
+onMounted(() => {
+  loadRegion()
+})
 </script>
 
 <style scoped>
@@ -214,5 +262,10 @@ const facilities = ref([
 .facility-risk.medium {
   background: rgba(255, 204, 68, 0.2);
   color: #ffcc88;
+}
+
+.empty-facility {
+  color: #88a0b0;
+  font-size: 12px;
 }
 </style>

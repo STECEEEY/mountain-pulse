@@ -1,0 +1,19 @@
+{
+  "features": {
+    "abs_velocity": 0.28,
+    "velocity": 0.22,
+    "elevation": 0.21,
+    "slope": 0.15,
+    "curvature": 0.08,
+    "aspect": 0.06
+  },
+  "top_feature": "abs_velocity",
+  "description": {
+    "abs_velocity": "形变速率绝对值（动得越快，风险越高）",
+    "velocity": "原始形变速率",
+    "elevation": "高程（滑坡通常发生在一定海拔）",
+    "slope": "坡度（坡度越陡，风险越高）",
+    "curvature": "曲率（地形凹凸程度）",
+    "aspect": "坡向"
+  }
+}

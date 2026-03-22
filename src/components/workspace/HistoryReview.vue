@@ -2,7 +2,10 @@
   <div class="history-review">
     <!-- 时间线选择 -->
     <div class="timeline-header">
-      <h4>历史事件时间线</h4>
+      <div class="title-wrap">
+        <h4>历史事件时间线</h4>
+        <el-tag size="small" type="warning">模拟数据</el-tag>
+      </div>
       <el-date-picker
         v-model="dateRange"
         type="daterange"
@@ -159,6 +162,12 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .timeline-header h4 {

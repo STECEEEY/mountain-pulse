@@ -1,0 +1,24 @@
+{
+  "total_pixels": 1320760,
+  "total_area_km2": 132.08,
+  "high_risk": {
+    "pixels": 663688,
+    "percentage": 50.25,
+    "area_km2": 66.37
+  },
+  "medium_risk": {
+    "pixels": 128920,
+    "percentage": 9.76,
+    "area_km2": 12.89
+  },
+  "low_risk": {
+    "pixels": 528152,
+    "percentage": 39.99,
+    "area_km2": 52.82
+  },
+  "mean_risk": 0.5772,
+  "median_risk": 0.7083,
+  "max_risk": 0.9602,
+  "min_risk": 0.0261,
+  "std_risk": 0.3693
+}

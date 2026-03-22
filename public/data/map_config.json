@@ -1,0 +1,23 @@
+{
+  "bounds": {
+    "west": 118.2,
+    "east": 119.5,
+    "south": 31.5,
+    "north": 32.5
+  },
+  "center": [
+    32.0,
+    118.85
+  ],
+  "zoom": 9,
+  "risk_thresholds": {
+    "high": 0.7,
+    "medium": 0.5,
+    "low": 0
+  },
+  "color_scale": {
+    "low": "#2c7bb6",
+    "medium": "#fdae61",
+    "high": "#d7191c"
+  }
+}

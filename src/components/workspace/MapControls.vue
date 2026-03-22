@@ -5,67 +5,64 @@
       <div class="control-title">图层</div>
       <div class="layer-list">
         <label class="layer-item">
-          <el-checkbox v-model="layers.satellite" />
-          <span>卫星影像</span>
+          <el-checkbox :model-value="props.layerState.riskMap" @change="onRiskMapChange" />
+          <span>风险底图</span>
         </label>
         <label class="layer-item">
-          <el-checkbox v-model="layers.insarHeatmap" />
-          <span>InSAR热力图</span>
+          <el-checkbox :model-value="props.layerState.highRiskArea" @change="onHighRiskAreaChange" />
+          <span>高风险区</span>
         </label>
         <label class="layer-item">
-          <el-checkbox v-model="layers.riskGrading" />
-          <span>风险分级</span>
-        </label>
-        <label class="layer-item">
-          <el-checkbox v-model="layers.disasterPoints" />
+          <el-checkbox :model-value="props.layerState.disasterPoints" @change="onDisasterPointsChange" />
           <span>灾害点</span>
         </label>
+
+        <div class="opacity-item">
+          <span>风险底图透明度 {{ Math.round(riskMapOpacity * 100) }}%</span>
+          <el-slider
+            :model-value="props.riskMapOpacity"
+            :min="0.1"
+            :max="0.9"
+            :step="0.05"
+            @update:model-value="updateOpacity"
+          />
+        </div>
       </div>
-    </div>
-
-    <!-- 缩放控制 -->
-    <div class="control-group zoom-controls">
-      <el-button :icon="Plus" circle @click="zoomIn" />
-      <el-button :icon="Minus" circle @click="zoomOut" />
-      <el-button :icon="Aim" circle @click="resetView" />
-    </div>
-
-    <!-- 工具 -->
-    <div class="control-group tools">
-      <el-tooltip content="测量距离" placement="left">
-        <el-button :icon="Pointer" circle />
-      </el-tooltip>
-      <el-tooltip content="绘制区域" placement="left">
-        <el-button :icon="Edit" circle />
-      </el-tooltip>
-      <el-tooltip content="导出图片" placement="left">
-        <el-button :icon="Download" circle />
-      </el-tooltip>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
-import { Plus, Minus, Aim, Pointer, Edit, Download } from '@element-plus/icons-vue'
-
-const layers = reactive({
-  satellite: true,
-  insarHeatmap: true,
-  riskGrading: true,
-  disasterPoints: true,
-})
-
-const zoomIn = () => {
-  // TODO: 实现缩放功能
+interface LayerState {
+  riskMap: boolean
+  highRiskArea: boolean
+  disasterPoints: boolean
 }
 
-const zoomOut = () => {
-  // TODO: 实现缩放功能
+const props = defineProps<{
+  layerState: LayerState
+  riskMapOpacity: number
+}>()
+
+const emit = defineEmits<{
+  'update:layerState': [LayerState]
+  'update:riskMapOpacity': [number]
+}>()
+
+const updateLayer = (key: keyof LayerState, value: unknown) => {
+  emit('update:layerState', {
+    ...props.layerState,
+    [key]: Boolean(value),
+  })
 }
 
-const resetView = () => {
-  // TODO: 实现重置视图功能
+const onRiskMapChange = (value: unknown) => updateLayer('riskMap', value)
+const onHighRiskAreaChange = (value: unknown) => updateLayer('highRiskArea', value)
+const onDisasterPointsChange = (value: unknown) => updateLayer('disasterPoints', value)
+
+const updateOpacity = (value: number | number[]) => {
+  const next = Array.isArray(value) ? value[0] : value
+  emit('update:riskMapOpacity', typeof next === 'number' ? next : 0.45)
 }
 </script>
 
@@ -100,7 +97,7 @@ const resetView = () => {
 .layer-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .layer-item {
@@ -117,26 +114,26 @@ const resetView = () => {
   color: #00f0ff;
 }
 
-.zoom-controls,
-.tools {
-  padding: 8px;
+.opacity-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  color: #a8c5d8;
+  font-size: 12px;
+  margin-top: 6px;
 }
 
-:deep(.el-button.is-circle) {
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(0, 200, 255, 0.3);
-  background: rgba(0, 30, 50, 0.6);
-  color: #88a0b0;
+:deep(.el-slider__runway) {
+  margin: 4px 0;
+  background-color: rgba(0, 160, 220, 0.24);
 }
 
-:deep(.el-button.is-circle:hover) {
-  background: rgba(0, 150, 255, 0.3);
-  border-color: #00f0ff;
-  color: #00f0ff;
+:deep(.el-slider__bar) {
+  background-color: #00c8ff;
+}
+
+:deep(.el-slider__button) {
+  border-color: #00c8ff;
 }
 
 :deep(.el-checkbox__inner) {

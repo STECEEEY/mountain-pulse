@@ -2,7 +2,7 @@
   <header class="app-header dark-mode">
     <div class="header-left">
       <div class="logo-tag">DZ</div>
-      <div class="logo-title">地脉智眼 - 地质灾害智能监测预警系统</div>
+      <div class="logo-title">山体脉搏 — 融合InSAR与机器学习的地质灾害早期识别与风险分级平台</div>
     </div>
 
     <div class="header-center">
@@ -98,6 +98,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  flex: 1;
 }
 
 .logo-tag {
@@ -115,11 +116,15 @@ onUnmounted(() => {
 }
 
 .logo-title {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   color: #00f0ff;
-  letter-spacing: 0.5px;
-  line-height: 1;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 680px;
 }
 
 .header-center {

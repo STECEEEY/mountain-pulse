@@ -11,19 +11,19 @@
       <div class="risk-breakdown">
         <div class="breakdown-item">
           <span class="breakdown-label">地质因素</span>
-          <el-progress :percentage="75" :stroke-width="8" color="#3b82f6" />
+          <el-progress :percentage="geologicalFactor" :stroke-width="8" color="#3b82f6" />
         </div>
         <div class="breakdown-item">
           <span class="breakdown-label">形变速率</span>
-          <el-progress :percentage="85" :stroke-width="8" color="#f59e0b" />
+          <el-progress :percentage="deformationFactor" :stroke-width="8" color="#f59e0b" />
         </div>
         <div class="breakdown-item">
           <span class="breakdown-label">降雨影响</span>
-          <el-progress :percentage="60" :stroke-width="8" color="#22c55e" />
+          <el-progress :percentage="rainfallFactor" :stroke-width="8" color="#22c55e" />
         </div>
         <div class="breakdown-item">
           <span class="breakdown-label">人口暴露</span>
-          <el-progress :percentage="70" :stroke-width="8" color="#8b5cf6" />
+          <el-progress :percentage="populationExposure" :stroke-width="8" color="#8b5cf6" />
         </div>
       </div>
     </div>
@@ -32,27 +32,27 @@
     <div class="ai-prediction">
       <div class="section-header">
         <h4>模型风险预测</h4>
-        <el-tag size="small" type="warning">72小时</el-tag>
+        <el-tag size="small" type="warning">趋势推演</el-tag>
       </div>
       <div class="prediction-content">
         <div class="prediction-item">
           <span class="time">今日</span>
-          <div class="prediction-bar high" style="width: 85%"></div>
-          <span class="prob">85%</span>
+          <div class="prediction-bar high" :style="{ width: `${currentRisk.score}%` }"></div>
+          <span class="prob">{{ currentRisk.score }}%</span>
         </div>
         <div class="prediction-item">
-          <span class="time">明日</span>
-          <div class="prediction-bar medium" style="width: 72%"></div>
-          <span class="prob">72%</span>
+          <span class="time">+24h</span>
+          <div class="prediction-bar medium" :style="{ width: `${nextDayRisk}%` }"></div>
+          <span class="prob">{{ nextDayRisk }}%</span>
         </div>
         <div class="prediction-item">
-          <span class="time">后日</span>
-          <div class="prediction-bar medium" style="width: 68%"></div>
-          <span class="prob">68%</span>
+          <span class="time">+48h</span>
+          <div class="prediction-bar medium" :style="{ width: `${twoDayRisk}%` }"></div>
+          <span class="prob">{{ twoDayRisk }}%</span>
         </div>
       </div>
       <p class="prediction-note">
-        预计降雨量增加将导致滑坡风险上升，建议提前做好防范准备。
+        {{ recommendation.note }}
       </p>
     </div>
 
@@ -63,29 +63,8 @@
         <div class="exposure-item">
           <span class="exposure-icon">POP</span>
           <div class="exposure-detail">
-            <span class="exposure-value">1,250</span>
+            <span class="exposure-value">{{ point?.threat || '暂无' }}</span>
             <span class="exposure-label">威胁人口</span>
-          </div>
-        </div>
-        <div class="exposure-item">
-          <span class="exposure-icon">SCH</span>
-          <div class="exposure-detail">
-            <span class="exposure-value">2</span>
-            <span class="exposure-label">学校</span>
-          </div>
-        </div>
-        <div class="exposure-item">
-          <span class="exposure-icon">HSP</span>
-          <div class="exposure-detail">
-            <span class="exposure-value">1</span>
-            <span class="exposure-label">医院</span>
-          </div>
-        </div>
-        <div class="exposure-item">
-          <span class="exposure-icon">BRG</span>
-          <div class="exposure-detail">
-            <span class="exposure-value">1</span>
-            <span class="exposure-label">桥梁</span>
           </div>
         </div>
       </div>
@@ -97,15 +76,15 @@
       <div class="rec-list">
         <div class="rec-item urgent">
           <el-icon><WarningFilled /></el-icon>
-          <span>立即通知汤山小学做好疏散准备</span>
+          <span>{{ recommendation.primary }}</span>
         </div>
         <div class="rec-item">
           <el-icon><Location /></el-icon>
-          <span>在危险区域设置警戒标志</span>
+          <span>{{ recommendation.secondary }}</span>
         </div>
         <div class="rec-item">
           <el-icon><View /></el-icon>
-          <span>加密监测频率至每日2次</span>
+          <span>{{ recommendation.tertiary }}</span>
         </div>
       </div>
     </div>
@@ -113,16 +92,88 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { WarningFilled, Location, View } from '@element-plus/icons-vue'
+import { normalizeRiskLevel } from '@/utils/riskLevel'
 
-defineProps<{
-  point: any
+const props = defineProps<{
+  point: {
+    level?: string
+    velocity?: number
+    slope?: number
+    threat?: string
+  } | null
 }>()
 
-const currentRisk = ref({
-  score: 78,
-  level: 'high',
+const parseThreatNumber = (value?: string) => {
+  if (!value) return 0
+  const matched = value.match(/-?\d+(\.\d+)?/)
+  if (!matched) return 0
+  return Number(matched[0])
+}
+
+const currentRisk = computed(() => {
+  const level = normalizeRiskLevel(props.point?.level)
+  const scoreMap: Record<string, number> = {
+    极高: 90,
+    高: 75,
+    中: 55,
+    低: 30,
+    未知: 0,
+  }
+  const levelMap: Record<string, string> = {
+    极高: 'high',
+    高: 'high',
+    中: 'medium',
+    低: 'low',
+    未知: 'low',
+  }
+  return {
+    score: scoreMap[level] ?? 0,
+    level: levelMap[level] ?? 'low',
+  }
+})
+
+const deformationFactor = computed(() => Math.min(Math.round(Math.abs(Number(props.point?.velocity || 0))), 100))
+const geologicalFactor = computed(() => Math.min(Math.round(Number(props.point?.slope || 0) * 3), 100))
+const rainfallFactor = computed(() => Math.max(currentRisk.value.score - 20, 10))
+const populationExposure = computed(() => Math.min(Math.round(parseThreatNumber(props.point?.threat) / 20), 100))
+
+const nextDayRisk = computed(() => Math.min(currentRisk.value.score + 5, 99))
+const twoDayRisk = computed(() => Math.min(currentRisk.value.score + 8, 99))
+
+const recommendation = computed(() => {
+  const level = normalizeRiskLevel(props.point?.level)
+  if (level === '极高') {
+    return {
+      primary: '建议立即启动红色预警与人员疏散',
+      secondary: '建议封控重点风险区并设置安全警戒线',
+      tertiary: '建议开启高频巡检与连续形变监测',
+      note: '当前风险等级较高，建议立即采取最高级别响应措施。',
+    }
+  }
+  if (level === '高') {
+    return {
+      primary: '建议启动橙色预警并做好转移准备',
+      secondary: '建议加强现场巡查并限制人员聚集',
+      tertiary: '建议提高监测频次并每日复盘',
+      note: '风险处于高位，建议尽快落实预警和防护。',
+    }
+  }
+  if (level === '中') {
+    return {
+      primary: '建议保持黄色预警并持续跟踪变化',
+      secondary: '建议完善排水和边坡巡检',
+      tertiary: '建议按计划开展定时监测',
+      note: '当前风险可控，需持续观测避免快速演化。',
+    }
+  }
+  return {
+    primary: '建议维持常态化监测',
+    secondary: '建议定期排查重点区域',
+    tertiary: '建议保留应急预案与联系人机制',
+    note: '当前风险较低，保持常规监测即可。',
+  }
 })
 </script>
 
@@ -168,6 +219,10 @@ const currentRisk = ref({
 
 .gauge-ring.medium {
   background: conic-gradient(#f59e0b 0% 50%, #f1f5f9 50% 100%);
+}
+
+.gauge-ring.low {
+  background: conic-gradient(#22c55e 0% 30%, #f1f5f9 30% 100%);
 }
 
 .gauge-value {

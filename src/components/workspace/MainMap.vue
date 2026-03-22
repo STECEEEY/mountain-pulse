@@ -12,202 +12,343 @@
         <span class="value">{{ zoomLevel.toFixed(1) }}</span>
       </div>
     </div>
+    <div v-if="false" class="map-hint">{{ mapHint }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { riskService } from '@/services/riskService'
+import type { HighRiskGeoJSON, MapConfig, RiskPoint } from '@/types/risk'
+import { getRiskLevelColor } from '@/utils/riskLevel'
 
 const emit = defineEmits(['select-point'])
+
+interface LayerState {
+  riskMap: boolean
+  highRiskArea: boolean
+  disasterPoints: boolean
+}
+
+const props = withDefaults(
+  defineProps<{
+    layerState: LayerState
+    riskMapOpacity: number
+  }>(),
+  {
+    riskMapOpacity: 0.45,
+  },
+)
 
 const mapRef = ref<HTMLElement>()
 const zoomLevel = ref(10)
 const centerCoords = ref('119.0°E, 32.1°N')
+const mapHint = ref('')
 let map: mapboxgl.Map | null = null
-const disasterMarkers: mapboxgl.Marker[] = []
+
+const RISK_MAP_SOURCE_ID = 'risk-map-source'
+const RISK_MAP_LAYER_ID = 'risk-map-layer'
+const HIGH_RISK_SOURCE_ID = 'high-risk-source'
+const HIGH_RISK_FILL_LAYER_ID = 'high-risk-fill'
+const HIGH_RISK_LINE_LAYER_ID = 'high-risk-line'
+const DISASTER_POINTS_SOURCE_ID = 'disaster-points-source'
+const DISASTER_POINTS_LAYER_ID = 'disaster-points-layer'
+
+const fallbackMapConfig: MapConfig = {
+  bounds: {
+    west: 118.2,
+    east: 119.5,
+    south: 31.5,
+    north: 32.5,
+  },
+  center: [32.0, 118.85],
+  zoom: 9,
+  risk_thresholds: {
+    high: 0.7,
+    medium: 0.5,
+    low: 0,
+  },
+  color_scale: {
+    low: '#2c7bb6',
+    medium: '#fdae61',
+    high: '#d7191c',
+  },
+}
+
+let mapConfig: MapConfig = fallbackMapConfig
+let monitoringPoints: RiskPoint[] = []
+let highRiskGeoJSON: HighRiskGeoJSON = { type: 'FeatureCollection', features: [] }
+
+const withinBounds = (point: RiskPoint, bounds: MapConfig['bounds']) => {
+  return (
+    Number.isFinite(point.longitude)
+    && Number.isFinite(point.latitude)
+    && point.longitude >= bounds.west
+    && point.longitude <= bounds.east
+    && point.latitude >= bounds.south
+    && point.latitude <= bounds.north
+  )
+}
 
 // Mapbox Access Token
 mapboxgl.accessToken = 'pk.eyJ1IjoidGttNGoiLCJhIjoiY21obXplem8yMDAxNzJscTB0c2o1OHBsYiJ9.u9M-kBhBorWBEb_EAh6I4Q'
 
-// 监测点数据
-const monitoringPoints = [
-  { id: 1, name: '汤山滑坡群', lng: 118.87, lat: 32.05, level: 'danger', deformation: 25.6 },
-  { id: 2, name: '宝华山崩塌', lng: 119.12, lat: 32.18, level: 'warning', deformation: 18.3 },
-  { id: 3, name: '紫金山北坡', lng: 118.82, lat: 32.08, level: 'warning', deformation: 15.7 },
-  { id: 4, name: '镇江三山', lng: 119.45, lat: 32.22, level: 'medium', deformation: 8.9 },
-  { id: 5, name: '茅山东麓', lng: 119.18, lat: 31.95, level: 'safe', deformation: 3.1 },
-]
-
-const insarHeatPoints = [
-  { lng: 118.87, lat: 32.05, weight: 0.95 },
-  { lng: 119.12, lat: 32.18, weight: 0.82 },
-  { lng: 118.82, lat: 32.08, weight: 0.75 },
-  { lng: 119.45, lat: 32.22, weight: 0.52 },
-  { lng: 119.18, lat: 31.95, weight: 0.33 },
-]
-
-const riskGradingPoints = [
-  { lng: 118.87, lat: 32.05, levelValue: 4 },
-  { lng: 119.12, lat: 32.18, levelValue: 3 },
-  { lng: 118.82, lat: 32.08, levelValue: 3 },
-  { lng: 119.45, lat: 32.22, levelValue: 2 },
-  { lng: 119.18, lat: 31.95, levelValue: 1 },
-]
-
-const getLevelColor = (level: string) => {
-  const colors: Record<string, string> = {
-    danger: '#ff4444',
-    warning: '#ff8844',
-    medium: '#ffcc44',
-    safe: '#44ff44',
+const normalizeCenter = (center: [number, number]): [number, number] => {
+  const [first, second] = center
+  if (Math.abs(first) <= 90 && Math.abs(second) > 90) {
+    return [second, first]
   }
-  return colors[level] || '#00f0ff'
+  return [first, second]
 }
 
-const addMarkers = () => {
-  if (!map) return
+const loadStaticData = async () => {
+  const [configRes, pointsRes, highRiskRes] = await Promise.allSettled([
+    riskService.loadMapConfig(),
+    riskService.loadRiskPoints(),
+    riskService.loadHighRiskGeoJSON(),
+  ])
 
-  disasterMarkers.forEach((marker) => marker.remove())
-  disasterMarkers.length = 0
+  if (configRes.status === 'fulfilled') {
+    mapConfig = configRes.value
+  } else {
+    mapHint.value = 'map_config.json 加载失败，已使用默认地图配置。'
+  }
 
-  monitoringPoints.forEach(point => {
-    const el = document.createElement('div')
-    el.className = 'pulse-marker'
-    el.innerHTML = `
-      <div class="marker-core" style="background: ${getLevelColor(point.level)}; box-shadow: 0 0 10px ${getLevelColor(point.level)};"></div>
-      <div class="marker-pulse" style="border-color: ${getLevelColor(point.level)};"></div>
-    `
+  if (pointsRes.status === 'fulfilled' && pointsRes.value.points.length > 0) {
+    const original = pointsRes.value.points
+    monitoringPoints = original.filter((item) => withinBounds(item, mapConfig.bounds))
+    const removedCount = original.length - monitoringPoints.length
+    if (removedCount > 0) {
+      mapHint.value = `已过滤 ${removedCount} 个越界异常点，仅显示地图范围内真实点。`
+    }
+  } else {
+    monitoringPoints = []
+    mapHint.value = 'risk_points.json 加载失败或为空，当前暂无可展示监测点。'
+  }
 
-    const marker = new mapboxgl.Marker(el)
-      .setLngLat([point.lng, point.lat])
-      .setPopup(
-        new mapboxgl.Popup({ offset: 25, className: 'dark-popup' }).setHTML(`
-          <div class="popup-content">
-            <strong>${point.name}</strong><br/>
-            <span style="color: ${getLevelColor(point.level)}">形变: ${point.deformation}mm</span>
-          </div>
-        `)
-      )
+  if (highRiskRes.status === 'fulfilled') {
+    highRiskGeoJSON = highRiskRes.value
+    if (highRiskGeoJSON.features.length === 0) {
+      mapHint.value = 'high_risk_points.geojson 当前为空，未渲染高风险面图层。'
+    }
+  } else {
+    mapHint.value = 'high_risk_points.geojson 加载失败，未渲染高风险面图层。'
+  }
+}
+
+const addRiskMapLayer = () => {
+  if (!map || map.getLayer(RISK_MAP_LAYER_ID)) return
+
+  const { west, east, south, north } = mapConfig.bounds
+  map.addSource(RISK_MAP_SOURCE_ID, {
+    type: 'image',
+    url: '/data/risk_map.png',
+    coordinates: [
+      [west, north],
+      [east, north],
+      [east, south],
+      [west, south],
+    ],
+  })
+
+  map.addLayer({
+    id: RISK_MAP_LAYER_ID,
+    type: 'raster',
+    source: RISK_MAP_SOURCE_ID,
+    paint: {
+      'raster-opacity': props.riskMapOpacity,
+    },
+  })
+
+  map.setLayoutProperty(RISK_MAP_LAYER_ID, 'visibility', props.layerState.riskMap ? 'visible' : 'none')
+}
+
+const addHighRiskAreaLayer = () => {
+  if (!map || map.getLayer(HIGH_RISK_FILL_LAYER_ID) || highRiskGeoJSON.features.length === 0) return
+
+  map.addSource(HIGH_RISK_SOURCE_ID, {
+    type: 'geojson',
+    data: highRiskGeoJSON,
+  })
+
+  map.addLayer({
+    id: HIGH_RISK_FILL_LAYER_ID,
+    type: 'fill',
+    source: HIGH_RISK_SOURCE_ID,
+    paint: {
+      'fill-color': '#ff2d2d',
+      'fill-opacity': 0.28,
+    },
+  })
+
+  map.addLayer({
+    id: HIGH_RISK_LINE_LAYER_ID,
+    type: 'line',
+    source: HIGH_RISK_SOURCE_ID,
+    paint: {
+      'line-color': '#ff4444',
+      'line-width': 2,
+      'line-opacity': 0.9,
+    },
+  })
+
+  map.on('click', HIGH_RISK_FILL_LAYER_ID, (e) => {
+    const feature = e.features?.[0]
+    if (!feature || !feature.properties) return
+
+    const riskProbability =
+      feature.properties.risk_probability ?? feature.properties.probability ?? feature.properties.risk ?? '未知'
+    const riskLevel = feature.properties.risk_level ?? feature.properties.level ?? '高风险'
+
+    new mapboxgl.Popup({ offset: 18, className: 'dark-popup' })
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <div class="popup-content">
+          <strong>高风险区域</strong><br/>
+          <span>风险概率：${riskProbability}</span><br/>
+          <span style="color:#ff7777;">风险等级：${riskLevel}</span>
+        </div>
+      `)
       .addTo(map!)
+  })
 
-    disasterMarkers.push(marker)
+  map.on('mouseenter', HIGH_RISK_FILL_LAYER_ID, () => {
+    if (map) map.getCanvas().style.cursor = 'pointer'
+  })
 
-    el.addEventListener('click', () => {
-      emit('select-point', point)
-    })
+  map.on('mouseleave', HIGH_RISK_FILL_LAYER_ID, () => {
+    if (map) map.getCanvas().style.cursor = ''
   })
 }
 
-const addInSarHeatmapLayer = () => {
-  if (!map || map.getLayer('insar-heatmap-layer')) return
+const addDisasterPointsLayer = () => {
+  if (!map || map.getLayer(DISASTER_POINTS_LAYER_ID)) return
 
-  map.addSource('insar-heatmap-source', {
+  map.addSource(DISASTER_POINTS_SOURCE_ID, {
     type: 'geojson',
     data: {
       type: 'FeatureCollection',
-      features: insarHeatPoints.map((item) => ({
+      features: monitoringPoints.map((item, index) => ({
         type: 'Feature',
-        properties: { weight: item.weight },
+        properties: {
+          id: index + 1,
+          name: item.name,
+          level: item.level,
+          type: item.type,
+          velocity: item.velocity,
+          threat: item.threat,
+        },
         geometry: {
           type: 'Point',
-          coordinates: [item.lng, item.lat],
+          coordinates: [item.longitude, item.latitude],
         },
       })),
     },
   })
 
   map.addLayer({
-    id: 'insar-heatmap-layer',
-    type: 'heatmap',
-    source: 'insar-heatmap-source',
-    maxzoom: 15,
-    paint: {
-      'heatmap-weight': ['get', 'weight'],
-      'heatmap-intensity': 1,
-      'heatmap-radius': 24,
-      'heatmap-opacity': 0.58,
-      'heatmap-color': [
-        'interpolate',
-        ['linear'],
-        ['heatmap-density'],
-        0,
-        'rgba(33,102,172,0)',
-        0.2,
-        'rgba(103,169,207,0.45)',
-        0.4,
-        'rgba(209,229,240,0.55)',
-        0.6,
-        'rgba(253,219,199,0.65)',
-        0.8,
-        'rgba(239,138,98,0.75)',
-        1,
-        'rgba(178,24,43,0.82)',
-      ],
-    },
-  })
-}
-
-const addRiskGradingLayer = () => {
-  if (!map || map.getLayer('risk-grading-layer')) return
-
-  map.addSource('risk-grading-source', {
-    type: 'geojson',
-    data: {
-      type: 'FeatureCollection',
-      features: riskGradingPoints.map((item) => ({
-        type: 'Feature',
-        properties: { levelValue: item.levelValue },
-        geometry: {
-          type: 'Point',
-          coordinates: [item.lng, item.lat],
-        },
-      })),
-    },
-  })
-
-  map.addLayer({
-    id: 'risk-grading-layer',
+    id: DISASTER_POINTS_LAYER_ID,
     type: 'circle',
-    source: 'risk-grading-source',
+    source: DISASTER_POINTS_SOURCE_ID,
     paint: {
-      'circle-radius': [
-        'interpolate',
-        ['linear'],
-        ['get', 'levelValue'],
-        1,
-        10,
-        4,
-        18,
-      ],
+      'circle-radius': 7,
       'circle-color': [
         'match',
-        ['get', 'levelValue'],
-        4,
-        '#ff4444',
-        3,
-        '#ff8844',
-        2,
-        '#ffcc44',
-        '#44ff44',
+        ['get', 'level'],
+        '极高', '#FF0000',
+        'danger', '#FF0000',
+        '高', '#FF4500',
+        'warning', '#FF4500',
+        '中', '#FFD700',
+        'medium', '#FFD700',
+        '低', '#00FF00',
+        'safe', '#00FF00',
+        '#00FF00',
       ],
-      'circle-opacity': 0.25,
+      'circle-stroke-color': '#ffd4d4',
       'circle-stroke-width': 1.2,
-      'circle-stroke-color': '#ffffff',
+      'circle-opacity': 0.95,
       'circle-stroke-opacity': 0.6,
     },
   })
+
+  map.on('click', DISASTER_POINTS_LAYER_ID, (e) => {
+    const feature = e.features?.[0]
+    if (!feature || !feature.properties) return
+
+    const props = feature.properties as {
+      id: number
+      name: string
+      level: string
+      type: string
+      velocity: number
+      threat: string
+    }
+
+    emit('select-point', {
+      id: props.id,
+      name: props.name,
+      lng: e.lngLat.lng,
+      lat: e.lngLat.lat,
+      level: props.level,
+      deformation: props.velocity,
+      type: props.type,
+      threat: props.threat,
+      elevation: monitoringPoints[props.id - 1]?.elevation,
+      slope: monitoringPoints[props.id - 1]?.slope,
+    })
+
+    new mapboxgl.Popup({ offset: 18, className: 'dark-popup' })
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <div class="popup-content">
+          <strong>${props.name}</strong><br/>
+          <span style="color:${getRiskLevelColor(props.level)}">类型：${props.type}</span><br/>
+          <span>风险等级：${props.level}</span><br/>
+          <span>形变速率：${Number(props.velocity).toFixed(2)} mm/yr</span><br/>
+          <span>威胁人口：${props.threat}</span>
+        </div>
+      `)
+      .addTo(map!)
+  })
+
+  map.on('mouseenter', DISASTER_POINTS_LAYER_ID, () => {
+    if (map) map.getCanvas().style.cursor = 'pointer'
+  })
+
+  map.on('mouseleave', DISASTER_POINTS_LAYER_ID, () => {
+    if (map) map.getCanvas().style.cursor = ''
+  })
+}
+
+const setLayerVisibility = (layerId: string, visible: boolean) => {
+  if (!map || !map.getLayer(layerId)) return
+  map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+}
+
+const syncLayerVisibility = () => {
+  if (!map) return
+  setLayerVisibility(RISK_MAP_LAYER_ID, props.layerState.riskMap)
+  setLayerVisibility(HIGH_RISK_FILL_LAYER_ID, props.layerState.highRiskArea)
+  setLayerVisibility(HIGH_RISK_LINE_LAYER_ID, props.layerState.highRiskArea)
+  setLayerVisibility(DISASTER_POINTS_LAYER_ID, props.layerState.disasterPoints)
+  if (map.getLayer(RISK_MAP_LAYER_ID)) {
+    map.setPaintProperty(RISK_MAP_LAYER_ID, 'raster-opacity', props.riskMapOpacity)
+  }
 }
 
 const initMap = () => {
   if (!mapRef.value) return
 
+  const center = normalizeCenter(mapConfig.center)
+
   map = new mapboxgl.Map({
     container: mapRef.value,
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: [119.0, 32.1],
-    zoom: 10,
+    center,
+    zoom: mapConfig.zoom,
     attributionControl: false,
     projection: 'mercator',
   })
@@ -218,9 +359,10 @@ const initMap = () => {
   map.on('load', () => {
     map?.setProjection('mercator')
     map?.setFog(null)
-    addInSarHeatmapLayer()
-    addRiskGradingLayer()
-    addMarkers()
+    addRiskMapLayer()
+    addHighRiskAreaLayer()
+    addDisasterPointsLayer()
+    syncLayerVisibility()
   })
 
   map.on('move', () => {
@@ -230,7 +372,23 @@ const initMap = () => {
   })
 }
 
-onMounted(() => {
+watch(
+  () => props.layerState,
+  () => {
+    syncLayerVisibility()
+  },
+  { deep: true },
+)
+
+watch(
+  () => props.riskMapOpacity,
+  () => {
+    syncLayerVisibility()
+  },
+)
+
+onMounted(async () => {
+  await loadStaticData()
   initMap()
 })
 
@@ -261,6 +419,8 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 12px 16px;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 24px;
   z-index: 10;
 }
@@ -282,47 +442,18 @@ onUnmounted(() => {
   color: #00f0ff;
 }
 
-/* 脉冲标记样式 */
-:global(.pulse-marker) {
-  cursor: pointer;
-  position: relative;
-  width: 24px;
-  height: 24px;
-}
-
-:global(.pulse-marker .marker-core) {
+.map-hint {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  z-index: 2;
-}
-
-:global(.pulse-marker .marker-pulse) {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid;
-  animation: pulse-animation 2s infinite;
-  z-index: 1;
-}
-
-@keyframes pulse-animation {
-  0% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(2);
-    opacity: 0;
-  }
+  top: 90px;
+  left: 16px;
+  max-width: 420px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #ffd9d9;
+  border: 1px solid rgba(255, 80, 80, 0.5);
+  border-radius: 8px;
+  background: rgba(80, 10, 10, 0.55);
+  z-index: 10;
 }
 
 :global(.dark-popup .mapboxgl-popup-content) {

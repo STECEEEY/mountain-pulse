@@ -4,7 +4,7 @@
     <div class="point-info" v-if="point">
       <h3 class="point-name">{{ point.name }}</h3>
       <div class="point-meta">
-        <span class="level-badge" :class="point.level">{{ getLevelText(point.level) }}</span>
+        <span class="level-badge" :class="point.level || ''">{{ getLevelText(point.level || '') }}</span>
         <span class="coords">{{ point.lng }}°E, {{ point.lat }}°N</span>
       </div>
     </div>
@@ -25,26 +25,31 @@
           <el-radio-button label="1y">1年</el-radio-button>
         </el-radio-group>
       </div>
-      <div class="chart-container" ref="chartRef"></div>
+      <div class="chart-wrap">
+        <div class="chart-container" ref="chartRef"></div>
+        <div v-if="loading" class="chart-state">加载中...</div>
+        <div v-else-if="errorMessage" class="chart-state error">{{ errorMessage }}</div>
+        <div v-else-if="point && filteredSeries.length === 0" class="chart-state">暂无数据</div>
+      </div>
     </div>
 
     <!-- 统计指标 -->
     <div class="stats-section">
       <div class="stat-card">
         <span class="stat-label">累计形变</span>
-        <span class="stat-value" :class="{ danger: stats.cumulative > 20 }">{{ stats.cumulative }} mm</span>
+        <span class="stat-value" :class="warningClass">{{ formatMetric(stats.cumulative, 'mm') }}</span>
       </div>
       <div class="stat-card">
         <span class="stat-label">年均速率</span>
-        <span class="stat-value">{{ stats.rate }} mm/yr</span>
+        <span class="stat-value">{{ formatMetric(stats.rate, 'mm/yr') }}</span>
       </div>
       <div class="stat-card">
         <span class="stat-label">最大形变</span>
-        <span class="stat-value">{{ stats.max }} mm</span>
+        <span class="stat-value">{{ formatMetric(stats.max, 'mm') }}</span>
       </div>
       <div class="stat-card warning-card">
         <span class="stat-label">预警状态</span>
-        <span class="stat-value warning">{{ stats.warning }}</span>
+        <span class="stat-value warning">{{ warningText }}</span>
       </div>
     </div>
 
@@ -55,31 +60,121 @@
         <span>模型趋势分析</span>
       </div>
       <p class="ai-content">
-        该监测点近6个月形变速率呈加速趋势，累计形变已超过黄色预警阈值。建议加密监测频率，
-        关注周边降雨情况，必要时启动应急响应。
+        预警等级直接使用风险点 level 原始字段；时序曲线与统计值均来自实时形变接口，
+        时间窗切换仅做前端过滤，不生成任何占位数据。
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import * as echarts from 'echarts'
+import { riskService } from '@/services/riskService'
+import type { DeformationRecord } from '@/types/risk'
+import { getRiskLevelClass, normalizeRiskLevel } from '@/utils/riskLevel'
 
 const props = defineProps<{
-  point: any
+  point: {
+    name?: string
+    lng?: number
+    lat?: number
+    level?: string
+  } | null
 }>()
 
 const timeRange = ref('6m')
 const chartRef = ref<HTMLElement>()
+const loading = ref(false)
+const errorMessage = ref('')
+const rawSeries = shallowRef<DeformationRecord[]>([])
 let chart: echarts.ECharts | null = null
+let resizeHandler: (() => void) | null = null
 
-const stats = ref({
-  cumulative: 25.6,
-  rate: 51.2,
-  max: 25.6,
-  warning: '黄色预警',
+const warningText = computed(() => normalizeRiskLevel(props.point?.level))
+
+const warningClass = computed(() => {
+  const levelClass = getRiskLevelClass(props.point?.level)
+  return {
+    danger: levelClass === 'danger',
+    warning: levelClass === 'warning',
+  }
 })
+
+const parseDate = (value: string) => {
+  if (/^\d{8}$/.test(value)) {
+    const year = Number(value.slice(0, 4))
+    const month = Number(value.slice(4, 6)) - 1
+    const day = Number(value.slice(6, 8))
+    return new Date(year, month, day)
+  }
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const formatDateLabel = (value: string) => {
+  const date = parseDate(value)
+  if (!date) return value
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+const filteredSeries = computed(() => {
+  if (rawSeries.value.length === 0) return []
+  const sorted = [...rawSeries.value].sort((a, b) => a.date.localeCompare(b.date))
+  const latestItem = sorted[sorted.length - 1]
+  if (!latestItem) return []
+  const latestDate = parseDate(latestItem.date)
+  if (!latestDate) return sorted
+
+  const monthMap: Record<string, number> = { '3m': 3, '6m': 6, '1y': 12 }
+  const months = monthMap[timeRange.value] ?? 6
+  const startDate = new Date(latestDate)
+  startDate.setMonth(startDate.getMonth() - months)
+
+  return sorted.filter((item) => {
+    const date = parseDate(item.date)
+    return !!date && date >= startDate && date <= latestDate
+  })
+})
+
+const stats = computed(() => {
+  if (filteredSeries.value.length === 0) {
+    return {
+      cumulative: null,
+      rate: null,
+      max: null,
+    }
+  }
+
+  const values = filteredSeries.value.map((item) => item.displacement)
+  const first = filteredSeries.value[0]
+  const last = filteredSeries.value[filteredSeries.value.length - 1]
+  if (!first || !last) {
+    return {
+      cumulative: null,
+      rate: null,
+      max: null,
+    }
+  }
+  const startDate = parseDate(first.date)
+  const endDate = parseDate(last.date)
+  const years = startDate && endDate
+    ? Math.max((endDate.getTime() - startDate.getTime()) / (365.25 * 24 * 3600 * 1000), 1 / 365)
+    : 1
+
+  return {
+    cumulative: last.displacement,
+    rate: (last.displacement - first.displacement) / years,
+    max: Math.max(...values.map((value) => Math.abs(value))),
+  }
+})
+
+const formatMetric = (value: number | null, unit: string) => {
+  if (value === null || Number.isNaN(value)) return '--'
+  return `${value.toFixed(2)} ${unit}`
+}
 
 const getLevelText = (level: string) => {
   const texts: Record<string, string> = {
@@ -87,36 +182,44 @@ const getLevelText = (level: string) => {
     warning: '高风险',
     medium: '中风险',
     safe: '低风险',
+    极高: '极高风险',
+    高: '高风险',
+    中: '中风险',
+    低: '低风险',
   }
   return texts[level] || level
 }
 
-const initChart = () => {
-  if (!chartRef.value) return
-  chart = echarts.init(chartRef.value)
-
-  const option = {
-    grid: { left: 40, right: 20, top: 20, bottom: 30 },
-    xAxis: {
-      type: 'category',
-      data: ['2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03'],
-      axisLine: { lineStyle: { color: '#2b4a6a' } },
-      axisLabel: { color: '#88a0b0', fontSize: 11 },
-    },
-    yAxis: {
-      type: 'value',
-      name: 'mm',
-      nameTextStyle: { color: '#88a0b0', fontSize: 11 },
-      axisLine: { show: false },
-      axisLabel: { color: '#88a0b0', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#1a3a5a', type: 'dashed' } },
-    },
-    series: [{
+const buildChartOption = () => ({
+  animation: false,
+  grid: { left: 40, right: 20, top: 20, bottom: 56 },
+  xAxis: {
+    type: 'category',
+    data: filteredSeries.value.map((item) => formatDateLabel(item.date)),
+    axisLine: { lineStyle: { color: '#2b4a6a' } },
+    axisLabel: { color: '#88a0b0', fontSize: 11, hideOverlap: true },
+  },
+  yAxis: {
+    type: 'value',
+    name: 'mm',
+    nameTextStyle: { color: '#88a0b0', fontSize: 11 },
+    axisLine: { show: false },
+    axisLabel: { color: '#88a0b0', fontSize: 11 },
+    splitLine: { lineStyle: { color: '#1a3a5a', type: 'dashed' } },
+  },
+  dataZoom: [
+    { type: 'inside', throttle: 80 },
+    { type: 'slider', height: 18, bottom: 8 },
+  ],
+  series: [
+    {
       type: 'line',
-      data: [2.3, 5.1, 8.7, 12.4, 18.9, 25.6],
-      smooth: true,
-      symbol: 'circle',
-      symbolSize: 6,
+      data: filteredSeries.value.map((item) => item.displacement),
+      smooth: false,
+      showSymbol: false,
+      sampling: 'lttb',
+      progressive: 2000,
+      progressiveThreshold: 5000,
       lineStyle: { color: '#00f0ff', width: 2, shadowColor: 'rgba(0, 240, 255, 0.5)', shadowBlur: 10 },
       itemStyle: { color: '#00f0ff', borderColor: '#00f0ff' },
       areaStyle: {
@@ -125,30 +228,72 @@ const initChart = () => {
           { offset: 1, color: 'rgba(0, 240, 255, 0)' },
         ]),
       },
-      markLine: {
-        silent: true,
-        symbol: 'none',
-        lineStyle: { color: '#ff4444', type: 'dashed' },
-        label: { show: true, position: 'end', color: '#ff8888', fontSize: 10, formatter: '预警线' },
-        data: [{ yAxis: 20 }],
-      },
-    }],
-    backgroundColor: 'transparent',
+    },
+  ],
+  backgroundColor: 'transparent',
+})
+
+const updateChart = () => {
+  if (!chart) return
+  chart.setOption(buildChartOption(), true)
+}
+
+const initChart = () => {
+  if (!chartRef.value) return
+  chart = echarts.init(chartRef.value)
+  updateChart()
+}
+
+const fetchDeformationData = async () => {
+  if (!props.point || typeof props.point.lat !== 'number' || typeof props.point.lng !== 'number') {
+    rawSeries.value = []
+    errorMessage.value = ''
+    updateChart()
+    return
   }
-  chart.setOption(option)
+
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const response = await riskService.loadDeformationData(props.point.lat, props.point.lng)
+    rawSeries.value = response.deformation_data
+      .filter((item) => typeof item.date === 'string' && Number.isFinite(item.displacement))
+      .map((item) => ({ date: item.date, displacement: Number(item.displacement) }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+  } catch (error) {
+    rawSeries.value = []
+    errorMessage.value = error instanceof Error ? error.message : '形变数据加载失败'
+  } finally {
+    loading.value = false
+    updateChart()
+  }
 }
 
 onMounted(() => {
   initChart()
-  window.addEventListener('resize', () => chart?.resize())
+  resizeHandler = () => chart?.resize()
+  window.addEventListener('resize', resizeHandler)
+  fetchDeformationData()
 })
 
 onUnmounted(() => {
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+  }
   chart?.dispose()
+  chart = null
 })
 
-watch(() => props.point, () => {
-  // 更新图表数据
+watch(
+  () => [props.point?.lat, props.point?.lng],
+  () => {
+    fetchDeformationData()
+  },
+)
+
+watch(filteredSeries, () => {
+  updateChart()
 })
 </script>
 
@@ -240,6 +385,25 @@ watch(() => props.point, () => {
 
 .chart-container {
   height: 200px;
+}
+
+.chart-wrap {
+  position: relative;
+}
+
+.chart-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #9bc2db;
+  background: rgba(2, 12, 24, 0.35);
+}
+
+.chart-state.error {
+  color: #ff9d9d;
 }
 
 .stats-section {

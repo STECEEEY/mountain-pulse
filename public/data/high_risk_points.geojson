@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [],
+  "metadata": {
+    "source": "landslide_risk_map_final.tif",
+    "threshold": 0.7,
+    "feature_count": 0,
+    "description": "风险概率 ≥ 0.7 的高风险区域"
+  }
+}

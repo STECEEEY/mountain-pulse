@@ -6,35 +6,35 @@
       <div class="info-grid">
         <div class="info-row">
           <span class="info-label">编号</span>
-          <span class="info-value">NZ-2026-0031</span>
+          <span class="info-value">{{ point?.id ?? '-' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">名称</span>
-          <span class="info-value">{{ point?.name || '汤山滑坡群' }}</span>
+          <span class="info-value">{{ point?.name || '暂无' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">类型</span>
-          <span class="info-value">滑坡</span>
+          <span class="info-value">{{ point?.type || '暂无' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">经度</span>
-          <span class="info-value">{{ point?.lng || '118.87' }}°E</span>
+          <span class="info-value">{{ point?.lng ? `${Number(point.lng).toFixed(6)}°E` : '-' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">纬度</span>
-          <span class="info-value">{{ point?.lat || '32.05' }}°N</span>
+          <span class="info-value">{{ point?.lat ? `${Number(point.lat).toFixed(6)}°N` : '-' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">高程</span>
-          <span class="info-value">256 m</span>
+          <span class="info-value">{{ point?.elevation !== undefined ? `${Number(point.elevation).toFixed(2)} m` : '-' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">坡度</span>
-          <span class="info-value">35°</span>
+          <span class="info-value">{{ point?.slope !== undefined ? `${Number(point.slope).toFixed(2)}°` : '-' }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">坡向</span>
-          <span class="info-value">东南</span>
+          <span class="info-label">威胁人口</span>
+          <span class="info-value">{{ point?.threat || '暂无' }}</span>
         </div>
       </div>
     </div>
@@ -45,19 +45,19 @@
       <div class="info-grid">
         <div class="info-row">
           <span class="info-label">监测开始</span>
-          <span class="info-value">2021-06-15</span>
+          <span class="info-value">-</span>
         </div>
         <div class="info-row">
           <span class="info-label">数据源</span>
-          <span class="info-value">Sentinel-1 SAR</span>
+          <span class="info-value">暂无</span>
         </div>
         <div class="info-row">
           <span class="info-label">最近更新</span>
-          <span class="info-value">2026-03-18</span>
+          <span class="info-value">-</span>
         </div>
         <div class="info-row">
           <span class="info-label">监测周期</span>
-          <span class="info-value">12天</span>
+          <span class="info-value">-</span>
         </div>
       </div>
     </div>
@@ -68,19 +68,19 @@
       <div class="info-grid">
         <div class="info-row">
           <span class="info-label">岩性</span>
-          <span class="info-value">泥岩、砂岩互层</span>
+          <span class="info-value">暂无</span>
         </div>
         <div class="info-row">
           <span class="info-label">构造</span>
-          <span class="info-value">断层破碎带</span>
+          <span class="info-value">暂无</span>
         </div>
         <div class="info-row">
           <span class="info-label">规模</span>
-          <span class="info-value">中型（50万m³）</span>
+          <span class="info-value">暂无</span>
         </div>
         <div class="info-row">
           <span class="info-label">稳定性</span>
-          <span class="info-value danger">欠稳定</span>
+          <span class="info-value danger">{{ point?.level ? `${point.level}风险` : '暂无' }}</span>
         </div>
       </div>
     </div>
@@ -88,16 +88,7 @@
     <!-- 历史灾害 -->
     <div class="info-section">
       <h4>历史灾害记录</h4>
-      <div class="disaster-list">
-        <div class="disaster-item">
-          <span class="disaster-date">2023-07</span>
-          <span class="disaster-desc">暴雨引发小规模滑动，无人员伤亡</span>
-        </div>
-        <div class="disaster-item">
-          <span class="disaster-date">2019-08</span>
-          <span class="disaster-desc">坡脚出现裂缝，已加固处理</span>
-        </div>
-      </div>
+      <div class="empty-history">暂无历史记录</div>
     </div>
 
     <!-- 操作按钮 -->
@@ -113,7 +104,17 @@
 import { Download, Printer, Share } from '@element-plus/icons-vue'
 
 defineProps<{
-  point: any
+  point: {
+    id?: number
+    name?: string
+    type?: string
+    lng?: number
+    lat?: number
+    elevation?: number
+    slope?: number
+    threat?: string
+    level?: string
+  } | null
 }>()
 </script>
 
@@ -185,6 +186,14 @@ defineProps<{
 .disaster-desc {
   color: #64748b;
   line-height: 1.4;
+}
+
+.empty-history {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
 }
 
 .action-buttons {

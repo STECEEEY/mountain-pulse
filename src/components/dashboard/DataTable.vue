@@ -11,44 +11,79 @@
       />
     </div>
     <div class="table-container">
+      <div v-if="loadError" class="table-state">{{ loadError }}</div>
       <el-table
+        v-else
+        ref="tableRef"
         :data="filteredData"
         style="width: 100%"
         size="small"
+        height="100%"
         :row-class-name="tableRowClassName"
+        @mouseenter="isHovering = true"
+        @mouseleave="isHovering = false"
       >
-        <el-table-column prop="name" label="名称" min-width="100" show-overflow-tooltip />
-        <el-table-column prop="type" label="类型" width="70" />
-        <el-table-column prop="level" label="等级" width="70">
+        <el-table-column prop="name" label="名称" min-width="92" show-overflow-tooltip />
+        <el-table-column prop="type" label="类型" width="56" />
+        <el-table-column prop="level" label="等级" width="56">
           <template #default="{ row }">
             <span class="level-badge" :class="row.levelClass">{{ row.level }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="deformation" label="形变" width="80">
+        <el-table-column prop="deformation" label="形变" width="78">
           <template #default="{ row }">
             <span :class="{ 'text-danger': row.deformation > 20 }">{{ row.deformation }}mm</span>
           </template>
         </el-table-column>
-        <el-table-column prop="population" label="威胁人口" width="80" />
+        <el-table-column prop="population" label="威胁人口" width="82" show-overflow-tooltip />
       </el-table>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
+import { riskService } from '@/services/riskService'
+import { getRiskLevelClass } from '@/utils/riskLevel'
 
 const searchText = ref('')
+const loadError = ref('')
+const tableRef = ref<any>(null)
+const isHovering = ref(false)
+let autoScrollTimer: number | null = null
 
-const tableData = ref([
-  { id: 1, name: '汤山滑坡群', type: '滑坡', level: '极高', levelClass: 'danger', deformation: 25.6, population: 1250 },
-  { id: 2, name: '宝华山崩塌', type: '崩塌', level: '高', levelClass: 'warning', deformation: 18.3, population: 830 },
-  { id: 3, name: '紫金山北坡', type: '滑坡', level: '高', levelClass: 'warning', deformation: 15.7, population: 2100 },
-  { id: 4, name: '镇江三山', type: '滑坡', level: '中', levelClass: 'medium', deformation: 8.9, population: 560 },
-  { id: 5, name: '茅山东麓', type: '崩塌', level: '中', levelClass: 'medium', deformation: 6.2, population: 420 },
-  { id: 6, name: '栖霞山南', type: '泥流', level: '低', levelClass: 'safe', deformation: 3.1, population: 280 },
-])
+const tableData = ref<Array<{
+  id: number
+  name: string
+  type: string
+  level: string
+  levelClass: string
+  deformation: number
+  population: string
+}>>([])
+
+const loadTableData = async () => {
+  try {
+    loadError.value = ''
+    const response = await riskService.loadRiskPoints()
+    tableData.value = response.points
+      .map((point, index) => ({
+        id: index + 1,
+        name: point.name,
+        type: point.type,
+        level: point.level,
+        levelClass: getRiskLevelClass(point.level),
+        deformation: Number(point.velocity),
+        population: point.threat,
+      }))
+      .sort((a, b) => Math.abs(b.deformation) - Math.abs(a.deformation))
+      .slice(0, 200)
+  } catch {
+    tableData.value = []
+    loadError.value = '风险点数据加载失败'
+  }
+}
 
 const filteredData = computed(() => {
   if (!searchText.value) return tableData.value
@@ -63,6 +98,47 @@ const tableRowClassName = ({ row }: { row: any }) => {
   if (row.levelClass === 'warning') return 'row-warning'
   return ''
 }
+
+const stopAutoScroll = () => {
+  if (autoScrollTimer !== null) {
+    window.clearInterval(autoScrollTimer)
+    autoScrollTimer = null
+  }
+}
+
+const startAutoScroll = async () => {
+  stopAutoScroll()
+  await nextTick()
+
+  const wrap = tableRef.value?.$el?.querySelector('.el-scrollbar__wrap') as HTMLElement | null
+  if (!wrap) return
+  if (filteredData.value.length <= 8) return
+
+  autoScrollTimer = window.setInterval(() => {
+    if (isHovering.value) return
+
+    const maxScrollTop = wrap.scrollHeight - wrap.clientHeight
+    if (maxScrollTop <= 0) return
+
+    if (wrap.scrollTop >= maxScrollTop - 1) {
+      wrap.scrollTop = 0
+    } else {
+      wrap.scrollTop += 1
+    }
+  }, 45)
+}
+
+onMounted(() => {
+  loadTableData()
+})
+
+onUnmounted(() => {
+  stopAutoScroll()
+})
+
+watch(filteredData, () => {
+  startAutoScroll()
+})
 </script>
 
 <style scoped>
@@ -88,7 +164,7 @@ const tableRowClassName = ({ row }: { row: any }) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 12px;
   border-bottom: 1px solid rgba(0, 150, 255, 0.1);
 }
 
@@ -101,7 +177,16 @@ const tableRowClassName = ({ row }: { row: any }) => {
 
 .table-container {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
+}
+
+.table-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #ff9d9d;
+  font-size: 13px;
 }
 
 :deep(.el-input__wrapper) {
@@ -128,9 +213,23 @@ const tableRowClassName = ({ row }: { row: any }) => {
   font-weight: 500;
 }
 
+:deep(.el-table th.el-table__cell .cell) {
+  padding: 0 4px;
+  font-size: 12px;
+}
+
 :deep(.el-table td.el-table__cell) {
   color: #e0f0ff;
   border-bottom: 1px solid rgba(0, 150, 255, 0.1);
+}
+
+:deep(.el-table td.el-table__cell .cell) {
+  padding: 0 4px;
+  font-size: 12px;
+}
+
+:deep(.el-table .el-scrollbar__wrap) {
+  scroll-behavior: auto;
 }
 
 :deep(.el-table .row-danger) {
@@ -170,5 +269,10 @@ const tableRowClassName = ({ row }: { row: any }) => {
 .text-danger {
   color: #ff4444;
   font-weight: 600;
+}
+
+.table-container :deep(.el-table__body-wrapper:hover),
+.table-container :deep(.el-scrollbar__wrap:hover) {
+  cursor: ns-resize;
 }
 </style>
