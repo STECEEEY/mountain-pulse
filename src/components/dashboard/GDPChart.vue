@@ -8,7 +8,7 @@
     <div class="chart-footer">
       <div class="stat-item">
         <span class="stat-label">年均降雨量</span>
-        <span class="stat-value"><AnimatedNumber :value="1138" /><small>mm</small></span>
+        <span class="stat-value"><AnimatedNumber :value="avgRainfall" /><small>mm</small></span>
       </div>
       <div class="stat-item">
         <span class="stat-label">2025年降雨</span>
@@ -38,10 +38,13 @@ const avgRainfall = computed(() => {
   return Math.round(sum / rainData.values.length)
 })
 
-// 计算2025年同比变化（与2024年对比）
+// 计算2025年同比变化（与2024年对比）- 修复 TS 错误
 const rainChangeRate = computed(() => {
-  const lastYear = rainData.values[rainData.values.length - 2]
-  const thisYear = rainData.values[rainData.values.length - 1]
+  const values = rainData.values
+  if (values.length < 2) return 0
+  const lastYear = values[values.length - 2]
+  const thisYear = values[values.length - 1]
+  if (lastYear === undefined || thisYear === undefined) return 0
   return ((thisYear - lastYear) / lastYear * 100)
 })
 
@@ -56,7 +59,7 @@ const initChart = () => {
     grid: {
       left: '12%',
       right: '5%',
-      top: '15%',
+      top: '18%',
       bottom: '10%',
       containLabel: true,
     },
@@ -68,6 +71,7 @@ const initChart = () => {
       borderWidth: 1,
       textStyle: { color: '#e0f0ff', fontSize: 11 },
       formatter: (params: any) => {
+        if (!params || params.length === 0) return ''
         const data = params[0]
         return `${data.name}年<br/>降雨量: ${data.value} mm`
       }
@@ -117,7 +121,7 @@ const initChart = () => {
         },
       },
       {
-        name: '年均线',
+        name: `年均值 ${avgRainfall.value}mm`,
         type: 'line',
         data: Array(rainData.years.length).fill(avgRainfall.value),
         lineStyle: {
@@ -126,10 +130,7 @@ const initChart = () => {
           type: 'dashed',
         },
         symbol: 'none',
-        smooth: false,
-        step: false,
         tooltip: { show: false },
-        z: 1,
       }
     ],
     backgroundColor: 'transparent',
