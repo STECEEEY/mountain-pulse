@@ -152,7 +152,7 @@ const addRiskMapLayer = () => {
 
   map.addSource(OVERVIEW_RISK_MAP_SOURCE_ID, {
     type: 'image',
-    url: '/data/risk_map.png',
+    url: '/data/risk_map.png', 
     coordinates: [
       [west, north],
       [east, north],
