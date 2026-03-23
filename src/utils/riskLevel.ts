@@ -3,10 +3,10 @@ export type CanonicalRiskLevel = '极高' | '高' | '中' | '低' | '未知'
 export const normalizeRiskLevel = (level?: string): CanonicalRiskLevel => {
   if (!level) return '未知'
   const normalized = level.trim().toLowerCase()
-  if (normalized.includes('极高') || normalized.includes('danger')) return '极高'
-  if (normalized === '高' || normalized.includes('warning')) return '高'
-  if (normalized === '中' || normalized.includes('medium')) return '中'
-  if (normalized === '低' || normalized.includes('safe')) return '低'
+  if (normalized.includes('极高风险') || normalized.includes('danger')) return '极高'
+  if (normalized === '高风险' || normalized.includes('warning')) return '高'
+  if (normalized === '中风险' || normalized.includes('medium')) return '中'
+  if (normalized === '低风险' || normalized.includes('safe')) return '低'
   return '未知'
 }
 
