@@ -1,4 +1,4 @@
-<template>
+<template>   
   <div class="side-panel">
     <!-- Tab 导航 -->
     <div class="tab-nav">
