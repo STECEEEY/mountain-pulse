@@ -2,7 +2,6 @@
   <div class="ai-suggestions">
     <div class="header">
       <h3>🤖 AI决策建议</h3>
-      <el-badge :value="aiBadgeCount" class="badge" :type="aiBadgeType">
         <el-button size="small" :icon="Refresh" circle @click="refreshSuggestions" :loading="loading" />
       </el-badge>
     </div>
