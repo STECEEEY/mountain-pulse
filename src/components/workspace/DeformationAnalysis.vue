@@ -358,7 +358,7 @@ const retryFetch = () => {
   border-color: #00f0ff;
   color: #fff;
 }
-</style>
+
 
 .point-info {
   padding-bottom: 16px;
