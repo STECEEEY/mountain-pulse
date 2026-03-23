@@ -303,22 +303,22 @@ const fetchDeformationData = async () => {
     
     // 验证数据有效性
     const validData = response.deformation_data
-      .filter((item) => {
+    .filter((item: { date: string; displacement: number }) => {
         const isValid = typeof item.date === 'string' && 
-                       item.date.length > 0 && 
-                       Number.isFinite(item.displacement) &&
-                       !Number.isNaN(item.displacement)
+                    item.date.length > 0 && 
+                    Number.isFinite(item.displacement) &&
+                    !Number.isNaN(item.displacement)
         if (!isValid) {
-          console.warn('无效数据项:', item)
+        console.warn('无效数据项:', item)
         }
         return isValid
-      })
-      .map((item) => ({ 
+    })
+    .map((item: { date: string; displacement: number }) => ({ 
         date: item.date, 
         displacement: Number(item.displacement) 
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date))
-    
+    }))
+    .sort((a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date))
+
     if (validData.length === 0) {
     errorMessage.value = '数据格式无效，请检查接口返回'
     rawSeries.value = []
@@ -331,7 +331,7 @@ const fetchDeformationData = async () => {
     console.log('处理后的数据:', {
     总数: validData.length,
     时间范围: `${validData[0]?.date ?? '未知'} ~ ${validData[validData.length - 1]?.date ?? '未知'}`,
-    位移范围: `${Math.min(...validData.map(d => d.displacement))} ~ ${Math.max(...validData.map(d => d.displacement))}`
+    位移范围: `${Math.min(...validData.map((d: { displacement: number }) => d.displacement))} ~ ${Math.max(...validData.map((d: { displacement: number }) => d.displacement))}`
     })
     
   } catch (error) {
