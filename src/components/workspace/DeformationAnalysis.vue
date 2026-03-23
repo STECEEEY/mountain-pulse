@@ -84,12 +84,16 @@ const props = defineProps<{
 }>()
 
 // 添加这个调试 watch
-watch(() => props.point, (newPoint) => {
-  console.log('DeformationAnalysis 接收到 point:', newPoint)
-  if (newPoint) {
-    console.log('坐标:', newPoint.lat, newPoint.lng)
-  }
-}, { deep: true, immediate: true })
+watch(
+  () => [props.point?.lat, props.point?.lng],
+  (newVal, oldVal) => {
+    console.log('watch 触发 - 新值:', newVal, '旧值:', oldVal)
+    console.log('准备调用 fetchDeformationData')
+    fetchDeformationData()
+  },
+  { immediate: true, deep: true }  // 添加 immediate 和 deep
+)
+
 
 const timeRange = ref('6m')
 const chartRef = ref<HTMLElement>()
@@ -263,7 +267,10 @@ const initChart = () => {
   updateChart()
 }
 
+// 在 fetchDeformationData 函数开头也添加日志
 const fetchDeformationData = async () => {
+  console.log('fetchDeformationData 被调用了')
+  console.log('当前 props.point:', props.point)
   if (!props.point || typeof props.point.lat !== 'number' || typeof props.point.lng !== 'number') {
     rawSeries.value = []
     errorMessage.value = ''
@@ -271,6 +278,7 @@ const fetchDeformationData = async () => {
     return
   }
 
+  console.log('开始请求形变数据，坐标:', props.point.lat, props.point.lng)
   loading.value = true
   errorMessage.value = ''
 
