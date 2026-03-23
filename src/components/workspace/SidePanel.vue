@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { Cpu, TrendCharts, Warning, Clock, Document, DataAnalysis } from '@element-plus/icons-vue'
 import AIDecisionCockpit from './AIDecisionCockpit.vue'
 import DeformationAnalysis from './DeformationAnalysis.vue'
@@ -53,8 +53,8 @@ defineProps<{
 
 const activeTab = ref('deformation')  // 改成 deformation 以便直接看到形变分析
 
-// 添加 watch 监听 selectedPoint 的变化
-watch(() => props.selectedPoint, (newPoint) => {
+// 添加 watch，使用 props.selectedPoint
+watch(() => props.selectedPoint, (newPoint: any) => {
   console.log('sidePanel 接收到 selectedPoint:', newPoint)
 }, { deep: true, immediate: true })
 
