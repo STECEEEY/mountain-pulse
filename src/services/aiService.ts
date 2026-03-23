@@ -13,9 +13,8 @@ const DASHSCOPE_API_KEY = 'sk-35342788c99143de9769dc63f0fb5bf4'
 
 // 构建决策 prompt
 const buildDecisionPrompt = (req: DecisionRequest): string => {
-  // 使用可选链和默认值，避免类型错误
-  const pointName = (req as any).pointName || req.pointName || '未知'
-  const dutyNote = (req as any).dutyNote || req.dutyNote || '无'
+  const pointName = (req as any).pointName || '未知'
+  const dutyNote = (req as any).dutyNote || '无'
   const affectedPopulation = (req as any).affectedPopulation || '待评估'
   
   return `你是一位地质灾害应急专家。请根据以下数据给出决策建议：
@@ -58,7 +57,6 @@ const callQwenDirectly = async (prompt: string): Promise<any> => {
   const data = await response.json()
   const content = data.output.choices[0].message.content
   
-  // 尝试解析 JSON
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
@@ -78,8 +76,8 @@ const callQwenDirectly = async (prompt: string): Promise<any> => {
 
 // Mock 数据
 const buildMockDecisions = (req: DecisionRequest): AIDecision[] => {
-  const titlePrefix = (req as any).pointName || req.pointName || '重点监测点'
-  const dutyNote = (req as any).dutyNote || req.dutyNote || ''
+  const titlePrefix = (req as any).pointName || '重点监测点'
+  const dutyNote = (req as any).dutyNote || ''
   const rainFlag = dutyNote.includes('降雨') || dutyNote.includes('雨')
 
   return [
@@ -130,11 +128,13 @@ const buildMockResponse = (req: DecisionRequest): DecisionResponse => {
   }
 }
 
-// 转换风险等级为 DecisionLevel 类型
+// 转换风险等级为 DecisionLevel 类型（只返回 danger 或 warning）
 const mapRiskLevelToDecisionLevel = (riskLevel: string): DecisionLevel => {
-  if (riskLevel === '高') return 'danger'
-  if (riskLevel === '中') return 'warning'
-  return 'info'  // info 是有效的 DecisionLevel
+  if (riskLevel === '高') {
+    return 'danger'
+  }
+  // 中风险和低风险都返回 warning
+  return 'warning'
 }
 
 // 真实调用
@@ -142,7 +142,8 @@ const getRealDecision = async (req: DecisionRequest): Promise<DecisionResponse> 
   const prompt = buildDecisionPrompt(req)
   const aiResult = await callQwenDirectly(prompt)
   
-  const level = mapRiskLevelToDecisionLevel(aiResult.riskLevel || '中')
+  // 确保 level 只能是 danger 或 warning
+  const level: DecisionLevel = mapRiskLevelToDecisionLevel(aiResult.riskLevel || '中')
   
   return {
     modelVersion: 'qwen3.5-flash',
@@ -154,7 +155,7 @@ const getRealDecision = async (req: DecisionRequest): Promise<DecisionResponse> 
     },
     decisions: [{
       id: Date.now(),
-      title: `${(req as any).pointName || req.pointName || '风险点'}应急处置`,
+      title: `${(req as any).pointName || '风险点'}应急处置`,
       level: level,
       confidence: aiResult.confidence || 85,
       window: '建议时间窗：未来6小时',
