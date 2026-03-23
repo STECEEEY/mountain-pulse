@@ -47,13 +47,14 @@ import HistoryReview from './HistoryReview.vue'
 import PointDetail from './PointDetail.vue'
 import RiskAnalysisPanel from './RiskAnalysisPanel.vue'
 
-defineProps<{
+// 关键修改：将 defineProps 的结果赋值给 props
+const props = defineProps<{
   selectedPoint: any
 }>()
 
-const activeTab = ref('deformation')  // 改成 deformation 以便直接看到形变分析
+const activeTab = ref('deformation')
 
-// 添加 watch，使用 props.selectedPoint
+// 现在可以使用 props.selectedPoint
 watch(() => props.selectedPoint, (newPoint: any) => {
   console.log('sidePanel 接收到 selectedPoint:', newPoint)
 }, { deep: true, immediate: true })
@@ -66,7 +67,6 @@ const tabs = [
   { key: 'history', label: '历史回溯', icon: Clock },
   { key: 'detail', label: '数据详情', icon: Document },
 ]
-
 </script>
 
 <style scoped>
