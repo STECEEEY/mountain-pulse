@@ -103,7 +103,7 @@ const loadRiskData = async () => {
   try {
     debugInfo.value = { status: '加载中...', pointCount: 0, sample: '' }
     
-    const response = await fetch('/public/data/risk_points.json')
+    const response = await fetch('/data/risk_points.json')
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
