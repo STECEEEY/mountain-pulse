@@ -5,7 +5,7 @@
       <div class="map-controls">
         <el-checkbox v-model="layers.riskMap" label="风险底图" />
         <el-checkbox v-model="layers.highRiskArea" label="高风险区" />
-        <el-checkbox v-model="layers.disasterPoints" label="灾害点" />
+        <el-checkbox v-model="layers.disasterPoints" label="风险点" />
         <div class="opacity-control">
           <span>透明度 {{ Math.round(riskMapOpacity * 100) }}%</span>
           <el-slider v-model="riskMapOpacity" :min="0.1" :max="0.9" :step="0.05" style="width: 110px" />
