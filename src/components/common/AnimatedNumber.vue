@@ -8,7 +8,7 @@ import { ref, watch, onMounted } from 'vue'
 const props = withDefaults(defineProps<{
   value: number
   duration?: number
-  decimals?: number
+  decimals?: number 
   prefix?: string
   suffix?: string
 }>(), {
