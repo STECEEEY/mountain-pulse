@@ -40,16 +40,55 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
+import type { ECBasicOption } from 'echarts/types/dist/shared'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
+
+// 类型定义
+interface RiskPoint {
+  name: string
+  type: string
+  level: '极高风险' | '高风险' | '中风险' | '低风险'
+  risk_probability: number
+  velocity: number
+  threat: string
+  longitude: number
+  latitude: number
+  elevation: number
+  slope: number
+  projection_x: number
+  projection_y: number
+}
+
+interface RiskData {
+  total_count: number
+  high_risk_count: number
+  points: RiskPoint[]
+}
+
+interface ExposureStats {
+  total: number
+  byLevel: {
+    '极高风险': number
+    '高风险': number
+    '中风险': number
+    '低风险': number
+  }
+  pointCount: {
+    '极高风险': number
+    '高风险': number
+    '中风险': number
+    '低风险': number
+  }
+}
 
 const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
 const loading = ref(true)
-const riskPoints = ref<any[]>([])
+const riskPoints = ref<RiskPoint[]>([])
 
-// 风险等级顺序（用于图表排序）
-const levelOrder = ['极高风险', '高风险', '中风险', '低风险']
-const levelColors = {
+// 风险等级顺序
+const levelOrder: readonly ('极高风险' | '高风险' | '中风险' | '低风险')[] = ['极高风险', '高风险', '中风险', '低风险']
+const levelColors: Record<string, string> = {
   '极高风险': '#ff4d4f',
   '高风险': '#ff7c43',
   '中风险': '#ffc107',
@@ -63,11 +102,10 @@ const loadRiskData = async () => {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    const data = await response.json()
+    const data: RiskData = await response.json()
     riskPoints.value = data.points || []
   } catch (error) {
     console.error('加载风险点数据失败:', error)
-    // 使用模拟数据作为降级方案
     riskPoints.value = []
   } finally {
     loading.value = false
@@ -75,8 +113,8 @@ const loadRiskData = async () => {
 }
 
 // 聚合威胁人口数据
-const exposureStats = computed(() => {
-  const stats = {
+const exposureStats = computed<ExposureStats>(() => {
+  const stats: ExposureStats = {
     total: 0,
     byLevel: {
       '极高风险': 0,
@@ -92,10 +130,10 @@ const exposureStats = computed(() => {
     }
   }
   
-  riskPoints.value.forEach((point: any) => {
+  riskPoints.value.forEach((point: RiskPoint) => {
     // 解析 threat 字段中的数字（如 "298人" -> 298）
     const pop = parseInt(point.threat) || 0
-    const level = point.level
+    const level = point.level as keyof ExposureStats['byLevel']
     
     if (stats.byLevel[level] !== undefined) {
       stats.byLevel[level] += pop
@@ -119,7 +157,7 @@ const chartData = computed(() => {
   return {
     levels: levelOrder,
     populations: levelOrder.map(level => exposureStats.value.byLevel[level]),
-    colors: levelOrder.map(level => levelColors[level as keyof typeof levelColors])
+    colors: levelOrder.map(level => levelColors[level])
   }
 })
 
@@ -132,15 +170,15 @@ const initChart = () => {
   
   chart = echarts.init(chartRef.value)
 
-  const option = {
+  const option: ECBasicOption = {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const data = params[0]
-        const level = data.name
+        const level = data.name as keyof ExposureStats['pointCount']
         const pop = data.value
-        const pointCount = exposureStats.value.pointCount[level as keyof typeof exposureStats.value.pointCount]
+        const pointCount = exposureStats.value.pointCount[level]
         return `
           <div style="font-weight:600;margin-bottom:4px">${level}</div>
           <div>威胁人口: ${pop.toLocaleString()} 人</div>
@@ -162,7 +200,7 @@ const initChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: chartData.value.levels,
+      data: chartData.value.levels as string[],
       axisLine: { lineStyle: { color: '#2b4a6a' } },
       axisLabel: {
         color: '#88a0b0',
@@ -230,7 +268,7 @@ const handleResize = () => chart?.resize()
 watch([exposureStats, loading], () => {
   if (!loading.value && chart) {
     chart.setOption({
-      xAxis: { data: chartData.value.levels },
+      xAxis: { data: chartData.value.levels as string[] },
       series: [{ data: chartData.value.populations }]
     })
   } else if (!loading.value && chartRef.value) {
