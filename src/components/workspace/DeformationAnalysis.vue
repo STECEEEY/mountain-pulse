@@ -256,46 +256,126 @@ const fetchDeformationData = async () => {
   errorMessage.value = ''
 
   try {
+    console.log('请求形变数据:', {
+      lat: props.point.lat,
+      lng: props.point.lng
+    })
+    
     const response = await riskService.loadDeformationData(props.point.lat, props.point.lng)
-    rawSeries.value = response.deformation_data
-      .filter((item) => typeof item.date === 'string' && Number.isFinite(item.displacement))
-      .map((item) => ({ date: item.date, displacement: Number(item.displacement) }))
+    
+    console.log('形变接口返回:', response)
+    
+    // 添加更严格的数据验证和转换
+    if (!response.deformation_data || !Array.isArray(response.deformation_data)) {
+      throw new Error('接口返回数据格式错误')
+    }
+    
+    if (response.deformation_data.length === 0) {
+      errorMessage.value = '该点位暂无形变数据'
+      rawSeries.value = []
+      return
+    }
+    
+    // 验证数据有效性
+    const validData = response.deformation_data
+      .filter((item) => {
+        const isValid = typeof item.date === 'string' && 
+                       item.date.length > 0 && 
+                       Number.isFinite(item.displacement) &&
+                       !Number.isNaN(item.displacement)
+        if (!isValid) {
+          console.warn('无效数据项:', item)
+        }
+        return isValid
+      })
+      .map((item) => ({ 
+        date: item.date, 
+        displacement: Number(item.displacement) 
+      }))
       .sort((a, b) => a.date.localeCompare(b.date))
+    
+    if (validData.length === 0) {
+      errorMessage.value = '数据格式无效，请检查接口返回'
+      rawSeries.value = []
+      return
+    }
+    
+    rawSeries.value = validData
+    errorMessage.value = ''
+    
+    console.log('处理后的数据:', {
+      总数: validData.length,
+      时间范围: `${validData[0].date} ~ ${validData[validData.length - 1].date}`,
+      位移范围: `${Math.min(...validData.map(d => d.displacement))} ~ ${Math.max(...validData.map(d => d.displacement))}`
+    })
+    
   } catch (error) {
+    console.error('加载形变数据失败:', error)
     rawSeries.value = []
-    errorMessage.value = error instanceof Error ? error.message : '形变数据加载失败'
+    
+    if (error instanceof Error) {
+      // 提供更友好的错误提示
+      if (error.message.includes('Failed to fetch')) {
+        errorMessage.value = '无法连接形变数据服务，请检查网络'
+      } else if (error.message.includes('超时')) {
+        errorMessage.value = '请求超时，请稍后重试'
+      } else {
+        errorMessage.value = error.message
+      }
+    } else {
+      errorMessage.value = '形变数据加载失败'
+    }
   } finally {
     loading.value = false
     updateChart()
   }
 }
 
-onMounted(() => {
-  initChart()
-  resizeHandler = () => chart?.resize()
-  window.addEventListener('resize', resizeHandler)
+// 添加重试机制
+const retryFetch = () => {
+  errorMessage.value = ''
   fetchDeformationData()
-})
-
-onUnmounted(() => {
-  if (resizeHandler) {
-    window.removeEventListener('resize', resizeHandler)
-  }
-  chart?.dispose()
-  chart = null
-})
-
-watch(
-  () => [props.point?.lat, props.point?.lng],
-  () => {
-    fetchDeformationData()
-  },
-)
-
-watch(filteredSeries, () => {
-  updateChart()
-})
+}
 </script>
+
+<template>
+  <!-- 在模板中添加重试按钮 -->
+  <div class="chart-wrap">
+    <div class="chart-container" ref="chartRef"></div>
+    <div v-if="loading" class="chart-state">加载中...</div>
+    <div v-else-if="errorMessage" class="chart-state error">
+      <div class="error-container">
+        <span>{{ errorMessage }}</span>
+        <el-button size="small" @click="retryFetch" class="retry-btn">
+          重试
+        </el-button>
+      </div>
+    </div>
+    <div v-else-if="point && filteredSeries.length === 0" class="chart-state">暂无数据</div>
+  </div>
+</template>
+
+<style scoped>
+/* 添加重试按钮样式 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.retry-btn {
+  background: rgba(0, 150, 255, 0.2);
+  border-color: #00f0ff;
+  color: #00f0ff;
+}
+
+.retry-btn:hover {
+  background: rgba(0, 150, 255, 0.4);
+  border-color: #00f0ff;
+  color: #fff;
+}
+</style>
 
 <style scoped>
 .deformation-analysis {
