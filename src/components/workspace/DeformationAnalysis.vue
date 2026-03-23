@@ -360,13 +360,6 @@ const retryFetch = () => {
 }
 </style>
 
-<style scoped>
-.deformation-analysis {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
 .point-info {
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(0, 200, 255, 0.2);
