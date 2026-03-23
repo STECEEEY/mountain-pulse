@@ -83,6 +83,14 @@ const props = defineProps<{
   } | null
 }>()
 
+// 添加这个调试 watch
+watch(() => props.point, (newPoint) => {
+  console.log('DeformationAnalysis 接收到 point:', newPoint)
+  if (newPoint) {
+    console.log('坐标:', newPoint.lat, newPoint.lng)
+  }
+}, { deep: true, immediate: true })
+
 const timeRange = ref('6m')
 const chartRef = ref<HTMLElement>()
 const loading = ref(false)
