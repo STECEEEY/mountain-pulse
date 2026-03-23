@@ -8,7 +8,7 @@
     <div class="chart-footer">
       <div class="stat-item">
         <span class="stat-label">总人口</span>
-        <span class="stat-value"><AnimatedNumber :value="45.2" :decimals="1" /><small>万</small></span>
+        <span class="stat-value"><AnimatedNumber :value="1128" :decimals="1" /><small>万</small></span>
       </div>
       <div class="stat-item">
         <span class="stat-label">同比增长</span>
