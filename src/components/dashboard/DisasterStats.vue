@@ -80,9 +80,9 @@ const loadStats = async () => {
 
     response.points.forEach((point) => {
       const level = point.level.trim().toLowerCase()
-      if (level.includes('极高') || level.includes('danger')) aggregate.danger += 1
-      else if (level === '高' || level.includes('warning')) aggregate.warning += 1
-      else if (level === '中' || level.includes('medium')) aggregate.medium += 1
+      if (level.includes('极高风险') || level.includes('danger')) aggregate.danger += 1
+      else if (level === '高风险' || level.includes('warning')) aggregate.warning += 1
+      else if (level === '中风险' || level.includes('medium')) aggregate.medium += 1
       else aggregate.safe += 1
 
       totalThreat += parseThreatPopulation(point.threat)
