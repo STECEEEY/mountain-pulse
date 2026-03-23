@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path'  // 添加这行
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+// 在 ESM 中获取 __dirname
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [vue()],
-  resolve: {  // 添加这个 resolve 配置
+  resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

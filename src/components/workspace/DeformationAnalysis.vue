@@ -83,16 +83,6 @@ const props = defineProps<{
   } | null
 }>()
 
-// 添加这个调试 watch
-watch(
-  () => [props.point?.lat, props.point?.lng],
-  (newVal, oldVal) => {
-    console.log('watch 触发 - 新值:', newVal, '旧值:', oldVal)
-    console.log('准备调用 fetchDeformationData')
-    fetchDeformationData()
-  },
-  { immediate: true, deep: true }  // 添加 immediate 和 deep
-)
 
 
 const timeRange = ref('6m')
@@ -355,6 +345,30 @@ const fetchDeformationData = async () => {
     updateChart()
   }
 }
+
+// 添加这个调试 watch
+watch(
+  () => [props.point?.lat, props.point?.lng],
+  (newVal, oldVal) => {
+    console.log('watch 触发 - 新值:', newVal, '旧值:', oldVal)
+    console.log('准备调用 fetchDeformationData')
+    fetchDeformationData()
+  },
+  { immediate: true, deep: true }  // 添加 immediate 和 deep
+)
+
+// ========== 在这里添加 onMounted ==========
+// 组件挂载时初始化图表
+onMounted(() => {
+  console.log('DeformationAnalysis 组件挂载，初始化图表')
+  if (chartRef.value) {
+    initChart()
+    // 如果已经有数据，确保图表渲染
+    if (filteredSeries.value && filteredSeries.value.length > 0) {
+      updateChart()
+    }
+  }
+})
 
 // 添加重试机制
 const retryFetch = () => {

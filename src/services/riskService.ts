@@ -33,7 +33,7 @@ export const riskService = {
   },
   async loadDeformationData(lat: number, lng: number) {
   // 使用相对路径，Vercel 会自动代理
-  const url = new URL(`/api/deformation/query?lat=${lat}&lng=${lng}`, window.location.origin)
+  const url = `http://47.102.147.118:8000/api/deformation/query?lat=${lat}&lng=${lng}`
   
   const response = await fetch(url.toString())
   if (!response.ok) {
