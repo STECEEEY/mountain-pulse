@@ -38,21 +38,30 @@ const avgRainfall = computed(() => {
   return Math.round(sum / rainData.values.length)
 })
 
-// 计算2025年同比变化（与2024年对比）- 修复 TS 错误
-const rainChangeRate = computed(() => {
+// 计算2025年同比变化
+const rainChangeRate = computed((): number => {
   const values = rainData.values
   if (values.length < 2) return 0
-  const lastYear = values[values.length - 2]
-  const thisYear = values[values.length - 1]
+  
+  const lastYear: number | undefined = values[values.length - 2]
+  const thisYear: number | undefined = values[values.length - 1]
+  
   if (lastYear === undefined || thisYear === undefined) return 0
+  
   return ((thisYear - lastYear) / lastYear * 100)
 })
 
-const rainChangeSymbol = computed(() => rainChangeRate.value >= 0 ? '+' : '')
-const rainChangeClass = computed(() => rainChangeRate.value >= 0 ? 'up' : 'down')
+const rainChangeSymbol = computed((): string => {
+  return rainChangeRate.value >= 0 ? '+' : ''
+})
+
+const rainChangeClass = computed((): string => {
+  return rainChangeRate.value >= 0 ? 'up' : 'down'
+})
 
 const initChart = () => {
   if (!chartRef.value) return
+  
   chart = echarts.init(chartRef.value)
 
   const option = {
@@ -148,7 +157,9 @@ const initChart = () => {
   chart.setOption(option)
 }
 
-const handleResize = () => chart?.resize()
+const handleResize = () => {
+  chart?.resize()
+}
 
 onMounted(() => {
   initChart()
