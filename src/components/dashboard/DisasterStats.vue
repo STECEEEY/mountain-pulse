@@ -42,10 +42,6 @@
           <strong v-else>暂无数据</strong>
         </span>
       </div>
-      <div class="threat-info">
-        <span class="threat-icon">ASSET</span>
-        <span class="threat-text">威胁资产: <strong>暂无数据</strong></span>
-      </div>
     </div>
 
     <!-- 扫描线效果 -->
