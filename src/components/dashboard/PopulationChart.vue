@@ -4,6 +4,14 @@
       <h3 class="card-title">人口暴露度</h3>
       <span class="card-badge">威胁人口统计</span>
     </div>
+    
+    <!-- 调试信息 - 部署后可以删除 -->
+    <div v-if="debugInfo" class="debug-info">
+      <div>数据状态: {{ debugInfo.status }}</div>
+      <div>风险点数量: {{ debugInfo.pointCount }}</div>
+      <div>示例数据: {{ debugInfo.sample }}</div>
+    </div>
+    
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
       <span>加载数据中...</span>
@@ -47,7 +55,7 @@ import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 interface RiskPoint {
   name: string
   type: string
-  level: '极高风险' | '高风险' | '中风险' | '低风险'
+  level: string
   risk_probability: number
   velocity: number
   threat: string
@@ -57,12 +65,6 @@ interface RiskPoint {
   slope: number
   projection_x: number
   projection_y: number
-}
-
-interface RiskData {
-  total_count: number
-  high_risk_count: number
-  points: RiskPoint[]
 }
 
 interface ExposureStats {
@@ -85,9 +87,10 @@ const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
 const loading = ref(true)
 const riskPoints = ref<RiskPoint[]>([])
+const debugInfo = ref<any>(null)
 
 // 风险等级顺序
-const levelOrder: readonly ('极高风险' | '高风险' | '中风险' | '低风险')[] = ['极高风险', '高风险', '中风险', '低风险']
+const levelOrder = ['极高风险', '高风险', '中风险', '低风险']
 const levelColors: Record<string, string> = {
   '极高风险': '#ff4d4f',
   '高风险': '#ff7c43',
@@ -98,14 +101,38 @@ const levelColors: Record<string, string> = {
 // 加载 JSON 数据
 const loadRiskData = async () => {
   try {
+    debugInfo.value = { status: '加载中...', pointCount: 0, sample: '' }
+    
     const response = await fetch('/public/data/risk_points.json')
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new Error(`HTTP ${response.status}`)
     }
-    const data: RiskData = await response.json()
-    riskPoints.value = data.points || []
-  } catch (error) {
-    console.error('加载风险点数据失败:', error)
+    const data = await response.json()
+    
+    // 调试：检查数据结构
+    const points = data.points || data
+    const pointCount = points.length || 0
+    const samplePoint = pointCount > 0 ? points[0] : null
+    
+    debugInfo.value = {
+      status: '加载成功',
+      pointCount: pointCount,
+      sample: samplePoint ? JSON.stringify({
+        level: samplePoint.level,
+        threat: samplePoint.threat,
+        type: samplePoint.type
+      }) : '无数据'
+    }
+    
+    riskPoints.value = points
+    
+  } catch (error: any) {
+    console.error('加载失败:', error)
+    debugInfo.value = {
+      status: `加载失败: ${error.message}`,
+      pointCount: 0,
+      sample: ''
+    }
     riskPoints.value = []
   } finally {
     loading.value = false
@@ -131,13 +158,29 @@ const exposureStats = computed<ExposureStats>(() => {
   }
   
   riskPoints.value.forEach((point: RiskPoint) => {
-    // 解析 threat 字段中的数字（如 "298人" -> 298）
-    const pop = parseInt(point.threat) || 0
+    // 尝试多种方式解析威胁人口
+    let pop = 0
+    if (point.threat) {
+      // 如果 threat 是字符串如 "298人"
+      if (typeof point.threat === 'string') {
+        const match = point.threat.match(/\d+/)
+        if (match) pop = parseInt(match[0])
+      } 
+      // 如果 threat 直接是数字
+      else if (typeof point.threat === 'number') {
+        pop = point.threat
+      }
+    }
+    
     const level = point.level as keyof ExposureStats['byLevel']
     
+    // 只统计有效的风险等级
     if (stats.byLevel[level] !== undefined) {
       stats.byLevel[level] += pop
       stats.pointCount[level] += 1
+    } else {
+      // 如果遇到未知等级，记录到调试信息
+      console.warn('未知风险等级:', level)
     }
     stats.total += pop
   })
@@ -145,7 +188,7 @@ const exposureStats = computed<ExposureStats>(() => {
   return stats
 })
 
-// 高风险区人口占比（极高+高）
+// 高风险区人口占比
 const highRiskRatio = computed(() => {
   const highRiskPop = exposureStats.value.byLevel['极高风险'] + exposureStats.value.byLevel['高风险']
   if (exposureStats.value.total === 0) return 0
@@ -156,7 +199,7 @@ const highRiskRatio = computed(() => {
 const chartData = computed(() => {
   return {
     levels: levelOrder,
-    populations: levelOrder.map(level => exposureStats.value.byLevel[level]),
+    populations: levelOrder.map(level => exposureStats.value.byLevel[level as keyof typeof exposureStats.value.byLevel]),
     colors: levelOrder.map(level => levelColors[level])
   }
 })
@@ -176,9 +219,9 @@ const initChart = () => {
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const data = params[0]
-        const level = data.name as keyof ExposureStats['pointCount']
+        const level = data.name
         const pop = data.value
-        const pointCount = exposureStats.value.pointCount[level]
+        const pointCount = exposureStats.value.pointCount[level as keyof typeof exposureStats.value.pointCount]
         return `
           <div style="font-weight:600;margin-bottom:4px">${level}</div>
           <div>威胁人口: ${pop.toLocaleString()} 人</div>
@@ -200,7 +243,7 @@ const initChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: chartData.value.levels as string[],
+      data: chartData.value.levels,
       axisLine: { lineStyle: { color: '#2b4a6a' } },
       axisLabel: {
         color: '#88a0b0',
@@ -261,14 +304,12 @@ const initChart = () => {
   chart.setOption(option)
 }
 
-// 响应窗口大小变化
 const handleResize = () => chart?.resize()
 
-// 监听数据变化重新渲染图表
 watch([exposureStats, loading], () => {
   if (!loading.value && chart) {
     chart.setOption({
-      xAxis: { data: chartData.value.levels as string[] },
+      xAxis: { data: chartData.value.levels },
       series: [{ data: chartData.value.populations }]
     })
   } else if (!loading.value && chartRef.value) {
@@ -403,6 +444,23 @@ onUnmounted(() => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 调试信息样式 */
+.debug-info {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #ffaa00;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: #ffaa00;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.debug-info div {
+  margin-bottom: 4px;
 }
 
 /* 响应式调整 */
