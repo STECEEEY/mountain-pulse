@@ -151,6 +151,8 @@ const stats = computed(() => {
   const values = filteredSeries.value.map((item) => item.displacement)
   const first = filteredSeries.value[0]
   const last = filteredSeries.value[filteredSeries.value.length - 1]
+  
+  // 添加更严格的检查
   if (!first || !last) {
     return {
       cumulative: null,
@@ -158,11 +160,20 @@ const stats = computed(() => {
       max: null,
     }
   }
+  
   const startDate = parseDate(first.date)
   const endDate = parseDate(last.date)
-  const years = startDate && endDate
-    ? Math.max((endDate.getTime() - startDate.getTime()) / (365.25 * 24 * 3600 * 1000), 1 / 365)
-    : 1
+  
+  // 确保日期有效
+  if (!startDate || !endDate) {
+    return {
+      cumulative: last.displacement,
+      rate: null,
+      max: Math.max(...values.map((value) => Math.abs(value))),
+    }
+  }
+  
+  const years = Math.max((endDate.getTime() - startDate.getTime()) / (365.25 * 24 * 3600 * 1000), 1 / 365)
 
   return {
     cumulative: last.displacement,
