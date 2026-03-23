@@ -5,13 +5,6 @@
       <span class="card-badge">威胁人口统计</span>
     </div>
     
-    <!-- 调试信息 - 部署后可以删除 -->
-    <div v-if="debugInfo" class="debug-info">
-      <div>数据状态: {{ debugInfo.status }}</div>
-      <div>风险点数量: {{ debugInfo.pointCount }}</div>
-      <div>示例数据: {{ debugInfo.sample }}</div>
-    </div>
-    
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
       <span>加载数据中...</span>
@@ -34,10 +27,10 @@
           </span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">高风险区占比</span>
+          <span class="stat-label">风险点总数</span>
           <span class="stat-value">
-            <AnimatedNumber :value="highRiskRatio" :decimals="1" />
-            <small>%</small>
+            <AnimatedNumber :value="totalPoints" :decimals="0" />
+            <small>个</small>
           </span>
         </div>
       </div>
@@ -87,57 +80,39 @@ const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
 const loading = ref(true)
 const riskPoints = ref<RiskPoint[]>([])
-const debugInfo = ref<any>(null)
 
 // 风险等级顺序
 const levelOrder = ['极高风险', '高风险', '中风险', '低风险']
+// 调整颜色：极高风险改为黄色调
 const levelColors: Record<string, string> = {
-  '极高风险': '#ff4d4f',
-  '高风险': '#ff7c43',
-  '中风险': '#ffc107',
-  '低风险': '#52c41a'
+  '极高风险': '#f5b042',  // 橙黄色
+  '高风险': '#ff7c43',     // 橙色
+  '中风险': '#ffc107',     // 金黄色
+  '低风险': '#52c41a'      // 绿色
 }
 
 // 加载 JSON 数据
 const loadRiskData = async () => {
   try {
-    debugInfo.value = { status: '加载中...', pointCount: 0, sample: '' }
-    
     const response = await fetch('/data/risk_points.json')
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
     const data = await response.json()
     
-    // 调试：检查数据结构
     const points = data.points || data
-    const pointCount = points.length || 0
-    const samplePoint = pointCount > 0 ? points[0] : null
-    
-    debugInfo.value = {
-      status: '加载成功',
-      pointCount: pointCount,
-      sample: samplePoint ? JSON.stringify({
-        level: samplePoint.level,
-        threat: samplePoint.threat,
-        type: samplePoint.type
-      }) : '无数据'
-    }
-    
     riskPoints.value = points
     
-  } catch (error: any) {
-    console.error('加载失败:', error)
-    debugInfo.value = {
-      status: `加载失败: ${error.message}`,
-      pointCount: 0,
-      sample: ''
-    }
+  } catch (error) {
+    console.error('加载风险点数据失败:', error)
     riskPoints.value = []
   } finally {
     loading.value = false
   }
 }
+
+// 风险点总数
+const totalPoints = computed(() => riskPoints.value.length)
 
 // 聚合威胁人口数据
 const exposureStats = computed<ExposureStats>(() => {
@@ -158,41 +133,27 @@ const exposureStats = computed<ExposureStats>(() => {
   }
   
   riskPoints.value.forEach((point: RiskPoint) => {
-    // 尝试多种方式解析威胁人口
+    // 解析 threat 字段中的数字（如 "298人" -> 298）
     let pop = 0
     if (point.threat) {
-      // 如果 threat 是字符串如 "298人"
       if (typeof point.threat === 'string') {
         const match = point.threat.match(/\d+/)
         if (match) pop = parseInt(match[0])
-      } 
-      // 如果 threat 直接是数字
-      else if (typeof point.threat === 'number') {
+      } else if (typeof point.threat === 'number') {
         pop = point.threat
       }
     }
     
     const level = point.level as keyof ExposureStats['byLevel']
     
-    // 只统计有效的风险等级
     if (stats.byLevel[level] !== undefined) {
       stats.byLevel[level] += pop
       stats.pointCount[level] += 1
-    } else {
-      // 如果遇到未知等级，记录到调试信息
-      console.warn('未知风险等级:', level)
     }
     stats.total += pop
   })
   
   return stats
-})
-
-// 高风险区人口占比
-const highRiskRatio = computed(() => {
-  const highRiskPop = exposureStats.value.byLevel['极高风险'] + exposureStats.value.byLevel['高风险']
-  if (exposureStats.value.total === 0) return 0
-  return (highRiskPop / exposureStats.value.total) * 100
 })
 
 // 图表数据
@@ -230,7 +191,7 @@ const initChart = () => {
         `
       },
       backgroundColor: 'rgba(10, 20, 30, 0.95)',
-      borderColor: '#00f0ff',
+      borderColor: '#f5b042',
       borderWidth: 1,
       textStyle: { color: '#e0f0ff', fontSize: 11 }
     },
@@ -416,7 +377,7 @@ onUnmounted(() => {
 }
 
 .stat-value.up {
-  color: #ff7c43;
+  color: #f5b042;
 }
 
 .loading-container {
@@ -444,23 +405,6 @@ onUnmounted(() => {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* 调试信息样式 */
-.debug-info {
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid #ffaa00;
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-  font-size: 11px;
-  color: #ffaa00;
-  font-family: monospace;
-  word-break: break-all;
-}
-
-.debug-info div {
-  margin-bottom: 4px;
 }
 
 /* 响应式调整 */
