@@ -338,7 +338,7 @@ const retryFetch = () => {
 }
 </script>
 
-<template>
+
   <!-- 在模板中添加重试按钮 -->
   <div class="chart-wrap">
     <div class="chart-container" ref="chartRef"></div>
@@ -353,7 +353,7 @@ const retryFetch = () => {
     </div>
     <div v-else-if="point && filteredSeries.length === 0" class="chart-state">暂无数据</div>
   </div>
-</template>
+
 
 <style scoped>
 /* 添加重试按钮样式 */
