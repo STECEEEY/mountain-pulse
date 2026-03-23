@@ -134,7 +134,7 @@ const formatDateLabel = (value: string) => {
 
 const filteredSeries = computed(() => {
   if (rawSeries.value.length === 0) return []
-  const sorted = [...rawSeries.value].sort((a, b) => a.date.localeCompare(b.date))
+  const sorted = [...rawSeries.value].sort((a: DeformationRecord, b: DeformationRecord) => a.date.localeCompare(b.date))
   const latestItem = sorted[sorted.length - 1]
   if (!latestItem) return []
   const latestDate = parseDate(latestItem.date)
@@ -145,7 +145,7 @@ const filteredSeries = computed(() => {
   const startDate = new Date(latestDate)
   startDate.setMonth(startDate.getMonth() - months)
 
-  return sorted.filter((item) => {
+  return sorted.filter((item: DeformationRecord) => {
     const date = parseDate(item.date)
     return !!date && date >= startDate && date <= latestDate
   })
@@ -160,11 +160,10 @@ const stats = computed(() => {
     }
   }
 
-  const values = filteredSeries.value.map((item) => item.displacement)
+  const values = filteredSeries.value.map((item: DeformationRecord) => item.displacement)
   const first = filteredSeries.value[0]
   const last = filteredSeries.value[filteredSeries.value.length - 1]
   
-  // 添加更严格的检查
   if (!first || !last) {
     return {
       cumulative: null,
@@ -176,12 +175,11 @@ const stats = computed(() => {
   const startDate = parseDate(first.date)
   const endDate = parseDate(last.date)
   
-  // 确保日期有效
   if (!startDate || !endDate) {
     return {
       cumulative: last.displacement,
       rate: null,
-      max: Math.max(...values.map((value) => Math.abs(value))),
+      max: Math.max(...values.map((value: number) => Math.abs(value))),
     }
   }
   
@@ -190,7 +188,7 @@ const stats = computed(() => {
   return {
     cumulative: last.displacement,
     rate: (last.displacement - first.displacement) / years,
-    max: Math.max(...values.map((value) => Math.abs(value))),
+    max: Math.max(...values.map((value: number) => Math.abs(value))),
   }
 })
 
@@ -218,7 +216,7 @@ const buildChartOption = () => ({
   grid: { left: 40, right: 20, top: 20, bottom: 56 },
   xAxis: {
     type: 'category',
-    data: filteredSeries.value.map((item) => formatDateLabel(item.date)),
+    data: filteredSeries.value.map((item: DeformationRecord) => formatDateLabel(item.date)),
     axisLine: { lineStyle: { color: '#2b4a6a' } },
     axisLabel: { color: '#88a0b0', fontSize: 11, hideOverlap: true },
   },
@@ -237,7 +235,7 @@ const buildChartOption = () => ({
   series: [
     {
       type: 'line',
-      data: filteredSeries.value.map((item) => item.displacement),
+      data: filteredSeries.value.map((item: DeformationRecord) => item.displacement),
       smooth: false,
       showSymbol: false,
       sampling: 'lttb',
