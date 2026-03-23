@@ -4,41 +4,48 @@
       <h3 class="card-title">人口暴露度</h3>
       <span class="card-badge">威胁人口统计</span>
     </div>
-    <div class="chart-container" ref="chartRef"></div>
-    <div class="chart-footer">
-      <div class="stat-item">
-        <span class="stat-label">威胁总人口</span>
-        <span class="stat-value">
-          <AnimatedNumber :value="exposureStats.total / 10000" :decimals="1" />
-          <small>万</small>
-        </span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">极高风险区</span>
-        <span class="stat-value up">
-          <AnimatedNumber :value="exposureStats.byLevel['极高风险'] / 10000" :decimals="1" />
-          <small>万</small>
-        </span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">高风险区占比</span>
-        <span class="stat-value">
-          <AnimatedNumber :value="highRiskRatio" :decimals="1" />
-          <small>%</small>
-        </span>
-      </div>
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <span>加载数据中...</span>
     </div>
+    <template v-else>
+      <div class="chart-container" ref="chartRef"></div>
+      <div class="chart-footer">
+        <div class="stat-item">
+          <span class="stat-label">威胁总人口</span>
+          <span class="stat-value">
+            <AnimatedNumber :value="exposureStats.total / 10000" :decimals="1" />
+            <small>万</small>
+          </span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">极高风险区</span>
+          <span class="stat-value up">
+            <AnimatedNumber :value="exposureStats.byLevel['极高风险'] / 10000" :decimals="1" />
+            <small>万</small>
+          </span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">高风险区占比</span>
+          <span class="stat-value">
+            <AnimatedNumber :value="highRiskRatio" :decimals="1" />
+            <small>%</small>
+          </span>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
-import riskData from '@/data/risk_points.json'
 
 const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
+const loading = ref(true)
+const riskPoints = ref<any[]>([])
 
 // 风险等级顺序（用于图表排序）
 const levelOrder = ['极高风险', '高风险', '中风险', '低风险']
@@ -47,6 +54,24 @@ const levelColors = {
   '高风险': '#ff7c43',
   '中风险': '#ffc107',
   '低风险': '#52c41a'
+}
+
+// 加载 JSON 数据
+const loadRiskData = async () => {
+  try {
+    const response = await fetch('/public/data/risk_points.json')
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data = await response.json()
+    riskPoints.value = data.points || []
+  } catch (error) {
+    console.error('加载风险点数据失败:', error)
+    // 使用模拟数据作为降级方案
+    riskPoints.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 // 聚合威胁人口数据
@@ -67,7 +92,7 @@ const exposureStats = computed(() => {
     }
   }
   
-  riskData.points.forEach((point: any) => {
+  riskPoints.value.forEach((point: any) => {
     // 解析 threat 字段中的数字（如 "298人" -> 298）
     const pop = parseInt(point.threat) || 0
     const level = point.level
@@ -99,7 +124,12 @@ const chartData = computed(() => {
 })
 
 const initChart = () => {
-  if (!chartRef.value) return
+  if (!chartRef.value || loading.value) return
+  
+  if (chart) {
+    chart.dispose()
+  }
+  
   chart = echarts.init(chartRef.value)
 
   const option = {
@@ -115,7 +145,7 @@ const initChart = () => {
           <div style="font-weight:600;margin-bottom:4px">${level}</div>
           <div>威胁人口: ${pop.toLocaleString()} 人</div>
           <div>风险点数量: ${pointCount} 个</div>
-          <div>平均威胁: ${Math.round(pop / pointCount)} 人/点</div>
+          <div>平均威胁: ${pointCount > 0 ? Math.round(pop / pointCount) : 0} 人/点</div>
         `
       },
       backgroundColor: 'rgba(10, 20, 30, 0.95)',
@@ -196,18 +226,20 @@ const initChart = () => {
 // 响应窗口大小变化
 const handleResize = () => chart?.resize()
 
-// 监听数据变化重新渲染（如果数据是异步加载的）
-import { watch } from 'vue'
-watch([exposureStats], () => {
-  if (chart) {
+// 监听数据变化重新渲染图表
+watch([exposureStats, loading], () => {
+  if (!loading.value && chart) {
     chart.setOption({
       xAxis: { data: chartData.value.levels },
       series: [{ data: chartData.value.populations }]
     })
+  } else if (!loading.value && chartRef.value) {
+    initChart()
   }
 }, { deep: true })
 
-onMounted(() => {
+onMounted(async () => {
+  await loadRiskData()
   initChart()
   window.addEventListener('resize', handleResize)
 })
@@ -229,6 +261,7 @@ onUnmounted(() => {
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  min-height: 280px;
 }
 
 .chart-card:hover {
@@ -305,6 +338,33 @@ onUnmounted(() => {
 
 .stat-value.up {
   color: #ff7c43;
+}
+
+.loading-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 180px;
+  color: #88a0b0;
+  font-size: 12px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(0, 240, 255, 0.2);
+  border-top-color: #00f0ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 响应式调整 */
