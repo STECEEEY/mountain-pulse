@@ -306,18 +306,18 @@ const fetchDeformationData = async () => {
       .sort((a, b) => a.date.localeCompare(b.date))
     
     if (validData.length === 0) {
-      errorMessage.value = '数据格式无效，请检查接口返回'
-      rawSeries.value = []
-      return
+    errorMessage.value = '数据格式无效，请检查接口返回'
+    rawSeries.value = []
+    return
     }
-    
+
     rawSeries.value = validData
     errorMessage.value = ''
-    
+
     console.log('处理后的数据:', {
-      总数: validData.length,
-      时间范围: `${validData[0].date} ~ ${validData[validData.length - 1].date}`,
-      位移范围: `${Math.min(...validData.map(d => d.displacement))} ~ ${Math.max(...validData.map(d => d.displacement))}`
+    总数: validData.length,
+    时间范围: `${validData[0]?.date ?? '未知'} ~ ${validData[validData.length - 1]?.date ?? '未知'}`,
+    位移范围: `${Math.min(...validData.map(d => d.displacement))} ~ ${Math.max(...validData.map(d => d.displacement))}`
     })
     
   } catch (error) {
