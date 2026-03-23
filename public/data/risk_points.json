@@ -5,7 +5,7 @@
     {
       "name": "风险点_1",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "中风险",
       "risk_probability": 0.9297,
       "velocity": 0.0187,
       "threat": "298人",
@@ -19,7 +19,7 @@
     {
       "name": "风险点_2",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "中风险",
       "risk_probability": 0.9297,
       "velocity": 0.0817,
       "threat": "298人",
@@ -33,7 +33,7 @@
     {
       "name": "风险点_3",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "高风险",
       "risk_probability": 0.9297,
       "velocity": 0.0817,
       "threat": "298人",
@@ -47,7 +47,7 @@
     {
       "name": "风险点_4",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "中风险",
       "risk_probability": 0.9297,
       "velocity": 0.0996,
       "threat": "298人",
@@ -61,7 +61,7 @@
     {
       "name": "风险点_5",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "中风险",
       "risk_probability": 0.9297,
       "velocity": 0.0177,
       "threat": "298人",
@@ -75,7 +75,7 @@
     {
       "name": "风险点_6",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "中风险",
       "risk_probability": 0.9297,
       "velocity": 0.064,
       "threat": "298人",
@@ -131,7 +131,7 @@
     {
       "name": "风险点_10",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "低风险",
       "risk_probability": 0.9297,
       "velocity": 0.018,
       "threat": "298人",
@@ -145,7 +145,7 @@
     {
       "name": "风险点_11",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "中风险",
       "risk_probability": 0.9297,
       "velocity": -0.0229,
       "threat": "298人",
@@ -201,7 +201,7 @@
     {
       "name": "风险点_15",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "低风险",
       "risk_probability": 0.9297,
       "velocity": 0.0758,
       "threat": "298人",
@@ -215,7 +215,7 @@
     {
       "name": "风险点_16",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "中风险",
       "risk_probability": 0.9297,
       "velocity": 0.0951,
       "threat": "298人",
@@ -271,7 +271,7 @@
     {
       "name": "风险点_20",
       "type": "滑坡",
-      "level": "极高风险",
+      "level": "低风险",
       "risk_probability": 0.9297,
       "velocity": 0.0596,
       "threat": "298人",
@@ -2119,7 +2119,7 @@
     {
       "name": "风险点_152",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "中风险",
       "risk_probability": 0.84,
       "velocity": 0.0611,
       "threat": "271人",
@@ -2133,7 +2133,7 @@
     {
       "name": "风险点_153",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.84,
       "velocity": -0.0053,
       "threat": "271人",
@@ -2147,7 +2147,7 @@
     {
       "name": "风险点_154",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.84,
       "velocity": 0.0621,
       "threat": "271人",
@@ -2609,7 +2609,7 @@
     {
       "name": "风险点_187",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.84,
       "velocity": 0.0471,
       "threat": "271人",
@@ -2651,7 +2651,7 @@
     {
       "name": "风险点_190",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.0565,
       "threat": "271人",
@@ -2665,7 +2665,7 @@
     {
       "name": "风险点_191",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.0878,
       "threat": "271人",
@@ -2679,7 +2679,7 @@
     {
       "name": "风险点_192",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "中风险",
       "risk_probability": 0.8399,
       "velocity": 0.0867,
       "threat": "271人",
@@ -2693,7 +2693,7 @@
     {
       "name": "风险点_193",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "中风险",
       "risk_probability": 0.8399,
       "velocity": 0.0566,
       "threat": "271人",
@@ -2707,7 +2707,7 @@
     {
       "name": "风险点_194",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "中风险",
       "risk_probability": 0.8399,
       "velocity": 0.0455,
       "threat": "271人",
@@ -2721,7 +2721,7 @@
     {
       "name": "风险点_195",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "中风险",
       "risk_probability": 0.8399,
       "velocity": 0.1169,
       "threat": "271人",
@@ -2749,7 +2749,7 @@
     {
       "name": "风险点_197",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "中风险",
       "risk_probability": 0.8399,
       "velocity": 0.15,
       "threat": "271人",
@@ -2777,7 +2777,7 @@
     {
       "name": "风险点_199",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "中风险",
       "risk_probability": 0.8399,
       "velocity": 0.0107,
       "threat": "271人",
@@ -2791,7 +2791,7 @@
     {
       "name": "风险点_200",
       "type": "滑坡",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.0911,
       "threat": "271人",
@@ -2805,7 +2805,7 @@
     {
       "name": "风险点_201",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.0853,
       "threat": "271人",
@@ -2819,7 +2819,7 @@
     {
       "name": "风险点_202",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.0574,
       "threat": "271人",
@@ -2833,7 +2833,7 @@
     {
       "name": "风险点_203",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.0964,
       "threat": "271人",
@@ -2847,7 +2847,7 @@
     {
       "name": "风险点_204",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.1676,
       "threat": "271人",
@@ -2861,7 +2861,7 @@
     {
       "name": "风险点_205",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.0535,
       "threat": "271人",
@@ -2875,7 +2875,7 @@
     {
       "name": "风险点_206",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.078,
       "threat": "271人",
@@ -2889,7 +2889,7 @@
     {
       "name": "风险点_207",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.1101,
       "threat": "271人",
@@ -2903,7 +2903,7 @@
     {
       "name": "风险点_208",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.0942,
       "threat": "271人",
@@ -2931,7 +2931,7 @@
     {
       "name": "风险点_210",
       "type": "潜在滑坡区",
-      "level": "高风险",
+      "level": "低风险",
       "risk_probability": 0.8399,
       "velocity": 0.1592,
       "threat": "271人",
