@@ -51,7 +51,12 @@ defineProps<{
   selectedPoint: any
 }>()
 
-const activeTab = ref('decision')
+const activeTab = ref('deformation')  // 改成 deformation 以便直接看到形变分析
+
+// 添加 watch 监听 selectedPoint 的变化
+watch(() => props.selectedPoint, (newPoint) => {
+  console.log('sidePanel 接收到 selectedPoint:', newPoint)
+}, { deep: true, immediate: true })
 
 const tabs = [
   { key: 'decision', label: '决策驾驶', icon: Cpu },
@@ -61,6 +66,7 @@ const tabs = [
   { key: 'history', label: '历史回溯', icon: Clock },
   { key: 'detail', label: '数据详情', icon: Document },
 ]
+
 </script>
 
 <style scoped>
