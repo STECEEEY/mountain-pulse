@@ -1,5 +1,5 @@
 import { httpClient } from './httpClient'
-import type { AIDecision, DecisionRequest, DecisionResponse } from '@/types/ai'
+import type { AIDecision, DecisionRequest, DecisionResponse, DecisionLevel } from '@/types/ai'
 
 export type AiMode = 'mock' | 'real'
 
@@ -13,12 +13,17 @@ const DASHSCOPE_API_KEY = 'sk-35342788c99143de9769dc63f0fb5bf4'
 
 // 构建决策 prompt
 const buildDecisionPrompt = (req: DecisionRequest): string => {
+  // 使用可选链和默认值，避免类型错误
+  const pointName = (req as any).pointName || req.pointName || '未知'
+  const dutyNote = (req as any).dutyNote || req.dutyNote || '无'
+  const affectedPopulation = (req as any).affectedPopulation || '待评估'
+  
   return `你是一位地质灾害应急专家。请根据以下数据给出决策建议：
 
 【风险点信息】
-- 风险点名称：${req.pointName || '未知'}
-- 巡查员反馈：${req.dutyNote || '无'}
-- 影响人口：${req.affectedPopulation || '未知'}
+- 风险点名称：${pointName}
+- 巡查员反馈：${dutyNote}
+- 影响人口：${affectedPopulation}
 
 请按以下 JSON 格式输出，只输出 JSON，不要有其他文字：
 {
@@ -55,14 +60,12 @@ const callQwenDirectly = async (prompt: string): Promise<any> => {
   
   // 尝试解析 JSON
   try {
-    // 提取 JSON 部分（如果 AI 返回了额外文字）
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0])
     }
     return JSON.parse(content)
   } catch {
-    // 如果不是 JSON，返回默认结构
     return {
       riskLevel: "中",
       mainThreat: content,
@@ -73,16 +76,17 @@ const callQwenDirectly = async (prompt: string): Promise<any> => {
   }
 }
 
-// Mock 数据（保持原有逻辑）
+// Mock 数据
 const buildMockDecisions = (req: DecisionRequest): AIDecision[] => {
-  const titlePrefix = req.pointName || '重点监测点'
-  const rainFlag = req.dutyNote?.includes('降雨') || req.dutyNote?.includes('雨') || false
+  const titlePrefix = (req as any).pointName || req.pointName || '重点监测点'
+  const dutyNote = (req as any).dutyNote || req.dutyNote || ''
+  const rainFlag = dutyNote.includes('降雨') || dutyNote.includes('雨')
 
   return [
     {
       id: Date.now(),
       title: `${titlePrefix}应急处置`,
-      level: rainFlag ? 'danger' : 'warning',
+      level: (rainFlag ? 'danger' : 'warning') as DecisionLevel,
       confidence: rainFlag ? 93 : 86,
       window: '建议时间窗：未来6小时',
       action: rainFlag
@@ -126,14 +130,19 @@ const buildMockResponse = (req: DecisionRequest): DecisionResponse => {
   }
 }
 
-// 真实调用（直接调用百炼）
+// 转换风险等级为 DecisionLevel 类型
+const mapRiskLevelToDecisionLevel = (riskLevel: string): DecisionLevel => {
+  if (riskLevel === '高') return 'danger'
+  if (riskLevel === '中') return 'warning'
+  return 'info'  // info 是有效的 DecisionLevel
+}
+
+// 真实调用
 const getRealDecision = async (req: DecisionRequest): Promise<DecisionResponse> => {
   const prompt = buildDecisionPrompt(req)
   const aiResult = await callQwenDirectly(prompt)
   
-  // 转换为统一的 DecisionResponse 格式
-  const level = aiResult.riskLevel === '高' ? 'danger' : 
-                aiResult.riskLevel === '中' ? 'warning' : 'info'
+  const level = mapRiskLevelToDecisionLevel(aiResult.riskLevel || '中')
   
   return {
     modelVersion: 'qwen3.5-flash',
@@ -141,11 +150,11 @@ const getRealDecision = async (req: DecisionRequest): Promise<DecisionResponse> 
     summary: {
       highRiskCount: aiResult.riskLevel === '高' ? 1 : 0,
       actionCount: aiResult.actions?.length || 1,
-      affectedPopulation: req.affectedPopulation || '待评估'
+      affectedPopulation: (req as any).affectedPopulation || '待评估'
     },
     decisions: [{
       id: Date.now(),
-      title: `${req.pointName || '风险点'}应急处置`,
+      title: `${(req as any).pointName || req.pointName || '风险点'}应急处置`,
       level: level,
       confidence: aiResult.confidence || 85,
       window: '建议时间窗：未来6小时',
@@ -169,12 +178,10 @@ const getRealDecision = async (req: DecisionRequest): Promise<DecisionResponse> 
 export const aiService = {
   defaultMode: aiMode,
   async getDecision(req: DecisionRequest, mode: AiMode = aiMode): Promise<DecisionResponse> {
-    // 如果是 mock 模式，返回 mock 数据
     if (mode !== 'real') {
       return buildMockResponse(req)
     }
 
-    // real 模式：调用阿里云百炼
     try {
       return await getRealDecision(req)
     } catch (error) {
