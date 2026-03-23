@@ -32,20 +32,19 @@ export const riskService = {
     return fetchJson<HighRiskGeoJSON>('/data/high_risk_points.geojson')
   },
   async loadDeformationData(lat: number, lng: number) {
-    const url = new URL('https://47.102.147.118:8000/api/deformation/query')
-    url.searchParams.set('lat', String(lat))
-    url.searchParams.set('lng', String(lng))
+  // 使用相对路径，Vercel 会自动代理
+  const url = new URL(`/api/deformation/query?lat=${lat}&lng=${lng}`, window.location.origin)
+  
+  const response = await fetch(url.toString())
+  if (!response.ok) {
+    throw new Error(`形变接口请求失败: ${response.status}`)
+  }
 
-    const response = await fetch(url.toString())
-    if (!response.ok) {
-      throw new Error(`形变接口请求失败: ${response.status}`)
-    }
+  const data = await response.json()
+  if (!data || !Array.isArray(data.deformation_data)) {
+    throw new Error('形变接口返回结构无效')
+  }
 
-    const data = await response.json() as DeformationResponse
-    if (!data || !Array.isArray(data.deformation_data)) {
-      throw new Error('形变接口返回结构无效')
-    }
-
-    return data
+  return data
   },
 }
