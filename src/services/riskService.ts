@@ -32,7 +32,7 @@ export const riskService = {
     return fetchJson<HighRiskGeoJSON>('/data/high_risk_points.geojson')
   },
   async loadDeformationData(lat: number, lng: number) {
-    const url = new URL('http://47.102.147.118:8000/api/deformation/query')
+    const url = new URL('https://47.102.147.118:8000/api/deformation/query')
     url.searchParams.set('lat', String(lat))
     url.searchParams.set('lng', String(lng))
 
