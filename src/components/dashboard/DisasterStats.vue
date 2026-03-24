@@ -8,37 +8,6 @@
       </span>
     </div>
     
-    <div class="stats-grid">
-      <div class="stat-box danger" :class="{ 'flash-alert': stats.danger > 0 }">
-        <div class="stat-number">
-          <AnimatedNumber :value="stats.danger" />
-        </div>
-        <div class="stat-name">极高风险</div>
-        <div class="stat-desc">需立即处置</div>
-      </div>
-      <div class="stat-box warning">
-        <div class="stat-number">
-          <AnimatedNumber :value="stats.warning" />
-        </div>
-        <div class="stat-name">高风险</div>
-        <div class="stat-desc">重点监测</div>
-      </div>
-      <div class="stat-box medium">
-        <div class="stat-number">
-          <AnimatedNumber :value="stats.medium" />
-        </div>
-        <div class="stat-name">中风险</div>
-        <div class="stat-desc">定期巡查</div>
-      </div>
-      <div class="stat-box safe">
-        <div class="stat-number">
-          <AnimatedNumber :value="stats.safe" />
-        </div>
-        <div class="stat-name">低风险</div>
-        <div class="stat-desc">常规监测</div>
-      </div>
-    </div>
-    
     <!-- 新增：风险占比图表 -->
     <div class="risk-chart">
       <div class="risk-bar">
