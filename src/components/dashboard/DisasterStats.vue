@@ -161,8 +161,221 @@ onMounted(() => {
 })
 </script>
 
+
 <style scoped>
-/* 保持原有样式，新增以下样式 */
+.chart-card {
+  flex: 1;
+  background: rgba(10, 20, 30, 0.8);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.chart-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 200, 255, 0.15);
+}
+
+.chart-card.alert-active {
+  border-color: rgba(255, 68, 68, 0.5);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.2);
+}
+
+.chart-card.alert-active:hover {
+  box-shadow: 0 8px 30px rgba(255, 68, 68, 0.25);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ff6666;
+}
+
+.card-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(255, 100, 100, 0.2);
+  border: 1px solid rgba(255, 100, 100, 0.5);
+  color: #ff6666;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: #ff4444;
+  border-radius: 50%;
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+    box-shadow: 0 0 0 4px rgba(255, 68, 68, 0);
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  flex: 1;
+}
+
+.stat-box {
+  background: rgba(0, 30, 50, 0.6);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  border-left: 3px solid;
+  transition: all 0.3s;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.stat-box.danger {
+  border-color: #ff4444;
+}
+
+.stat-box.danger.flash-alert {
+  animation: flashAlert 2s ease-in-out infinite;
+}
+
+@keyframes flashAlert {
+  0%, 100% {
+    background: rgba(0, 30, 50, 0.6);
+  }
+  50% {
+    background: rgba(255, 68, 68, 0.15);
+  }
+}
+
+.stat-box.warning {
+  border-color: #ff8844;
+}
+
+.stat-box.medium {
+  border-color: #ffcc44;
+}
+
+.stat-box.safe {
+  border-color: #44ff44;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e0f0ff;
+  line-height: 1;
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-box.danger .stat-number {
+  color: #ff4444;
+  text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
+
+.stat-box.warning .stat-number {
+  color: #ff8844;
+}
+
+.stat-box.medium .stat-number {
+  color: #ffcc44;
+}
+
+.stat-box.safe .stat-number {
+  color: #44ff44;
+}
+
+.stat-name {
+  font-size: 11px;
+  color: #88a0b0;
+}
+
+.chart-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 150, 255, 0.1);
+  margin-top: auto;
+}
+
+.threat-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.threat-icon {
+  font-size: 10px;
+  border: 1px solid rgba(0, 180, 255, 0.25);
+  border-radius: 8px;
+  padding: 2px 6px;
+  color: #9ad4f2;
+}
+
+.threat-text {
+  font-size: 12px;
+  color: #88a0b0;
+}
+
+.threat-text strong {
+  color: #00f0ff;
+}
+
+/* 扫描线效果 */
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 240, 255, 0.05),
+    transparent
+  );
+  animation: scanMove 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanMove {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
 
 .stat-desc {
   font-size: 10px;
