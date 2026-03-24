@@ -152,7 +152,7 @@ const addRiskMapLayer = () => {
   const scale = 1.2  // 整体放大10%
   // 偏移参数
   const rightShift = 0.15 // 右移
-  const downShift = 0.03  // 下移（负值）
+  const downShift = -0.05  // 下移（负值）
   
   // 计算原始宽高
   const originalWidth = east - west
