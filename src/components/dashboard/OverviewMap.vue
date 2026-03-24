@@ -355,14 +355,17 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 380px 12px 340px;
+  padding: 12px 20px;
   border-bottom: 1px solid rgba(0, 150, 255, 0.1);
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .card-title {
@@ -370,28 +373,19 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: 500;
   color: #00f0ff;
-}
-
-.map-controls :deep(.el-button) {
-  background: rgba(0, 30, 50, 0.6);
-  border-color: rgba(0, 150, 255, 0.3);
-  color: #88a0b0;
-}
-
-.map-controls :deep(.el-button--primary) {
-  background: rgba(0, 150, 255, 0.3);
-  border-color: #00f0ff;
-  color: #00f0ff;
+  white-space: nowrap;
 }
 
 .map-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .map-controls :deep(.el-checkbox) {
   margin-right: 0;
+  color: #9cc0d8;
 }
 
 .map-controls :deep(.el-checkbox__label) {
@@ -413,15 +407,32 @@ onUnmounted(() => {
   background: rgba(0, 146, 226, 0.55);
 }
 
+.opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9cc0d8;
+  font-size: 12px;
+}
+
+.opacity-control span {
+  white-space: nowrap;
+}
+
+.opacity-control :deep(.el-slider) {
+  width: 110px;
+}
+
 .map-container {
   flex: 1;
   position: relative;
   min-height: 0;
+  width: 100%;
 }
 
 .map-hint {
   position: absolute;
-  top: 68px;
+  bottom: 60px;
   left: 16px;
   max-width: 420px;
   padding: 8px 10px;
@@ -431,14 +442,7 @@ onUnmounted(() => {
   border-radius: 8px;
   background: rgba(80, 10, 10, 0.55);
   z-index: 10;
-}
-
-.opacity-control {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #9cc0d8;
-  font-size: 12px;
+  pointer-events: none;
 }
 
 :global(.dark-popup .mapboxgl-popup-content) {
@@ -463,6 +467,7 @@ onUnmounted(() => {
   gap: 24px;
   padding: 12px;
   border-top: 1px solid rgba(0, 150, 255, 0.1);
+  flex-wrap: wrap;
 }
 
 .legend-item {
