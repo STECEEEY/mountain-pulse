@@ -20,15 +20,22 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
-      // 添加地质云代理
+      // 地质云代理配置
       '/geology-cloud': {
         target: 'https://igss.cgs.gov.cn:6160',
         changeOrigin: true,
-        secure: false, // 如果目标服务器是https但证书有问题，设置为false
+        secure: false,
         rewrite: (path) => path.replace(/^\/geology-cloud/, ''),
-        headers: {
-          'Origin': 'https://igss.cgs.gov.cn',
-          'Referer': 'https://igss.cgs.gov.cn'
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            // 添加必要的请求头
+            proxyReq.setHeader('Origin', 'https://igss.cgs.gov.cn');
+            proxyReq.setHeader('Referer', 'https://igss.cgs.gov.cn');
+            proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+          });
         }
       }
     }
