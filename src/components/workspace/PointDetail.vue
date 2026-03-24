@@ -311,7 +311,7 @@ watch(() => props.point, async (newPoint) => {
 .info-value {
   font-size: 13px;
   font-weight: 500;
-  color: #1e293b;
+  color: #e2e8f0;
   text-align: right;
   word-break: break-word;
   flex: 1;
