@@ -149,9 +149,9 @@ const addRiskMapLayer = () => {
   const { west, east, south, north } = mapConfig.bounds
   
   // 增加右移的量（经度偏移0.15度，让地图移动更明显）
-  const rightShift = 0.55
+  const rightShift = 0.15
   // 上移的量（纬度偏移0.05度）
-  const upShift = 0.25
+  const upShift = 0.09
 
   map.addSource(OVERVIEW_RISK_MAP_SOURCE_ID, {
     type: 'image',
