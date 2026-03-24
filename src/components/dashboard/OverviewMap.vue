@@ -148,7 +148,7 @@ const addRiskMapLayer = () => {
 
   const { west, east, south, north } = mapConfig.bounds
   // 图片缩放和拉伸参数
-  const scale = 1.05  // 整体放大10%
+  const scale = 1.1  // 整体放大10%
   const stretchX = 1.05  // 横向拉伸5%
   const rightShift = 0.15  // 右移0.15度
   const upShift = 0.05  // 上移0.05度
@@ -163,8 +163,8 @@ const addRiskMapLayer = () => {
   // 计算新的边界
   const newWest = centerX - width / 2 + 0.15  // 右移0.15度
   const newEast = centerX + width / 2 + 0.15
-  const newSouth = centerY - height / 2 + 0.01  // 上移0.05度
-  const newNorth = centerY + height / 2 + 0.01
+  const newSouth = centerY - height / 2 - 0.02  // 上移0.05度
+  const newNorth = centerY + height / 2 - 0.02
   
 
   map.addSource(OVERVIEW_RISK_MAP_SOURCE_ID, {
