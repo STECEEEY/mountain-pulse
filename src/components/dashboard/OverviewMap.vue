@@ -151,7 +151,7 @@ const addRiskMapLayer = () => {
   // 图片缩放参数（直接修改边界值来实现缩放）
   const scale = 1.2  // 整体放大10%
   // 偏移参数
-  const rightShift = 0.50 // 右移
+  const rightShift = 0.30 // 右移
   const downShift = -0.05  // 下移（负值）
   
   // 计算原始宽高
