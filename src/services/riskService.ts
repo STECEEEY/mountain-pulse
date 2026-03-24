@@ -35,7 +35,7 @@ export const riskService = {
   // 形变数据 API（通过 Vercel 代理）
   async loadDeformationData(lat: number, lng: number) {
     // 使用与 vercel.json 中 source 匹配的路径
-    const url = `/api/insar/timeseries?lat=${lat}&lng=${lng}`
+    const url = `/api/timeseries?lat=${lat}&lng=${lng}`
     console.log('形变请求URL:', url)
     
     const response = await fetch(url)
