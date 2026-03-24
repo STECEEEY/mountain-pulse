@@ -138,10 +138,47 @@
       </div>
     </div>
 
-    <!-- 历史灾害 -->
+    <!-- 历史灾害记录 -->
     <div class="info-section">
-      <h4>历史灾害记录</h4>
-      <div class="empty-history">暂无历史记录</div>
+      <h4>📜 历史灾害记录</h4>
+      
+      <div v-if="disastersLoading" class="loading-text">
+        <span class="loading-spinner"></span>
+        <span>正在搜索附近历史灾害...</span>
+      </div>
+      
+      <div v-else-if="nearbyDisasters.length > 0" class="disasters-list">
+        <div class="disasters-summary">
+          <span>附近 {{ nearbyDisasters.length }} 处历史灾害</span>
+          <span>半径: {{ searchRadius }} km</span>
+        </div>
+        <div class="disaster-cards">
+          <div v-for="disaster in nearbyDisasters" :key="disaster.id" class="disaster-card">
+            <div class="disaster-header">
+              <span class="disaster-name">{{ disaster.name }}</span>
+              <span class="disaster-type">{{ disaster.type }}</span>
+            </div>
+            <div class="disaster-info">
+              <div class="info-row">
+                <span class="info-label">距离</span>
+                <span class="info-value">{{ disaster.distance.toFixed(2) }} km</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">威胁人口</span>
+                <span class="info-value">{{ disaster.threat_people || 0 }} 人</span>
+              </div>
+              <div class="info-row" v-if="disaster.threat_property">
+                <span class="info-label">威胁财产</span>
+                <span class="info-value">{{ disaster.threat_property }} 万元</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div v-else class="empty-history">
+        半径 {{ searchRadius }} km 内无历史灾害记录
+      </div>
     </div>
 
     <!-- 操作按钮 -->
@@ -193,12 +230,86 @@ const geologyData = ref({
 })
 const geologyLoading = ref(false)
 
+// 历史灾害数据
+const historicalDisasters = ref<any[]>([])
+const nearbyDisasters = ref<any[]>([])
+const disastersLoading = ref(false)
+const searchRadius = ref(5)
+
 // API 配置
 const RAINFALL_API = '/api/rainfall'
 
 const lastUpdateTime = computed(() => {
   return new Date().toLocaleString('zh-CN')
 })
+
+// 计算两点之间的距离（km）
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+// 加载历史灾害数据
+async function loadHistoricalDisasters() {
+  try {
+    const response = await fetch('/data/受灾点样本.geojson')
+    if (!response.ok) throw new Error('加载失败')
+    const geojson = await response.json()
+    historicalDisasters.value = geojson.features.map((feature: any) => ({
+      id: feature.properties.野外编号 || feature.properties.灾害体编号,
+      name: feature.properties.灾害体名称,
+      type: feature.properties.灾害体类型,
+      lng: feature.geometry.coordinates[0],
+      lat: feature.geometry.coordinates[1],
+      threat_people: feature.properties.威胁人口,
+      threat_property: feature.properties.威胁财产,
+      disaster_level: feature.properties.险情等级 || feature.properties.灾害等级,
+      date: '',
+      description: `${feature.properties.灾害体类型}灾害点`
+    }))
+    console.log(`加载了 ${historicalDisasters.value.length} 个历史灾害点`)
+  } catch (error) {
+    console.error('加载历史灾害数据失败', error)
+  }
+}
+
+// 查找附近灾害点
+function findNearbyDisasters(lat: number, lng: number, radiusKm: number) {
+  return historicalDisasters.value
+    .map(d => ({ ...d, distance: calculateDistance(lat, lng, d.lat, d.lng) }))
+    .filter(d => d.distance <= radiusKm)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 10)
+}
+
+// 加载附近灾害点
+async function loadNearbyDisasters() {
+  if (!props.point?.lng || !props.point?.lat) {
+    nearbyDisasters.value = []
+    return
+  }
+  disastersLoading.value = true
+  try {
+    if (historicalDisasters.value.length === 0) {
+      await loadHistoricalDisasters()
+    }
+    nearbyDisasters.value = findNearbyDisasters(
+      props.point.lat,
+      props.point.lng,
+      searchRadius.value
+    )
+  } catch (error) {
+    console.error('查找附近灾害点失败', error)
+  } finally {
+    disastersLoading.value = false
+  }
+}
 
 // 获取降雨数据
 async function fetchRainfallData() {
@@ -226,7 +337,6 @@ async function fetchRainfallData() {
       rainfallData.value = result.data
       console.log('降雨数据:', rainfallData.value)
       
-      // 等待 DOM 更新后渲染图表
       await nextTick()
       renderChart()
     } else {
@@ -243,32 +353,22 @@ async function fetchRainfallData() {
 
 // 渲染图表
 function renderChart() {
-  if (!chartRef.value || !rainfallData.value) {
-    console.warn('无法渲染图表: chartRef或rainfallData为空')
-    return
-  }
+  if (!chartRef.value || !rainfallData.value) return
   
-  // 销毁旧图表实例
   if (chart) {
     chart.dispose()
     chart = null
   }
   
-  // 创建新图表实例
   chart = echarts.init(chartRef.value)
   
   const timeseries = rainfallData.value.timeseries
-  if (!timeseries || timeseries.length === 0) {
-    console.warn('无时序数据')
-    return
-  }
+  if (!timeseries || timeseries.length === 0) return
   
-  // 选择显示的数据
   const displayData = showFullHistory.value ? timeseries : timeseries.slice(-12)
   const dates = displayData.map((item: any) => item.date)
   const precip = displayData.map((item: any) => item.precip_mm)
   
-  // 计算纵轴最大值（留一些空间）
   const maxPrecip = Math.max(...precip)
   const yAxisMax = Math.ceil(maxPrecip / 50) * 50 + 50
   
@@ -276,10 +376,7 @@ function renderChart() {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      formatter: (params: any) => {
-        const data = params[0]
-        return `${data.axisValue}<br/>降雨量: ${data.value} mm`
-      }
+      formatter: (params: any) => `${params[0].axisValue}<br/>降雨量: ${params[0].value} mm`
     },
     grid: {
       left: '15%',
@@ -320,23 +417,15 @@ function renderChart() {
         shadowColor: 'rgba(59, 130, 246, 0.3)',
         shadowBlur: 8
       },
-      barWidth: '50%',
-      label: {
-        show: false
-      }
-    }],
-    title: {
-      show: false
-    }
+      barWidth: '50%'
+    }]
   })
   
-  // 调整图表大小
   setTimeout(() => {
     if (chart) chart.resize()
   }, 100)
 }
 
-// 切换图表视图
 function toggleChartView() {
   showFullHistory.value = !showFullHistory.value
   renderChart()
@@ -439,18 +528,15 @@ function shareData() {
 }
 
 // 监听 point 变化
-watch(() => props.point, async (newPoint, oldPoint) => {
+watch(() => props.point, async (newPoint) => {
   if (newPoint && newPoint.lng && newPoint.lat) {
-    // 重置显示状态
     showFullHistory.value = false
-    
-    // 重新加载数据
     await loadGeologyFromLocalFile()
     await fetchRainfallData()
+    await loadNearbyDisasters()
   }
 }, { immediate: true })
 
-// 监听窗口大小变化
 const handleResize = () => {
   if (chart) {
     chart.resize()
@@ -640,6 +726,61 @@ onUnmounted(() => {
   color: #94a3b8;
   padding-top: 8px;
   border-top: 1px solid #e2e8f0;
+}
+
+/* 历史灾害样式 */
+.disasters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.disasters-summary {
+  font-size: 12px;
+  color: #94a3b8;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.disaster-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.disaster-card {
+  background: rgba(0, 30, 50, 0.4);
+  border-radius: 8px;
+  padding: 10px;
+  border-left: 3px solid #f97316;
+}
+
+.disaster-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.disaster-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e0f0ff;
+}
+
+.disaster-type {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.disaster-info {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
 }
 
 .error-tip, .empty-tip {
