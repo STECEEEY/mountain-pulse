@@ -80,7 +80,7 @@
         <!-- 降雨图表 -->
         <div class="rainfall-chart">
           <div class="chart-header">
-            <span class="chart-title">{{ showFullHistory ? '全部降雨历史' : '近12个月降雨趋势' }}</span>
+            <span class="chart-title">{{ showFullHistory ? '全部降雨历史' : '月降雨趋势' }}</span>
             <el-button type="primary" link size="small" @click="toggleChartView">
               {{ showFullHistory ? '收起' : '查看全部' }}
             </el-button>
@@ -89,8 +89,7 @@
         </div>
         
         <div class="data-source">
-          <span>📡 数据来源: CRU TS 4.09</span>
-          <span>🕐 更新时间: {{ lastUpdateTime }}</span>
+          <span>📡 数据来源: 彭守璋. (2020). 中国1km分辨率逐月降水量数据集（1901-2024）. 国家青藏高原科学数据中心.</span>
         </div>
       </div>
       
