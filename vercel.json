@@ -3,8 +3,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/timeseries",
-      "destination": "http://47.102.147.118:8000/api/timeseries"
+      "source": "/api/deformation/(.*)",
+      "destination": "http://47.102.147.118:8000/api/deformation/$1"
     },
     {
       "source": "/api/rainfall/(.*)",
