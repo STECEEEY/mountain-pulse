@@ -210,7 +210,7 @@ const geologyData = ref({
 const geologyLoading = ref(false)
 
 // API 配置
-const API_BASE = 'http://47.102.147.118:5000/api/rainfall'
+const API_BASE = '/api/rainfall'
 
 // 最后更新时间
 const lastUpdateTime = computed(() => {
