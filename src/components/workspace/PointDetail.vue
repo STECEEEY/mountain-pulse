@@ -180,7 +180,7 @@ async function fetchGeologyFromCloud(lng: number, lat: number) {
       tk: GEOLOGY_CLOUD_CONFIG.token
     })
 
-    const url = `${GEOLOGY_CLOUD_CONFIG.wmsUrl}?${params.toString()}`
+    const url = `/geology-cloud/igs/rest/ogc/qg50w_20210416_F7qGy9A7/MapServer/WMSServer?${params.toString()}`
     
     const response = await fetch(url)
     const data = await response.json()
