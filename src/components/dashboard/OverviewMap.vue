@@ -147,34 +147,35 @@ const addRiskMapLayer = () => {
   if (!map || map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) return
 
   const { west, east, south, north } = mapConfig.bounds
-  // 图片缩放和拉伸参数
-  const scale = 1.9  // 整体放大10%
-  const stretchX = 1.2  // 横向拉伸5%
-  const rightShift = 0.15  // 右移0.15度
-  const upShift = 0.05  // 上移0.05度
+ // 图片缩放参数
+  const scale = 1.3  // 整体放大10%
+  // 右移的量
+  const rightShift = 0
+  // 下移的量（负值表示下移）
+  const downShift = -0.1
+  
   // 计算中心点
   const centerX = (west + east) / 2
   const centerY = (north + south) / 2
-
- // 计算缩放后的宽高
-  const width = (east - west) * scale * stretchX
+  
+  // 计算缩放后的宽高
+  const width = (east - west) * scale
   const height = (north - south) * scale
   
-  // 计算新的边界
-  const newWest = centerX - width / 2 + 0.15  // 右移0.15度
-  const newEast = centerX + width / 2 + 0.15
-  const newSouth = centerY - height / 2 - 0.02  // 上移0.05度
-  const newNorth = centerY + height / 2 - 0.02
-  
+  // 计算新的边界（加上偏移）
+  const newWest = centerX - width / 2 + rightShift
+  const newEast = centerX + width / 2 + rightShift
+  const newSouth = centerY - height / 2 + downShift
+  const newNorth = centerY + height / 2 + downShift
 
   map.addSource(OVERVIEW_RISK_MAP_SOURCE_ID, {
     type: 'image',
     url: '/data/risk_map.png', 
     coordinates: [
-      [west + rightShift, north + upShift],      // 左上角
-      [east + rightShift, north + upShift],      // 右上角
-      [east + rightShift, south + upShift],      // 右下角
-      [west + rightShift, south + upShift],      // 左下角
+      [newWest, newNorth],      // 左上角
+      [newEast, newNorth],      // 右上角
+      [newEast, newSouth],      // 右下角
+      [newWest, newSouth],      // 左下角
     ],
   })
 
