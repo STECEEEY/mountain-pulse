@@ -62,7 +62,7 @@
       </div>
     </div>
 
-    <!-- 地质信息（修改部分） -->
+    <!-- 地质信息 -->
     <div class="info-section">
       <h4>地质特征</h4>
       <div class="info-grid">
@@ -111,6 +111,21 @@ import { ref, watch, computed } from 'vue'
 import { Download, Printer, Share } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
+// 定义 props
+const props = defineProps<{
+  point: {
+    id?: number
+    name?: string
+    type?: string
+    lng?: number
+    lat?: number
+    elevation?: number
+    slope?: number
+    threat?: string
+    level?: string
+  } | null
+}>()
+
 // 地质云配置
 const GEOLOGY_CLOUD_CONFIG = {
   token: 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2ZGY2NGJhOS1mOTVkLTQxYTctYWE5Zi05MzNhMDlkNTc0Y2EifQ.EyhGVC8iqgZRuUrcABDv2JYgZbv4MbAqIOLQIN7EvPo',
@@ -118,7 +133,7 @@ const GEOLOGY_CLOUD_CONFIG = {
   layerName: 't0'
 }
 
-// 新增地质数据响应式变量
+// 地质数据响应式变量
 const geologyData = ref({
   unit: '',
   lithology: '',
@@ -171,14 +186,14 @@ async function fetchGeologyFromCloud(lng: number, lat: number) {
     const data = await response.json()
     
     if (data && data.features && data.features.length > 0) {
-      const props = data.features[0].properties
+      const featureProps = data.features[0].properties
       
       return {
-        unit: props['地质单元'] || props['地质名称'] || '',
-        lithology: extractLithology(props),
-        structure: extractStructure(props),
-        scale: props['规模'] || '',
-        stability: evaluateStability(props)
+        unit: featureProps['地质单元'] || featureProps['地质名称'] || '',
+        lithology: extractLithology(featureProps),
+        structure: extractStructure(featureProps),
+        scale: featureProps['规模'] || '',
+        stability: evaluateStability(featureProps)
       }
     }
     
@@ -190,10 +205,10 @@ async function fetchGeologyFromCloud(lng: number, lat: number) {
 }
 
 // 提取岩性
-function extractLithology(props: any): string {
-  if (props['岩性']) return props['岩性']
-  if (props['描述']) {
-    const desc = props['描述']
+function extractLithology(featureProps: any): string {
+  if (featureProps['岩性']) return featureProps['岩性']
+  if (featureProps['描述']) {
+    const desc = featureProps['描述']
     const keywords = ['砂岩', '泥岩', '灰岩', '页岩', '花岗岩', '闪长岩', '玄武岩']
     for (const kw of keywords) {
       if (desc.includes(kw)) return kw
@@ -203,10 +218,10 @@ function extractLithology(props: any): string {
 }
 
 // 提取构造
-function extractStructure(props: any): string {
-  if (props['构造']) return props['构造']
-  if (props['描述']) {
-    const desc = props['描述']
+function extractStructure(featureProps: any): string {
+  if (featureProps['构造']) return featureProps['构造']
+  if (featureProps['描述']) {
+    const desc = featureProps['描述']
     const keywords = ['节理', '裂隙', '断层', '褶皱', '顺向坡']
     for (const kw of keywords) {
       if (desc.includes(kw)) return kw
@@ -216,9 +231,9 @@ function extractStructure(props: any): string {
 }
 
 // 评估稳定性
-function evaluateStability(props: any): string {
-  if (props['稳定性']) return props['稳定性']
-  const desc = (props['描述'] || '').toLowerCase()
+function evaluateStability(featureProps: any): string {
+  if (featureProps['稳定性']) return featureProps['稳定性']
+  const desc = (featureProps['描述'] || '').toLowerCase()
   if (desc.includes('不稳定') || desc.includes('崩塌') || desc.includes('滑坡')) {
     return '不稳定'
   } else if (desc.includes('基本稳定')) {
@@ -229,9 +244,8 @@ function evaluateStability(props: any): string {
   return '待评估'
 }
 
-// 加载地质信息（修改部分）
+// 加载地质信息
 async function loadGeologyInfo() {
-  // 修复类型错误：先判断 point 是否存在
   if (!props.point) {
     return
   }
@@ -264,20 +278,6 @@ watch(() => props.point, async (newPoint) => {
     await loadGeologyInfo()
   }
 }, { immediate: true })
-
-defineProps<{
-  point: {
-    id?: number
-    name?: string
-    type?: string
-    lng?: number
-    lat?: number
-    elevation?: number
-    slope?: number
-    threat?: string
-    level?: string
-  } | null
-}>()
 </script>
 
 <style scoped>
