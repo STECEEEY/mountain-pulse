@@ -147,11 +147,24 @@ const addRiskMapLayer = () => {
   if (!map || map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) return
 
   const { west, east, south, north } = mapConfig.bounds
+  // 图片缩放和拉伸参数
+  const scale = 1.05  // 整体放大10%
+  const stretchX = 1.05  // 横向拉伸5%
+
+  // 计算中心点
+  const centerX = (west + east) / 2
+  const centerY = (north + south) / 2
+
+ // 计算缩放后的宽高
+  const width = (east - west) * scale * stretchX
+  const height = (north - south) * scale
   
-  // 增加右移的量（经度偏移0.15度，让地图移动更明显）
-  const rightShift = 0.15
-  // 上移的量（纬度偏移0.05度）
-  const upShift = 0.05
+  // 计算新的边界
+  const newWest = centerX - width / 2 + 0.15  // 右移0.15度
+  const newEast = centerX + width / 2 + 0.15
+  const newSouth = centerY - height / 2 + 0.01  // 上移0.05度
+  const newNorth = centerY + height / 2 + 0.01
+  
 
   map.addSource(OVERVIEW_RISK_MAP_SOURCE_ID, {
     type: 'image',
