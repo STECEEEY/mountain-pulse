@@ -31,20 +31,25 @@ export const riskService = {
   loadHighRiskGeoJSON() {
     return fetchJson<HighRiskGeoJSON>('/data/high_risk_points.geojson')
   },
-  async loadDeformationData(lat: number, lng: number) {
-  // 使用相对路径，Vercel 会自动代理
-  const url = `/api/deformation/query?lat=${lat}&lng=${lng}`
   
-  const response = await fetch(url.toString())
-  if (!response.ok) {
-    throw new Error(`形变接口请求失败: ${response.status}`)
-  }
+  // 形变数据 API（通过 Vercel 代理）
+  async loadDeformationData(lat: number, lng: number) {
+    // 使用与 vercel.json 中 source 匹配的路径
+    const url = `/api/insar/timeseries?lat=${lat}&lng=${lng}`
+    console.log('形变请求URL:', url)
+    
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`形变接口请求失败: ${response.status}`)
+    }
 
-  const data = await response.json()
-  if (!data || !Array.isArray(data.deformation_data)) {
-    throw new Error('形变接口返回结构无效')
-  }
+    const data = await response.json()
+    
+    // 根据你的实际返回结构调整
+    if (!data) {
+      throw new Error('形变接口返回结构无效')
+    }
 
-  return data
+    return data
   },
 }
