@@ -150,7 +150,8 @@ const addRiskMapLayer = () => {
   // 图片缩放和拉伸参数
   const scale = 1.05  // 整体放大10%
   const stretchX = 1.05  // 横向拉伸5%
-
+  const rightShift = 0.15  // 右移0.15度
+  const upShift = 0.05  // 上移0.05度
   // 计算中心点
   const centerX = (west + east) / 2
   const centerY = (north + south) / 2
