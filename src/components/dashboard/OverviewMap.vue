@@ -4,6 +4,7 @@
       <h3 class="card-title">宁镇山脉区域概况</h3>
       <div class="map-controls center-controls">
         <el-checkbox v-model="layers.riskMap" label="风险底图" />
+        <el-checkbox v-model="layers.disasterPoints" label="风险点" />
         <div class="opacity-control">
           <span>透明度 {{ Math.round(riskMapOpacity * 100) }}%</span>
           <el-slider v-model="riskMapOpacity" :min="0.1" :max="0.9" :step="0.05" style="width: 110px" />
@@ -147,19 +148,19 @@ const addRiskMapLayer = () => {
 
   const { west, east, south, north } = mapConfig.bounds
   
-  // 获取透明度滑块的长度（大约对应经度0.05度）
-  const opacitySliderLength = 0.05
-  // 上移的量（大约对应纬度0.02度）
-  const upShift = 0.02
+  // 增加右移的量（经度偏移0.15度，让地图移动更明显）
+  const rightShift = 0.55
+  // 上移的量（纬度偏移0.05度）
+  const upShift = 0.25
 
   map.addSource(OVERVIEW_RISK_MAP_SOURCE_ID, {
     type: 'image',
     url: '/data/risk_map.png', 
     coordinates: [
-      [west + opacitySliderLength, north + upShift],      // 左上角
-      [east + opacitySliderLength, north + upShift],      // 右上角
-      [east + opacitySliderLength, south + upShift],      // 右下角
-      [west + opacitySliderLength, south + upShift],      // 左下角
+      [west + rightShift, north + upShift],      // 左上角
+      [east + rightShift, north + upShift],      // 右上角
+      [east + rightShift, south + upShift],      // 右下角
+      [west + rightShift, south + upShift],      // 左下角
     ],
   })
 
