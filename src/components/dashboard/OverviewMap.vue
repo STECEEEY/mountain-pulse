@@ -147,26 +147,34 @@ const addRiskMapLayer = () => {
   if (!map || map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) return
 
   const { west, east, south, north } = mapConfig.bounds
- // 图片缩放参数
-  const scale = 1.3  // 整体放大10%
-  // 右移的量
-  const rightShift = 0
-  // 下移的量（负值表示下移）
-  const downShift = -0.1
   
-  // 计算中心点
+  // 图片缩放参数（直接修改边界值来实现缩放）
+  const scale = 1.2  // 整体放大10%
+  // 偏移参数
+  const rightShift = 0  // 右移
+  const downShift = -0.05  // 下移（负值）
+  
+  // 计算原始宽高
+  const originalWidth = east - west
+  const originalHeight = north - south
+  
+  // 计算缩放后的宽高
+  const scaledWidth = originalWidth * scale
+  const scaledHeight = originalHeight * scale
+  
+  // 计算缩放后的新边界（居中缩放）
   const centerX = (west + east) / 2
   const centerY = (north + south) / 2
   
-  // 计算缩放后的宽高
-  const width = (east - west) * scale
-  const height = (north - south) * scale
-  
-  // 计算新的边界（加上偏移）
-  const newWest = centerX - width / 2 + rightShift
-  const newEast = centerX + width / 2 + rightShift
-  const newSouth = centerY - height / 2 + downShift
-  const newNorth = centerY + height / 2 + downShift
+  const newWest = centerX - scaledWidth / 2 + rightShift
+  const newEast = centerX + scaledWidth / 2 + rightShift
+  const newSouth = centerY - scaledHeight / 2 + downShift
+  const newNorth = centerY + scaledHeight / 2 + downShift
+
+  // 如果地图源已存在，先移除
+  if (map.getSource(OVERVIEW_RISK_MAP_SOURCE_ID)) {
+    map.removeSource(OVERVIEW_RISK_MAP_SOURCE_ID)
+  }
 
   map.addSource(OVERVIEW_RISK_MAP_SOURCE_ID, {
     type: 'image',
@@ -179,14 +187,17 @@ const addRiskMapLayer = () => {
     ],
   })
 
-  map.addLayer({
-    id: OVERVIEW_RISK_MAP_LAYER_ID,
-    type: 'raster',
-    source: OVERVIEW_RISK_MAP_SOURCE_ID,
-    paint: {
-      'raster-opacity': riskMapOpacity.value,
-    },
-  })
+  // 如果图层已存在，不需要重新添加
+  if (!map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) {
+    map.addLayer({
+      id: OVERVIEW_RISK_MAP_LAYER_ID,
+      type: 'raster',
+      source: OVERVIEW_RISK_MAP_SOURCE_ID,
+      paint: {
+        'raster-opacity': riskMapOpacity.value,
+      },
+    })
+  }
 }
 
 const addHighRiskAreaLayer = () => {
