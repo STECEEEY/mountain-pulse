@@ -2,10 +2,8 @@
   <div class="map-card">
     <div class="card-header">
       <h3 class="card-title">宁镇山脉区域概况</h3>
-      <div class="map-controls">
+      <div class="map-controls center-controls">
         <el-checkbox v-model="layers.riskMap" label="风险底图" />
-        <el-checkbox v-model="layers.highRiskArea" label="高风险区" />
-        <el-checkbox v-model="layers.disasterPoints" label="风险点" />
         <div class="opacity-control">
           <span>透明度 {{ Math.round(riskMapOpacity * 100) }}%</span>
           <el-slider v-model="riskMapOpacity" :min="0.1" :max="0.9" :step="0.05" style="width: 110px" />
@@ -48,7 +46,6 @@ let map: mapboxgl.Map | null = null
 const mapHint = ref('')
 const layers = reactive({
   riskMap: true,
-  highRiskArea: true,
   disasterPoints: true,
 })
 const riskMapOpacity = ref(0.45)
@@ -149,15 +146,20 @@ const addRiskMapLayer = () => {
   if (!map || map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) return
 
   const { west, east, south, north } = mapConfig.bounds
+  
+  // 获取透明度滑块的长度（大约对应经度0.05度）
+  const opacitySliderLength = 0.05
+  // 上移的量（大约对应纬度0.02度）
+  const upShift = 0.02
 
   map.addSource(OVERVIEW_RISK_MAP_SOURCE_ID, {
     type: 'image',
     url: '/data/risk_map.png', 
     coordinates: [
-      [west, north],
-      [east, north],
-      [east, south],
-      [west, south],
+      [west + opacitySliderLength, north + upShift],      // 左上角
+      [east + opacitySliderLength, north + upShift],      // 右上角
+      [east + opacitySliderLength, south + upShift],      // 右下角
+      [west + opacitySliderLength, south + upShift],      // 左下角
     ],
   })
 
@@ -296,8 +298,6 @@ const setLayerVisibility = (layerId: string, visible: boolean) => {
 
 const updateLayerVisibility = () => {
   setLayerVisibility(OVERVIEW_RISK_MAP_LAYER_ID, layers.riskMap)
-  setLayerVisibility(OVERVIEW_HIGH_RISK_FILL_LAYER_ID, layers.highRiskArea)
-  setLayerVisibility(OVERVIEW_HIGH_RISK_LINE_LAYER_ID, layers.highRiskArea)
   setLayerVisibility(OVERVIEW_DISASTER_POINTS_LAYER_ID, layers.disasterPoints)
   if (map && map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) {
     map.setPaintProperty(OVERVIEW_RISK_MAP_LAYER_ID, 'raster-opacity', riskMapOpacity.value)
@@ -334,7 +334,7 @@ onMounted(async () => {
 })
 
 watch(
-  () => [layers.riskMap, layers.highRiskArea, layers.disasterPoints, riskMapOpacity.value],
+  () => [layers.riskMap, layers.disasterPoints, riskMapOpacity.value],
   () => {
     updateLayerVisibility()
   },
@@ -381,6 +381,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.center-controls {
+  justify-content: center !important;
+  flex: 1;
 }
 
 .map-controls :deep(.el-checkbox) {
