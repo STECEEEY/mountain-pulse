@@ -3,8 +3,12 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/insar/(.*)",
       "destination": "http://47.102.147.118:8000/api/$1"
+    },
+    {
+      "source": "/api/rainfall/(.*)",
+      "destination": "http://47.102.147.118:5000/api/rainfall/$1"
     },
     {
       "source": "/(.*)",
