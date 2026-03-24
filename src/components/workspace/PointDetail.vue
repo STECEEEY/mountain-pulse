@@ -39,17 +39,15 @@
       </div>
     </div>
 
-    <!-- 降雨量分析（替换原监测信息） -->
+    <!-- 降雨量分析 -->
     <div class="info-section rainfall-section">
       <h4>📊 降雨量分析</h4>
       
-      <!-- 加载状态 -->
       <div v-if="rainfallLoading" class="loading-text">
         <span class="loading-spinner"></span>
         <span>正在加载降雨数据...</span>
       </div>
       
-      <!-- 数据内容 -->
       <div v-else-if="rainfallData" class="rainfall-content">
         <!-- 统计卡片 -->
         <div class="stats-cards">
@@ -67,48 +65,40 @@
           </div>
         </div>
         
-        <!-- 极值信息 -->
+        <!-- 极值信息（一行一个） -->
         <div class="extreme-info">
-          <div class="extreme-item max">
-            <span class="extreme-label">🌧️ 最湿月份</span>
-            <span class="extreme-value">{{ rainfallData.statistics.max_month?.date }}: {{ rainfallData.statistics.max_month?.precip_mm }} mm</span>
+          <div class="extreme-row">
+            <span class="extreme-label">🌧️ 最湿月份：</span>
+            <span class="extreme-value">{{ rainfallData.statistics.max_month?.date }} ({{ rainfallData.statistics.max_month?.precip_mm }} mm)</span>
           </div>
-          <div class="extreme-item min">
-            <span class="extreme-label">☀️ 最干月份</span>
-            <span class="extreme-value">{{ rainfallData.statistics.min_month?.date }}: {{ rainfallData.statistics.min_month?.precip_mm }} mm</span>
+          <div class="extreme-row">
+            <span class="extreme-label">☀️ 最干月份：</span>
+            <span class="extreme-value">{{ rainfallData.statistics.min_month?.date }} ({{ rainfallData.statistics.min_month?.precip_mm }} mm)</span>
           </div>
         </div>
         
-        <!-- 降雨图表（简化版，显示最近12个月） -->
+        <!-- 降雨图表 -->
         <div class="rainfall-chart">
           <div class="chart-header">
-            <span class="chart-title">近12个月降雨趋势</span>
-            <el-button 
-              type="primary" 
-              link 
-              size="small" 
-              @click="showFullHistory = !showFullHistory"
-            >
+            <span class="chart-title">{{ showFullHistory ? '全部降雨历史' : '近12个月降雨趋势' }}</span>
+            <el-button type="primary" link size="small" @click="toggleChartView">
               {{ showFullHistory ? '收起' : '查看全部' }}
             </el-button>
           </div>
           <div ref="chartRef" class="chart-container"></div>
         </div>
         
-        <!-- 数据来源信息 -->
         <div class="data-source">
           <span>📡 数据来源: CRU TS 4.09</span>
           <span>🕐 更新时间: {{ lastUpdateTime }}</span>
         </div>
       </div>
       
-      <!-- 错误状态 -->
       <div v-else-if="rainfallError" class="error-tip">
         <span>⚠️ {{ rainfallError }}</span>
         <button @click="fetchRainfallData" class="retry-btn">重试</button>
       </div>
       
-      <!-- 无数据提示 -->
       <div v-else class="empty-tip">
         <span>📍 请选择监测点查看降雨数据</span>
       </div>
@@ -147,10 +137,6 @@
           <span class="info-value">{{ geologyData.description }}</span>
         </div>
       </div>
-      <div v-if="!geologyData.fromCloud && !geologyLoading && point?.lng && point?.lat" class="retry-tip">
-        <span>⚠️ 无法加载地质数据</span>
-        <button @click="retryFetch" class="retry-btn">重试</button>
-      </div>
     </div>
 
     <!-- 历史灾害 -->
@@ -169,12 +155,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Download, Printer, Share } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 
-// 定义 props
 const props = defineProps<{
   point: {
     id?: number
@@ -189,7 +174,7 @@ const props = defineProps<{
   } | null
 }>()
 
-// 降雨数据相关
+// 降雨数据
 const rainfallLoading = ref(false)
 const rainfallError = ref('')
 const rainfallData = ref<any>(null)
@@ -197,7 +182,7 @@ const showFullHistory = ref(false)
 const chartRef = ref(null)
 let chart: echarts.ECharts | null = null
 
-// 地质数据相关
+// 地质数据
 const geologyData = ref({
   unit: '',
   code: '',
@@ -210,9 +195,8 @@ const geologyData = ref({
 const geologyLoading = ref(false)
 
 // API 配置
-const API_BASE = '/api/rainfall'
+const RAINFALL_API = '/api/rainfall'
 
-// 最后更新时间
 const lastUpdateTime = computed(() => {
   return new Date().toLocaleString('zh-CN')
 })
@@ -228,20 +212,22 @@ async function fetchRainfallData() {
   rainfallError.value = ''
   
   try {
-    const url = `${API_BASE}/point?lon=${props.point.lng}&lat=${props.point.lat}`
+    const url = `${RAINFALL_API}/point?lon=${props.point.lng}&lat=${props.point.lat}`
+    console.log('降雨请求URL:', url)
+    
     const response = await fetch(url)
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      throw new Error(`HTTP ${response.status}`)
     }
     
     const result = await response.json()
     
     if (result.status === 'success') {
       rainfallData.value = result.data
-      console.log('降雨数据加载成功:', rainfallData.value)
+      console.log('降雨数据:', rainfallData.value)
       
-      // 渲染图表
+      // 等待 DOM 更新后渲染图表
       await nextTick()
       renderChart()
     } else {
@@ -258,31 +244,49 @@ async function fetchRainfallData() {
 
 // 渲染图表
 function renderChart() {
-  if (!chartRef.value || !rainfallData.value) return
-  
-  if (!chart) {
-    chart = echarts.init(chartRef.value)
+  if (!chartRef.value || !rainfallData.value) {
+    console.warn('无法渲染图表: chartRef或rainfallData为空')
+    return
   }
   
-  // 选择显示的数据（最近12个月或全部）
+  // 销毁旧图表实例
+  if (chart) {
+    chart.dispose()
+    chart = null
+  }
+  
+  // 创建新图表实例
+  chart = echarts.init(chartRef.value)
+  
   const timeseries = rainfallData.value.timeseries
+  if (!timeseries || timeseries.length === 0) {
+    console.warn('无时序数据')
+    return
+  }
+  
+  // 选择显示的数据
   const displayData = showFullHistory.value ? timeseries : timeseries.slice(-12)
   const dates = displayData.map((item: any) => item.date)
   const precip = displayData.map((item: any) => item.precip_mm)
   
+  // 计算纵轴最大值（留一些空间）
+  const maxPrecip = Math.max(...precip)
+  const yAxisMax = Math.ceil(maxPrecip / 50) * 50 + 50
+  
   chart.setOption({
     tooltip: {
       trigger: 'axis',
+      axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const data = params[0]
         return `${data.axisValue}<br/>降雨量: ${data.value} mm`
       }
     },
     grid: {
-      left: '10%',
-      right: '10%',
-      top: 20,
-      bottom: 30,
+      left: '15%',
+      right: '5%',
+      top: 40,
+      bottom: 50,
       containLabel: true
     },
     xAxis: {
@@ -290,33 +294,56 @@ function renderChart() {
       data: dates,
       axisLabel: {
         rotate: 45,
-        interval: Math.ceil(dates.length / 8),
-        fontSize: 10
-      }
+        interval: Math.max(1, Math.floor(dates.length / 8)),
+        fontSize: 10,
+        margin: 15
+      },
+      axisLine: { lineStyle: { color: '#64748b' } }
     },
     yAxis: {
       type: 'value',
       name: '降水量 (mm)',
-      nameStyle: { fontSize: 11 }
+      nameStyle: { fontSize: 12, fontWeight: 500 },
+      nameLocation: 'middle',
+      nameGap: 55,
+      min: 0,
+      max: yAxisMax,
+      axisLabel: { fontSize: 11 },
+      splitLine: { lineStyle: { type: 'dashed', color: '#e2e8f0' } }
     },
     series: [{
+      name: '降水量',
       type: 'bar',
       data: precip,
       itemStyle: {
         color: '#3b82f6',
-        borderRadius: [4, 4, 0, 0]
+        borderRadius: [6, 6, 0, 0],
+        shadowColor: 'rgba(59, 130, 246, 0.3)',
+        shadowBlur: 8
       },
-      barWidth: '60%'
-    }]
+      barWidth: '50%',
+      label: {
+        show: false
+      }
+    }],
+    title: {
+      show: false
+    }
   })
+  
+  // 调整图表大小
+  setTimeout(() => {
+    if (chart) chart.resize()
+  }, 100)
 }
 
-// 监听显示模式变化
-watch(showFullHistory, () => {
+// 切换图表视图
+function toggleChartView() {
+  showFullHistory.value = !showFullHistory.value
   renderChart()
-})
+}
 
-// 从本地JSON文件加载地质信息
+// 地质数据加载
 async function loadGeologyFromLocalFile() {
   if (!props.point) return
   
@@ -326,7 +353,7 @@ async function loadGeologyFromLocalFile() {
     const response = await fetch('/data/geology_inferred_results.json')
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: 无法加载地质数据文件`)
+      throw new Error(`HTTP ${response.status}`)
     }
     
     const data = await response.json()
@@ -366,7 +393,6 @@ async function loadGeologyFromLocalFile() {
   }
 }
 
-// 设置默认地质信息
 function setDefaultGeology() {
   geologyData.value = {
     unit: '宁镇山脉褶皱带',
@@ -379,18 +405,6 @@ function setDefaultGeology() {
   }
 }
 
-// 重试加载
-async function retryFetch() {
-  ElMessage.info('正在重新加载地质数据...')
-  await loadGeologyFromLocalFile()
-  if (geologyData.value.fromCloud) {
-    ElMessage.success('地质数据加载成功！')
-  } else {
-    ElMessage.warning('使用默认地质数据')
-  }
-}
-
-// 导出数据
 function exportData() {
   if (rainfallData.value) {
     const dataStr = JSON.stringify(rainfallData.value, null, 2)
@@ -407,12 +421,10 @@ function exportData() {
   }
 }
 
-// 打印报告
 function printReport() {
   window.print()
 }
 
-// 分享
 function shareData() {
   if (navigator.share) {
     navigator.share({
@@ -428,14 +440,18 @@ function shareData() {
 }
 
 // 监听 point 变化
-watch(() => props.point, async (newPoint) => {
-  if (newPoint) {
+watch(() => props.point, async (newPoint, oldPoint) => {
+  if (newPoint && newPoint.lng && newPoint.lat) {
+    // 重置显示状态
+    showFullHistory.value = false
+    
+    // 重新加载数据
     await loadGeologyFromLocalFile()
     await fetchRainfallData()
   }
 }, { immediate: true })
 
-// 监听窗口大小变化，调整图表
+// 监听窗口大小变化
 const handleResize = () => {
   if (chart) {
     chart.resize()
@@ -453,9 +469,6 @@ onUnmounted(() => {
     chart = null
   }
 })
-
-// 导入 nextTick
-import { nextTick } from 'vue'
 </script>
 
 <style scoped>
@@ -567,29 +580,34 @@ import { nextTick } from 'vue'
   margin-top: 4px;
 }
 
+/* 极值信息样式 - 一行一个 */
 .extreme-info {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   background: #fef3c7;
   border-radius: 8px;
   padding: 12px;
 }
 
-.extreme-item {
-  flex: 1;
+.extreme-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: 13px;
+  padding: 4px 0;
 }
 
 .extreme-label {
   color: #92400e;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 13px;
 }
 
 .extreme-value {
   color: #b45309;
+  font-weight: 500;
+  font-size: 13px;
 }
 
 .rainfall-chart {
@@ -601,17 +619,19 @@ import { nextTick } from 'vue'
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  padding: 0 4px;
 }
 
 .chart-title {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: #334155;
 }
 
 .chart-container {
-  height: 200px;
+  height: 240px;
   width: 100%;
+  min-height: 200px;
 }
 
 .data-source {
@@ -637,33 +657,6 @@ import { nextTick } from 'vue'
   background: #f8fafc;
 }
 
-.retry-tip {
-  margin-top: 12px;
-  padding: 8px 12px;
-  background: #fef3c7;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #d97706;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.retry-btn {
-  padding: 4px 12px;
-  background: #d97706;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.retry-btn:hover {
-  background: #b45309;
-}
-
 .empty-history {
   padding: 12px;
   border-radius: 8px;
@@ -682,5 +675,21 @@ import { nextTick } from 'vue'
 
 .action-buttons .el-button {
   flex: 1;
+}
+
+.retry-btn {
+  padding: 4px 12px;
+  background: #d97706;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-left: 12px;
+}
+
+.retry-btn:hover {
+  background: #b45309;
 }
 </style>
