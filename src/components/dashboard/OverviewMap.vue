@@ -148,7 +148,7 @@ const addRiskMapLayer = () => {
 
   const { west, east, south, north } = mapConfig.bounds
   // 图片缩放和拉伸参数
-  const scale = 1.1  // 整体放大10%
+  const scale = 1.3  // 整体放大10%
   const stretchX = 1.05  // 横向拉伸5%
   const rightShift = 0.15  // 右移0.15度
   const upShift = 0.05  // 上移0.05度
