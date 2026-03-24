@@ -91,25 +91,16 @@
         </div>
         <div class="info-row">
           <span class="info-label">规模</span>
-          <span class="info-value">{{ geologyData.scale || '区域尺度' }}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">稳定性</span>
-          <span class="info-value" :class="{ danger: geologyData.stability === '不稳定' }">
-            {{ geologyData.stability || (point?.level ? `${point.level}风险` : '暂无') }}
-          </span>
-        </div>
-        <div class="info-row" v-if="geologyData.confidence !== undefined">
-          <span class="info-label">推断置信度</span>
-          <span class="info-value">
-            {{ (geologyData.confidence * 100).toFixed(1) }}%
-            <span class="confidence-tip">(KNN算法)</span>
-          </span>
+          <span class="info-value">{{ geologyData.scale || '暂无' }}</span>
         </div>
         <div class="info-row" v-if="geologyData.description">
           <span class="info-label">详细描述</span>
           <span class="info-value">{{ geologyData.description }}</span>
         </div>
+      </div>
+      <div v-if="!geologyData.fromCloud && !geologyLoading && point?.lng && point?.lat" class="retry-tip">
+        <span>⚠️ 无法加载地质数据</span>
+        <button @click="retryFetch" class="retry-btn">重试</button>
       </div>
     </div>
 
@@ -131,6 +122,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { Download, Printer, Share } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 // 定义 props
 const props = defineProps<{
@@ -154,10 +146,8 @@ const geologyData = ref({
   lithology: '',
   structure: '',
   scale: '',
-  stability: '',
   description: '',
-  fromCloud: false,
-  confidence: undefined as number | undefined
+  fromCloud: false
 })
 
 const geologyLoading = ref(false)
@@ -208,11 +198,9 @@ async function loadGeologyFromLocalFile() {
         code: geo.code || '',
         lithology: geo.lithology || '',
         structure: geo.structure || '',
-        scale: geo.scale || '区域尺度',
-        stability: geo.stability || '待评估',
+        scale: geo.scale || '',
         description: geo.description || '',
-        fromCloud: true,
-        confidence: geo.confidence
+        fromCloud: true
       }
       console.log(`加载地质信息成功: ${geo.unit}`)
     } else {
@@ -235,11 +223,8 @@ function setDefaultGeology() {
     lithology: '砂岩、页岩、灰岩组合',
     structure: '北东向褶皱束，断裂发育',
     scale: '区域尺度',
-    stability: props.point?.level === '极高风险' ? '不稳定' : 
-              (props.point?.level === '高风险' ? '基本稳定' : '稳定'),
     description: '宁镇山脉为古生代-中生代地层，构造线方向北东，是地质灾害重点监测区',
-    fromCloud: false,
-    confidence: undefined
+    fromCloud: false
   }
 }
 
@@ -330,18 +315,6 @@ watch(() => props.point, async (newPoint) => {
   text-align: right;
   word-break: break-word;
   flex: 1;
-}
-
-.info-value.danger {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-.confidence-tip {
-  font-size: 10px;
-  color: #94a3b8;
-  font-weight: normal;
-  margin-left: 4px;
 }
 
 .retry-tip {
