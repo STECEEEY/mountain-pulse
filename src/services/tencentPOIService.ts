@@ -1,6 +1,6 @@
 // src/services/tencentPOIService.ts
 
-const TENCENT_MAP_KEY = '222/PTIBZ-6ZLCEF5XX-7Z5IN-SBLV5-BLBUO'
+const TENCENT_MAP_KEY = 'PTIBZ-6ZLCZ-EF5XX-7Z5IN-SBLV5-BLBUO'
 
 export interface TencentPOI {
   id: string
