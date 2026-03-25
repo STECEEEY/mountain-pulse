@@ -102,6 +102,12 @@ interface RiskPoint {
   level: string
 }
 
+interface MockFacilityItem {
+  name: string
+  type: string
+  detail: string
+}
+
 const props = defineProps<{
   selectedRiskPoint?: RiskPoint | null
 }>()
@@ -192,7 +198,7 @@ const loadMockFacilities = async (riskPoint: RiskPoint) => {
   loadingFacilities.value = true
   
   setTimeout(() => {
-    const mockData = [
+    const mockData: MockFacilityItem[] = [
       { name: '句容水库', type: '水库', detail: '库容1200万m³，距风险点较近' },
       { name: '南京师范大学', type: '学校', detail: '师生约3万人，需重点关注' },
       { name: '镇江市第一人民医院', type: '医院', detail: '床位500张，应急医疗资源' },
@@ -207,6 +213,7 @@ const loadMockFacilities = async (riskPoint: RiskPoint) => {
     const result: Facility[] = []
     for (let i = 0; i < mockData.length; i++) {
       const item = mockData[i]
+      // 使用非空断言，因为 item 肯定存在
       const distance = Math.floor(Math.random() * 1900 + 100)
       const { risk, riskClass } = calculateRiskByDistance(distance)
       
