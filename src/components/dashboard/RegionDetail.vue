@@ -250,7 +250,7 @@ const loadFacilitiesAroundRiskPoint = async (riskPoint: RiskPoint) => {
     const facilityMap = new Map<string, any>()
     
     results.forEach((result, index) => {
-      const type = facilityTypes[index]
+      const type = facilityTypes[index] ?? '其他'
       
       if (result.success && result.data && result.data.length > 0) {
         result.data.forEach((poi: any) => {
@@ -263,7 +263,7 @@ const loadFacilitiesAroundRiskPoint = async (riskPoint: RiskPoint) => {
             )
             
             facilityMap.set(key, {
-              id: poi.id,
+              id: poi.id || `${poi.title}_${poi.location.lat}_${poi.location.lng}`,
               name: poi.title,
               type: type,
               detail: poi.address || `${type}设施`,
