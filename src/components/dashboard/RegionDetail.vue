@@ -212,7 +212,7 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
     
     results.forEach((result, index) => {
       // 使用非空断言，因为index肯定在facilityTypes范围内
-      const currentType = facilityTypes[index]
+      const currentType = facilityTypes[index] ?? '其他'
       
       if (result.success && result.data && result.data.length > 0) {
         result.data.forEach((poi: any) => {
@@ -224,7 +224,7 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
             facilityMap.set(key, {
               id: poiId,
               name: poi.title,
-              type: currentType, // currentType 确保是 string
+              type: currentType as string,
               detail: poi.address || `${currentType}设施`,
               lat: poi.location.lat,
               lng: poi.location.lng
