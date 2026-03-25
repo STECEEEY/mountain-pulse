@@ -1,6 +1,6 @@
 // api/tencent.ts
+
 export default async function handler(req: any, res: any) {
-  // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
   
@@ -8,12 +8,19 @@ export default async function handler(req: any, res: any) {
     return res.status(200).end()
   }
   
-  const { keyword, boundary, page_size } = req.query
-  
-  // 直接使用测试成功的 Key
+  const { keyword, boundary, location, radius, page_size } = req.query
   const TENCENT_MAP_KEY = 'DJ4BZ-QHNH4-IDFUT-KAYGK-Y2VG2-47FQM'
   
-  const url = `https://apis.map.qq.com/ws/place/v1/search?keyword=${encodeURIComponent(keyword as string)}&boundary=${boundary}&page_size=${page_size}&key=${TENCENT_MAP_KEY}`
+  let url = ''
+  
+  // 判断是周边搜索还是多边形搜索
+  if (location && radius) {
+    // 周边搜索
+    url = `https://apis.map.qq.com/ws/place/v1/search?keyword=${encodeURIComponent(keyword as string)}&location=${location}&radius=${radius}&page_size=${page_size || 20}&key=${TENCENT_MAP_KEY}`
+  } else {
+    // 多边形搜索
+    url = `https://apis.map.qq.com/ws/place/v1/search?keyword=${encodeURIComponent(keyword as string)}&boundary=${boundary}&page_size=${page_size || 20}&key=${TENCENT_MAP_KEY}`
+  }
   
   try {
     const response = await fetch(url)
