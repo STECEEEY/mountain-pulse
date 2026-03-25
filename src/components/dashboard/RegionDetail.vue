@@ -1,8 +1,4 @@
 <template>
-<!-- 添加这行测试，看是否收到数据 -->
-  <div style="background: orange; padding: 5px; margin: 5px;">
-    收到风险点: {{ selectedRiskPoint?.name || '无' }}
-  </div>
   <div class="detail-card">
     <div class="card-header">
       <h3 class="card-title">区域详情</h3>
@@ -233,40 +229,29 @@ watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
 }, { immediate: true })
 
 // 加载风险点周边的关键设施
+// 加载风险点周边的关键设施
 const loadFacilitiesAroundRiskPoint = async (riskPoint: RiskPoint) => {
-    console.log('loadFacilitiesAroundRiskPoint 被调用, riskPoint:', riskPoint)  // 添加这行
+  console.log('开始加载周边设施, 风险点:', riskPoint)
   loadingFacilities.value = true
   
   try {
-    // 搜索半径 2000 米
     const radius = 2000
     
-    // 需要搜索的设施类型
     const facilityTypes = [
       '水库', '学校', '医院', '化工厂', '加油站', 
       '桥梁', '隧道', '变电站', '交通枢纽'
     ]
-    console.log('开始搜索周边设施, 类型:', facilityTypes) 
-
-    // 并行搜索各类设施
-    const results = await Promise.all(
-      facilityTypes.map(type => 
-        tencentPOIService.searchNearby(type, riskPoint.lat, riskPoint.lng, radius)
-      )
-    )
-    console.log('API返回结果:', results)  
-
-    // 收集并去重
+    
     const facilityMap = new Map<string, any>()
     
-    results.forEach((result, index) => {
-      const type = facilityTypes[index] ?? '其他'
+    // 改为串行请求，避免超过并发限制
+    for (const type of facilityTypes) {
+      const result = await tencentPOIService.searchNearby(type, riskPoint.lat, riskPoint.lng, radius)
       
       if (result.success && result.data && result.data.length > 0) {
         result.data.forEach((poi: any) => {
           const key = `${poi.title}_${poi.location.lat}_${poi.location.lng}`
           if (!facilityMap.has(key)) {
-            // 计算距离
             const distance = calculateDistance(
               riskPoint.lat, riskPoint.lng,
               poi.location.lat, poi.location.lng
@@ -285,13 +270,15 @@ const loadFacilitiesAroundRiskPoint = async (riskPoint: RiskPoint) => {
           }
         })
       }
-    })
+      
+      // 添加一个小延时，避免超过并发限制
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
     
-    // 转换为设施列表并计算风险等级
     const facilityList: Facility[] = Array.from(facilityMap.values()).map(facility => {
       const { risk, riskClass } = calculateRiskLevelByDistance(facility.distance)
       return {
-        id: facility.id,
+        id: String(facility.id),
         icon: facility.icon,
         name: facility.name,
         detail: facility.detail,
@@ -303,12 +290,9 @@ const loadFacilitiesAroundRiskPoint = async (riskPoint: RiskPoint) => {
       }
     })
     
-    // 按距离排序（近的优先）
     facilityList.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+    facilities.value = facilityList.slice(0, 10)
     
-    facilities.value = facilityList.slice(0, 10) // 最多显示10个
-    
-    // 通知父组件更新地图上的设施标记
     emit('facilitiesUpdate', facilities.value)
     
   } catch (error) {
