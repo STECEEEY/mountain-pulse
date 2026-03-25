@@ -1,8 +1,5 @@
 <template>
 <!-- 添加测试div，看样式是否生效 -->
-  <div style="background: red; color: white; padding: 10px; margin: 10px;">
-    测试：RegionDetail 组件已加载
-  </div>
   <div class="detail-card">
     <div class="card-header">
       <h3 class="card-title">区域详情</h3>
@@ -222,15 +219,19 @@ const loadRegion = async () => {
 
 // 监听选中的风险点变化，加载周边设施
 watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
+    console.log('RegionDetail watch 触发, newRiskPoint:', newRiskPoint) 
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
+      console.log('开始加载周边设施, 风险点坐标:', newRiskPoint.lat, newRiskPoint.lng)  // 添加这行
     await loadFacilitiesAroundRiskPoint(newRiskPoint)
   } else {
+      console.log('风险点数据不完整，跳过加载')  // 添加这行
     facilities.value = []
   }
 }, { immediate: true })
 
 // 加载风险点周边的关键设施
 const loadFacilitiesAroundRiskPoint = async (riskPoint: RiskPoint) => {
+    console.log('loadFacilitiesAroundRiskPoint 被调用, riskPoint:', riskPoint)  // 添加这行
   loadingFacilities.value = true
   
   try {
@@ -242,14 +243,16 @@ const loadFacilitiesAroundRiskPoint = async (riskPoint: RiskPoint) => {
       '水库', '学校', '医院', '化工厂', '加油站', 
       '桥梁', '隧道', '变电站', '交通枢纽'
     ]
-    
+    console.log('开始搜索周边设施, 类型:', facilityTypes) 
+
     // 并行搜索各类设施
     const results = await Promise.all(
       facilityTypes.map(type => 
         tencentPOIService.searchNearby(type, riskPoint.lat, riskPoint.lng, radius)
       )
     )
-    
+    console.log('API返回结果:', results)  
+
     // 收集并去重
     const facilityMap = new Map<string, any>()
     
