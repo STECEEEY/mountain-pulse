@@ -65,6 +65,15 @@ interface Facility {
   riskClass: string
 }
 
+interface PendingFacility {
+  id: string
+  name: string
+  type: string
+  detail: string
+  lat: number
+  lng: number
+}
+
 const selectedRegion = ref({
   name: '',
   area: -1,
@@ -76,7 +85,7 @@ const selectedRegion = ref({
 const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 
-// 设施类型对应的图标映射 - 添加默认类型
+// 设施类型对应的图标映射
 const getFacilityIcon = (type: string): string => {
   const iconMap: Record<string, string> = {
     '水库': '💧',
@@ -90,7 +99,6 @@ const getFacilityIcon = (type: string): string => {
     '交通枢纽': '🚉',
     '大坝': '🌊'
   }
-  // 确保type存在，如果不存在返回默认图标
   return iconMap[type] || '📍'
 }
 
@@ -190,9 +198,7 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
     }
     
     // 需要提取的关键设施类型
-    const facilityTypes = ['水库', '学校', '医院', '化工厂', '加油站', '桥梁', '隧道', '变电站']
-    
-    const allFacilities: any[] = []
+    const facilityTypes: string[] = ['水库', '学校', '医院', '化工厂', '加油站', '桥梁', '隧道', '变电站']
     
     // 并行请求各类设施
     const promises = facilityTypes.map(type => 
@@ -202,25 +208,26 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
     const results = await Promise.all(promises)
     
     // 合并去重（基于名称和坐标）
-    const facilityMap = new Map()
+    const facilityMap = new Map<string, PendingFacility>()
+    
     results.forEach((result, index) => {
-      // 修复：确保type有值，如果index超出范围则使用默认值
-      const type = index < facilityTypes.length ? facilityTypes[index] : '其他'
+      // 使用非空断言，因为index肯定在facilityTypes范围内
+      const currentType = facilityTypes[index]
       
       if (result.success && result.data && result.data.length > 0) {
         result.data.forEach((poi: any) => {
-          // 修复：确保id不为undefined
+          // 确保id不为undefined
           const poiId = poi.id || `${poi.title}_${poi.location.lat}_${poi.location.lng}`
           const key = `${poi.title}_${poi.location.lat}_${poi.location.lng}`
+          
           if (!facilityMap.has(key)) {
             facilityMap.set(key, {
               id: poiId,
               name: poi.title,
-              type: type, // 现在type保证是string
-              detail: poi.address || `${type}设施`,
+              type: currentType, // currentType 确保是 string
+              detail: poi.address || `${currentType}设施`,
               lat: poi.location.lat,
-              lng: poi.location.lng,
-              icon: getFacilityIcon(type) // 现在type保证是string
+              lng: poi.location.lng
             })
           }
         })
@@ -232,7 +239,7 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
       const { risk, riskClass } = calculateRiskLevel(facility, riskPoints)
       return {
         id: String(facility.id),
-        icon: facility.icon,
+        icon: getFacilityIcon(facility.type), // facility.type 确保是 string
         name: facility.name,
         detail: facility.detail,
         risk: risk,
