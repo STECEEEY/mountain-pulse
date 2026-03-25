@@ -21,19 +21,23 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
-      // 腾讯地图API代理
+      // 腾讯地图API代理 - 修改配置
       '/tencent-map': {
         target: 'https://apis.map.qq.com',
         changeOrigin: true,
+        secure: false,
         rewrite: (path) => path.replace(/^\/tencent-map/, ''),
         configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
-            console.log('腾讯地图代理错误:', err);
-          });
           proxy.on('proxyReq', (proxyReq, req, res) => {
-            // 添加必要的请求头
+            // 设置请求头
             proxyReq.setHeader('Origin', 'https://apis.map.qq.com');
             proxyReq.setHeader('Referer', 'https://apis.map.qq.com');
+          });
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('腾讯地图代理响应状态:', proxyRes.statusCode);
+          });
+          proxy.on('error', (err, req, res) => {
+            console.log('腾讯地图代理错误:', err);
           });
         }
       }
