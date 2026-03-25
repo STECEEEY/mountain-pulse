@@ -29,7 +29,6 @@
       </div>
     </div>
     
-    <!-- 显示当前选中的风险点 -->
     <div v-if="selectedRiskPoint" class="selected-risk">
       <div class="risk-title">
         <span class="risk-icon">⚠️</span>
@@ -60,7 +59,7 @@
           <div class="facility-info">
             <span class="facility-name">{{ facility.name }}</span>
             <span class="facility-detail">{{ facility.detail }}</span>
-            <span class="facility-distance" v-if="facility.distance">距离: {{ facility.distance }}m</span>
+            <span class="facility-distance">距离: {{ facility.distance }}m</span>
           </div>
           <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
         </div>
@@ -89,7 +88,7 @@ interface Facility {
   detail: string
   risk: string
   riskClass: string
-  distance?: number
+  distance: number
   lat: number
   lng: number
 }
@@ -123,7 +122,6 @@ const selectedRegion = ref({
 const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 
-// 设施类型对应的图标映射
 const getFacilityIcon = (type: string): string => {
   const iconMap: Record<string, string> = {
     '水库': '💧',
@@ -139,28 +137,10 @@ const getFacilityIcon = (type: string): string => {
   return iconMap[type] || '📍'
 }
 
-// 计算两点之间的距离（米）
-const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-  const R = 6371000
-  const rad = Math.PI / 180
-  const dLat = (lat2 - lat1) * rad
-  const dLng = (lng2 - lng1) * rad
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
-            Math.sin(dLng/2) * Math.sin(dLng/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return Math.round(R * c)
-}
-
-// 计算设施风险等级（基于与风险点的距离）
-const calculateRiskLevelByDistance = (distance: number): { risk: string; riskClass: string } => {
-  if (distance < 500) {
-    return { risk: '极高风险', riskClass: 'critical' }
-  } else if (distance < 1000) {
-    return { risk: '高风险', riskClass: 'high' }
-  } else if (distance < 2000) {
-    return { risk: '中风险', riskClass: 'medium' }
-  }
+const calculateRiskByDistance = (distance: number): { risk: string; riskClass: string } => {
+  if (distance < 500) return { risk: '极高风险', riskClass: 'critical' }
+  if (distance < 1000) return { risk: '高风险', riskClass: 'high' }
+  if (distance < 2000) return { risk: '中风险', riskClass: 'medium' }
   return { risk: '低风险', riskClass: 'low' }
 }
 
@@ -181,7 +161,6 @@ const loadRegion = async () => {
     const heightKm = Math.abs(config.bounds.north - config.bounds.south) * 111
     const areaKm2 = widthKm * heightKm
 
-    const totalPopulation = pointsPayload.points.reduce((sum, point) => sum + parseThreatPopulation(point.threat), 0)
     const rank: Record<CanonicalRiskLevel, number> = { 极高: 4, 高: 3, 中: 2, 低: 1, 未知: 0 }
     const maxLevel = pointsPayload.points.reduce<CanonicalRiskLevel>((current, point) => {
       const level = normalizeRiskLevel(point.level)
@@ -195,22 +174,12 @@ const loadRegion = async () => {
       riskPoints: pointsPayload.points.length,
       warningLevel: maxLevel === '未知' ? '' : `${maxLevel}预警`,
     }
-    
   } catch (error) {
     console.error('加载区域数据失败:', error)
-    selectedRegion.value = {
-      name: '',
-      area: -1,
-      population: -1,
-      riskPoints: 0,
-      warningLevel: '',
-    }
   }
 }
 
-// 监听选中的风险点变化，加载模拟设施数据
 watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
-  console.log('RegionDetail watch 触发, newRiskPoint:', newRiskPoint)
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
     await loadMockFacilities(newRiskPoint)
   } else {
@@ -219,15 +188,11 @@ watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
   }
 }, { immediate: true })
 
-// 加载模拟的关键设施数据（不调用 API）
 const loadMockFacilities = async (riskPoint: RiskPoint) => {
-  console.log('开始加载模拟设施数据, 风险点:', riskPoint)
   loadingFacilities.value = true
   
-  // 模拟异步加载
   setTimeout(() => {
-    // 设施类型和对应的图标
-    const facilityData = [
+    const mockData = [
       { name: '句容水库', type: '水库', detail: '库容1200万m³，距风险点较近' },
       { name: '南京师范大学', type: '学校', detail: '师生约3万人，需重点关注' },
       { name: '镇江市第一人民医院', type: '医院', detail: '床位500张，应急医疗资源' },
@@ -239,19 +204,17 @@ const loadMockFacilities = async (riskPoint: RiskPoint) => {
       { name: '句容客运站', type: '交通枢纽', detail: '日均客流5000人次' }
     ]
     
-    const mockList: Facility[] = []
-    
-    for (let i = 0; i < facilityData.length; i++) {
-      const data = facilityData[i]
-      // 随机生成距离（100-2000米）
+    const result: Facility[] = []
+    for (let i = 0; i < mockData.length; i++) {
+      const item = mockData[i]
       const distance = Math.floor(Math.random() * 1900 + 100)
-      const { risk, riskClass } = calculateRiskLevelByDistance(distance)
+      const { risk, riskClass } = calculateRiskByDistance(distance)
       
-      mockList.push({
+      result.push({
         id: `${i + 1}`,
-        icon: getFacilityIcon(data.type),
-        name: data.name,
-        detail: data.detail,
+        icon: getFacilityIcon(item.type),
+        name: item.name,
+        detail: item.detail,
         risk: risk,
         riskClass: riskClass,
         distance: distance,
@@ -260,18 +223,13 @@ const loadMockFacilities = async (riskPoint: RiskPoint) => {
       })
     }
     
-    // 按距离排序
-    mockList.sort((a, b) => (a.distance || 0) - (b.distance || 0))
-    
-    facilities.value = mockList
-    emit('facilitiesUpdate', mockList)
+    result.sort((a, b) => a.distance - b.distance)
+    facilities.value = result
+    emit('facilitiesUpdate', result)
     loadingFacilities.value = false
-    
-    console.log('模拟设施加载完成，共', mockList.length, '个设施')
-  }, 500)
+  }, 300)
 }
 
-// 点击设施，通知父组件定位
 const onFacilityClick = (facility: Facility) => {
   emit('facilityClick', {
     name: facility.name,
@@ -449,28 +407,23 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  font-weight: 700;
-  color: #9ad4f2;
   flex-shrink: 0;
 }
 
 .facility-info {
   flex: 1;
-  min-width: 0;
 }
 
 .facility-name {
   display: block;
   font-size: 13px;
   color: #e0f0ff;
-  word-break: break-word;
 }
 
 .facility-detail {
   display: block;
   font-size: 11px;
   color: #88a0b0;
-  word-break: break-word;
 }
 
 .facility-distance {
@@ -508,14 +461,7 @@ onMounted(() => {
   color: #88ff88;
 }
 
-.empty-facility {
-  color: #88a0b0;
-  font-size: 12px;
-  text-align: center;
-  padding: 20px;
-}
-
-.loading-facility {
+.empty-facility, .loading-facility {
   color: #88a0b0;
   font-size: 12px;
   text-align: center;
