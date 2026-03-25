@@ -25,9 +25,6 @@
       <!-- 风险分级 -->
       <RiskClassification v-if="activeTab === 'risk'" :point="selectedPoint" />
 
-      <!-- 历史回溯 -->
-      <HistoryReview v-if="activeTab === 'history'" :point="selectedPoint" />
-
       <!-- 风险分析 -->
       <RiskAnalysisPanel v-if="activeTab === 'risk-analysis'" />
 
@@ -43,7 +40,6 @@ import { Cpu, TrendCharts, Warning, Clock, Document, DataAnalysis } from '@eleme
 import AIDecisionCockpit from './AIDecisionCockpit.vue'
 import DeformationAnalysis from './DeformationAnalysis.vue'
 import RiskClassification from './RiskClassification.vue'
-import HistoryReview from './HistoryReview.vue'
 import PointDetail from './PointDetail.vue'
 import RiskAnalysisPanel from './RiskAnalysisPanel.vue'
 
@@ -64,7 +60,6 @@ const tabs = [
   { key: 'deformation', label: '形变分析', icon: TrendCharts },
   { key: 'risk', label: '风险分级', icon: Warning },
   { key: 'risk-analysis', label: '风险分析', icon: DataAnalysis },
-  { key: 'history', label: '历史回溯', icon: Clock },
   { key: 'detail', label: '数据详情', icon: Document },
 ]
 </script>
