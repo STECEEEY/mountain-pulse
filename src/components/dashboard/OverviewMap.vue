@@ -33,12 +33,6 @@
     </div>
   </div>
   
-  <!-- 添加 RegionDetail 组件 -->
-  <RegionDetail 
-    :selectedRiskPoint="selectedRiskPoint"
-    @facilitiesUpdate="handleFacilitiesUpdate"
-    @facilityClick="handleFacilityClick"
-  />
 </template>
 
 <script setup lang="ts">
