@@ -102,12 +102,6 @@ interface RiskPoint {
   level: string
 }
 
-interface MockFacilityItem {
-  name: string
-  type: string
-  detail: string
-}
-
 const props = defineProps<{
   selectedRiskPoint?: RiskPoint | null
 }>()
@@ -198,41 +192,120 @@ const loadMockFacilities = async (riskPoint: RiskPoint) => {
   loadingFacilities.value = true
   
   setTimeout(() => {
-    const mockData: MockFacilityItem[] = [
-      { name: '句容水库', type: '水库', detail: '库容1200万m³，距风险点较近' },
-      { name: '南京师范大学', type: '学校', detail: '师生约3万人，需重点关注' },
-      { name: '镇江市第一人民医院', type: '医院', detail: '床位500张，应急医疗资源' },
-      { name: '镇江化工园区', type: '化工厂', detail: '重点监管企业，风险较高' },
-      { name: '宁镇加油站', type: '加油站', detail: 'G312国道旁，日均服务300车次' },
-      { name: '润扬大桥', type: '桥梁', detail: '跨江通道，日均车流5万辆' },
-      { name: '磨盘山隧道', type: '隧道', detail: '宁镇公路关键通道' },
-      { name: '句容变电站', type: '变电站', detail: '区域电力供应关键节点' },
-      { name: '句容客运站', type: '交通枢纽', detail: '日均客流5000人次' }
-    ]
-    
-    const result: Facility[] = []
-    for (let i = 0; i < mockData.length; i++) {
-      const item = mockData[i]
-      // 使用非空断言，因为 item 肯定存在
-      const distance = Math.floor(Math.random() * 1900 + 100)
-      const { risk, riskClass } = calculateRiskByDistance(distance)
-      
-      result.push({
-        id: `${i + 1}`,
-        icon: getFacilityIcon(item.type),
-        name: item.name,
-        detail: item.detail,
-        risk: risk,
-        riskClass: riskClass,
-        distance: distance,
+    // 使用数组字面量，直接定义，避免循环中的 undefined 问题
+    const result: Facility[] = [
+      {
+        id: '1',
+        icon: getFacilityIcon('水库'),
+        name: '句容水库',
+        detail: '库容1200万m³，距风险点较近',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 500 + 100),
         lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
         lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
-      })
-    }
+      },
+      {
+        id: '2',
+        icon: getFacilityIcon('学校'),
+        name: '南京师范大学',
+        detail: '师生约3万人，需重点关注',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 800 + 500),
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      },
+      {
+        id: '3',
+        icon: getFacilityIcon('医院'),
+        name: '镇江市第一人民医院',
+        detail: '床位500张，应急医疗资源',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 1000 + 800),
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      },
+      {
+        id: '4',
+        icon: getFacilityIcon('化工厂'),
+        name: '镇江化工园区',
+        detail: '重点监管企业，风险较高',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 400 + 200),
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      },
+      {
+        id: '5',
+        icon: getFacilityIcon('加油站'),
+        name: '宁镇加油站',
+        detail: 'G312国道旁，日均服务300车次',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 600 + 400),
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      },
+      {
+        id: '6',
+        icon: getFacilityIcon('桥梁'),
+        name: '润扬大桥',
+        detail: '跨江通道，日均车流5万辆',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 900 + 700),
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      },
+      {
+        id: '7',
+        icon: getFacilityIcon('隧道'),
+        name: '磨盘山隧道',
+        detail: '宁镇公路关键通道',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 700 + 500),
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      },
+      {
+        id: '8',
+        icon: getFacilityIcon('变电站'),
+        name: '句容变电站',
+        detail: '区域电力供应关键节点',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 1100 + 900),
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      },
+      {
+        id: '9',
+        icon: getFacilityIcon('交通枢纽'),
+        name: '句容客运站',
+        detail: '日均客流5000人次',
+        risk: '',
+        riskClass: '',
+        distance: Math.floor(Math.random() * 1300 + 1000),
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      }
+    ]
     
-    result.sort((a, b) => a.distance - b.distance)
-    facilities.value = result
-    emit('facilitiesUpdate', result)
+    // 计算每个设施的风险等级
+    const finalResult = result.map(item => {
+      const { risk, riskClass } = calculateRiskByDistance(item.distance)
+      return { ...item, risk, riskClass }
+    })
+    
+    // 按距离排序
+    finalResult.sort((a, b) => a.distance - b.distance)
+    
+    facilities.value = finalResult
+    emit('facilitiesUpdate', finalResult)
     loadingFacilities.value = false
   }, 300)
 }
