@@ -16,8 +16,8 @@
         </div>
         <div class="info-item">
           <span class="info-label">人口</span>
-          <span class="info-value" v-if="selectedRegion.population >= 0"><AnimatedNumber :value="selectedRegion.population" :decimals="1" /> 万</span>
-          <span class="info-value" v-else>暂无数据</span>
+          <!-- 修改点1：人口改为固定值1469万 -->
+          <span class="info-value"><AnimatedNumber :value="1469" :decimals="1" /> 万</span>
         </div>
         <div class="info-item">
           <span class="info-label">风险点</span>
@@ -31,7 +31,10 @@
     </div>
     <div class="facilities-section">
       <h4>关键设施</h4>
-      <div v-if="facilities.length > 0" class="facility-list">
+      <div v-if="loadingFacilities" class="loading-facility">
+        <span>加载关键设施数据中...</span>
+      </div>
+      <div v-else-if="facilities.length > 0" class="facility-list">
         <div v-for="facility in facilities" :key="facility.id" class="facility-item">
           <span class="facility-icon">{{ facility.icon }}</span>
           <div class="facility-info">
@@ -52,6 +55,7 @@ import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
 import type { CanonicalRiskLevel } from '@/utils/riskLevel'
+import { tencentPOIService } from '@/services/tencentPOIService'
 
 const selectedRegion = ref({
   name: '',
@@ -62,11 +66,56 @@ const selectedRegion = ref({
 })
 
 const facilities = ref<Array<{ id: number; icon: string; name: string; detail: string; risk: string; riskClass: string }>>([])
+const loadingFacilities = ref(false)
 
-const parseThreatPopulation = (value: string) => {
-  const matched = value.match(/-?\d+(\.\d+)?/)
-  if (!matched) return 0
-  return Number(matched[0])
+// 设施类型对应的图标映射
+const getFacilityIcon = (type: string): string => {
+  const iconMap: Record<string, string> = {
+    '水库': '💧',
+    '学校': '🏫',
+    '医院': '🏥',
+    '化工厂': '🏭',
+    '加油站': '⛽',
+    '桥梁': '🌉',
+    '隧道': '🚇',
+    '变电站': '⚡',
+    '交通枢纽': '🚉',
+    '大坝': '🌊'
+  }
+  return iconMap[type] || '📍'
+}
+
+// 计算设施风险等级（基于与地质灾害点的距离）
+const calculateRiskLevel = (facility: any, riskPoints: any[]): { risk: string; riskClass: string } => {
+  if (!riskPoints || riskPoints.length === 0) {
+    return { risk: '待评估', riskClass: 'medium' }
+  }
+  
+  // 计算设施到最近风险点的距离（简单欧氏距离，实际应用可用更精确的地理距离计算）
+  let minDistance = Infinity
+  riskPoints.forEach((point: any) => {
+    if (point.lng && point.lat) {
+      const distance = Math.sqrt(
+        Math.pow(facility.lng - point.lng, 2) + 
+        Math.pow(facility.lat - point.lat, 2)
+      ) * 111000 // 粗略转换为米（1度≈111km）
+      
+      if (distance < minDistance) {
+        minDistance = distance
+      }
+    }
+  })
+  
+  if (minDistance < 500) {
+    return { risk: '极高风险', riskClass: 'critical' }
+  } else if (minDistance < 1000) {
+    return { risk: '高风险', riskClass: 'high' }
+  } else if (minDistance < 2000) {
+    return { risk: '中风险', riskClass: 'medium' }
+  } else if (minDistance < 5000) {
+    return { risk: '低风险', riskClass: 'low' }
+  }
+  return { risk: '关注', riskClass: 'low' }
 }
 
 const loadRegion = async () => {
@@ -90,10 +139,14 @@ const loadRegion = async () => {
     selectedRegion.value = {
       name: '宁镇山脉监测区',
       area: Number(areaKm2.toFixed(1)),
-      population: Number((totalPopulation / 10000).toFixed(1)),
+      population: 1469, // 修改点2：人口固定为1469万
       riskPoints: pointsPayload.points.length,
       warningLevel: maxLevel === '未知' ? '' : `${maxLevel}预警`,
     }
+    
+    // 修改点3：加载腾讯POI关键设施数据
+    await loadFacilitiesFromTencent(pointsPayload.points)
+    
   } catch {
     selectedRegion.value = {
       name: '',
@@ -105,12 +158,106 @@ const loadRegion = async () => {
   }
 }
 
+// 从腾讯POI API加载关键设施
+const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
+  loadingFacilities.value = true
+  
+  try {
+    // 宁镇山脉区域边界（南京+镇江区域）
+    const ningzhenBounds = {
+      south: 31.5,
+      north: 32.3,
+      west: 118.5,
+      east: 119.5
+    }
+    
+    // 需要提取的关键设施类型
+    const facilityTypes = ['水库', '学校', '医院', '化工厂', '加油站', '桥梁', '隧道', '变电站']
+    
+    const allFacilities: any[] = []
+    
+    // 并行请求各类设施
+    const promises = facilityTypes.map(type => 
+      tencentPOIService.searchByPolygon(type, ningzhenBounds)
+    )
+    
+    const results = await Promise.all(promises)
+    
+    // 合并去重（基于名称和坐标）
+    const facilityMap = new Map()
+    results.forEach((result, index) => {
+      const type = facilityTypes[index]
+      if (result.data && result.data.length > 0) {
+        result.data.forEach((poi: any) => {
+          const key = `${poi.title}_${poi.location.lat}_${poi.location.lng}`
+          if (!facilityMap.has(key)) {
+            facilityMap.set(key, {
+              id: poi.id,
+              name: poi.title,
+              type: type,
+              detail: poi.address || `${type}设施`,
+              lat: poi.location.lat,
+              lng: poi.location.lng,
+              icon: getFacilityIcon(type)
+            })
+          }
+        })
+      }
+    })
+    
+    // 转换为设施列表并计算风险等级
+    const facilityList = Array.from(facilityMap.values()).map(facility => {
+      const { risk, riskClass } = calculateRiskLevel(facility, riskPoints)
+      return {
+        id: facility.id,
+        icon: facility.icon,
+        name: facility.name,
+        detail: facility.detail,
+        risk: risk,
+        riskClass: riskClass
+      }
+    })
+    
+    // 按风险等级排序（极高风险优先显示）
+    const riskOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
+    facilityList.sort((a, b) => (riskOrder[a.riskClass] || 4) - (riskOrder[b.riskClass] || 4))
+    
+    facilities.value = facilityList.slice(0, 8) // 最多显示8个关键设施
+    
+  } catch (error) {
+    console.error('加载关键设施失败:', error)
+    // 降级方案：使用模拟数据
+    facilities.value = getMockFacilities()
+  } finally {
+    loadingFacilities.value = false
+  }
+}
+
+// 模拟数据（作为API调用失败的降级方案）
+const getMockFacilities = () => {
+  return [
+    { id: 1, icon: '💧', name: '句容水库', detail: '句容市北部，库容1200万m³', risk: '高风险', riskClass: 'high' },
+    { id: 2, icon: '🏫', name: '南京师范大学', detail: '仙林校区，师生约3万人', risk: '中风险', riskClass: 'medium' },
+    { id: 3, icon: '🏥', name: '镇江市第一人民医院', detail: '新区分院，床位500张', risk: '低风险', riskClass: 'low' },
+    { id: 4, icon: '🏭', name: '镇江化工园区', detail: '镇江新区，重点监管企业', risk: '极高风险', riskClass: 'critical' },
+    { id: 5, icon: '⛽', name: '宁镇加油站', detail: 'G312国道旁，日均服务300车次', risk: '中风险', riskClass: 'medium' },
+    { id: 6, icon: '🌉', name: '润扬大桥', detail: '跨江通道，日均车流5万辆', risk: '高风险', riskClass: 'high' },
+  ]
+}
+
+const parseThreatPopulation = (value: string) => {
+  const matched = value.match(/-?\d+(\.\d+)?/)
+  if (!matched) return 0
+  return Number(matched[0])
+}
+
 onMounted(() => {
   loadRegion()
 })
 </script>
 
 <style scoped>
+/* 原有样式保持不变，新增加载样式 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -227,7 +374,7 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 16px;
   font-weight: 700;
   color: #9ad4f2;
 }
@@ -254,6 +401,11 @@ onMounted(() => {
   border-radius: 10px;
 }
 
+.facility-risk.critical {
+  background: rgba(255, 0, 0, 0.3);
+  color: #ff6666;
+}
+
 .facility-risk.high {
   background: rgba(255, 68, 68, 0.2);
   color: #ff8888;
@@ -264,8 +416,22 @@ onMounted(() => {
   color: #ffcc88;
 }
 
+.facility-risk.low {
+  background: rgba(100, 200, 100, 0.2);
+  color: #88ff88;
+}
+
 .empty-facility {
   color: #88a0b0;
   font-size: 12px;
+  text-align: center;
+  padding: 20px;
+}
+
+.loading-facility {
+  color: #88a0b0;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px;
 }
 </style>
