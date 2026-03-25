@@ -9,6 +9,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/tencent",
+      "destination": "/api/tencent.ts"
+    },
+    {
       "source": "/api/deformation/(.*)",
       "destination": "http://47.102.147.118:8000/api/deformation/$1"
     },
