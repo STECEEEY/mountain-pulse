@@ -1,6 +1,6 @@
 // src/services/tencentPOIService.ts
 
-const TENCENT_MAP_KEY = '5YUBZ-S7WKZ-OFJXR-7PKHU-CTZV5-LPBLR'
+const TENCENT_MAP_KEY = 'DJ4BZ-QHNH4-IDFUT-KAYGK-Y2VG2-47FQM'
 
 export const tencentPOIService = {
   async searchByPolygon(keyword: string, bounds: { south: number; north: number; west: number; east: number }) {
