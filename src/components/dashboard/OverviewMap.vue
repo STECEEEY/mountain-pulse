@@ -32,7 +32,11 @@
       </div>
     </div>
   </div>
-  
+  <RegionDetail 
+    :selectedRiskPoint="selectedRiskPoint"
+    @facilitiesUpdate="handleFacilitiesUpdate"
+    @facilityClick="handleFacilityClick"
+  />
 </template>
 
 <script setup lang="ts">
@@ -411,6 +415,25 @@ const updateLayerVisibility = () => {
   setLayerVisibility(OVERVIEW_DISASTER_POINTS_LAYER_ID, layers.disasterPoints)
   if (map && map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) {
     map.setPaintProperty(OVERVIEW_RISK_MAP_LAYER_ID, 'raster-opacity', riskMapOpacity.value)
+  }
+}
+
+const handleFacilitiesUpdate = (facilities: any[]) => {
+  console.log('收到设施更新:', facilities)
+  // 如果有地图标记功能，在这里添加
+  if (map && facilities.length > 0) {
+    addFacilityMarkers(facilities)
+  }
+}
+
+const handleFacilityClick = (facility: { name: string; lat: number; lng: number; type: string }) => {
+  console.log('设施点击:', facility)
+  if (map) {
+    map.flyTo({
+      center: [facility.lng, facility.lat],
+      zoom: 16,
+      duration: 1000
+    })
   }
 }
 
