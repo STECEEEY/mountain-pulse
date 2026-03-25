@@ -31,6 +31,11 @@
         <span>低风险</span>
       </div>
     </div>
+    <RegionDetail 
+      :selectedRiskPoint="selectedRiskPoint"
+      @facilitiesUpdate="handleFacilitiesUpdate"
+      @facilityClick="handleFacilityClick"
+    />
   </div>
   
 </template>
