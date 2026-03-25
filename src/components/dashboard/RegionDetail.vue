@@ -57,7 +57,7 @@ import type { CanonicalRiskLevel } from '@/utils/riskLevel'
 import { tencentPOIService } from '@/services/tencentPOIService'
 
 interface Facility {
-  id: string  // 改为string类型
+  id: string
   icon: string
   name: string
   detail: string
@@ -76,7 +76,7 @@ const selectedRegion = ref({
 const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 
-// 设施类型对应的图标映射
+// 设施类型对应的图标映射 - 添加默认类型
 const getFacilityIcon = (type: string): string => {
   const iconMap: Record<string, string> = {
     '水库': '💧',
@@ -90,6 +90,7 @@ const getFacilityIcon = (type: string): string => {
     '交通枢纽': '🚉',
     '大坝': '🌊'
   }
+  // 确保type存在，如果不存在返回默认图标
   return iconMap[type] || '📍'
 }
 
@@ -192,7 +193,7 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
     const facilityTypes = ['水库', '学校', '医院', '化工厂', '加油站', '桥梁', '隧道', '变电站']
     
     const allFacilities: any[] = []
-    const type = index < facilityTypes.length ? facilityTypes[index] : '其他'
+    
     // 并行请求各类设施
     const promises = facilityTypes.map(type => 
       tencentPOIService.searchByPolygon(type, ningzhenBounds)
@@ -203,21 +204,23 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
     // 合并去重（基于名称和坐标）
     const facilityMap = new Map()
     results.forEach((result, index) => {
-      const type = facilityTypes[index]
+      // 修复：确保type有值，如果index超出范围则使用默认值
+      const type = index < facilityTypes.length ? facilityTypes[index] : '其他'
+      
       if (result.success && result.data && result.data.length > 0) {
         result.data.forEach((poi: any) => {
-          // 修复：使用poi.id，如果不存在则生成一个临时ID
+          // 修复：确保id不为undefined
           const poiId = poi.id || `${poi.title}_${poi.location.lat}_${poi.location.lng}`
           const key = `${poi.title}_${poi.location.lat}_${poi.location.lng}`
           if (!facilityMap.has(key)) {
             facilityMap.set(key, {
-              id: poiId,  // 确保id不为undefined
+              id: poiId,
               name: poi.title,
-              type: type,
+              type: type, // 现在type保证是string
               detail: poi.address || `${type}设施`,
               lat: poi.location.lat,
               lng: poi.location.lng,
-              icon: getFacilityIcon(type)
+              icon: getFacilityIcon(type) // 现在type保证是string
             })
           }
         })
@@ -228,7 +231,7 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
     const facilityList: Facility[] = Array.from(facilityMap.values()).map(facility => {
       const { risk, riskClass } = calculateRiskLevel(facility, riskPoints)
       return {
-        id: String(facility.id),  // 确保转换为string类型
+        id: String(facility.id),
         icon: facility.icon,
         name: facility.name,
         detail: facility.detail,
