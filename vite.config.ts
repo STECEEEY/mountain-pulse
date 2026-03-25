@@ -15,26 +15,25 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      // 你的后端API代理
       '/api': {
         target: 'http://47.102.147.118:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
-      // 地质云代理配置
-      '/geology-cloud': {
-        target: 'https://igss.cgs.gov.cn:6160',
+      // 腾讯地图API代理
+      '/tencent-map': {
+        target: 'https://apis.map.qq.com',
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/geology-cloud/, ''),
+        rewrite: (path) => path.replace(/^\/tencent-map/, ''),
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
-            console.log('proxy error', err);
+            console.log('腾讯地图代理错误:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, res) => {
             // 添加必要的请求头
-            proxyReq.setHeader('Origin', 'https://igss.cgs.gov.cn');
-            proxyReq.setHeader('Referer', 'https://igss.cgs.gov.cn');
-            proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+            proxyReq.setHeader('Origin', 'https://apis.map.qq.com');
+            proxyReq.setHeader('Referer', 'https://apis.map.qq.com');
           });
         }
       }
