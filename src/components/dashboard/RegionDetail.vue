@@ -1,5 +1,8 @@
 <template>
-<!-- 添加测试div，看样式是否生效 -->
+<!-- 添加这行测试，看是否收到数据 -->
+  <div style="background: orange; padding: 5px; margin: 5px;">
+    收到风险点: {{ selectedRiskPoint?.name || '无' }}
+  </div>
   <div class="detail-card">
     <div class="card-header">
       <h3 class="card-title">区域详情</h3>
