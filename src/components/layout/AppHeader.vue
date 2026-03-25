@@ -2,7 +2,7 @@
   <header class="app-header dark-mode">
     <div class="header-left">
       <div class="logo-tag">DZ</div>
-      <div class="logo-title">山体脉搏 — 融合InSAR与机器学习的地质灾害早期识别与风险分级平台</div>
+      <div class="logo-title">山体脉搏 — 融合InSAR与机器学习的地质灾害识别与风险预警系统</div>
     </div>
 
     <div class="header-center">
