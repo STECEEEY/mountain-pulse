@@ -335,10 +335,12 @@ const addDisasterPointsLayer = () => {
   })
 
   map.on('click', OVERVIEW_DISASTER_POINTS_LAYER_ID, (e) => {
+      console.log('风险点被点击了', e)
     const feature = e.features?.[0]
     if (!feature || !feature.properties) return
 
     const pointProps = feature.properties as any
+    console.log('风险点数据:', pointProps)
 
     // 设置选中的风险点，传递给 RegionDetail
     selectedRiskPoint.value = {
@@ -349,6 +351,7 @@ const addDisasterPointsLayer = () => {
       threat: pointProps.threat,
       level: pointProps.level,
     }
+    console.log('selectedRiskPoint 已设置:', selectedRiskPoint.value)
 
     emit('select-point', {
       id: pointProps.id,
