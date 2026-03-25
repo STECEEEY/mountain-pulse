@@ -1,37 +1,25 @@
 // src/services/tencentPOIService.ts
 
-const TENCENT_MAP_KEY = 'DJ4BZ-QHNH4-IDFUT-KAYGK-Y2VG2-47FQM'
-
 export const tencentPOIService = {
   async searchByPolygon(keyword: string, bounds: { south: number; north: number; west: number; east: number }) {
     const params = new URLSearchParams({
       keyword: keyword,
       boundary: `rectangle(${bounds.south},${bounds.west},${bounds.north},${bounds.east})`,
-      page_size: '20',
-      key: TENCENT_MAP_KEY
+      page_size: '20'
     })
     
-    // 使用 Vercel Serverless Function
+    // 直接调用代理，不再传递 key 参数（因为 key 在后端）
     const url = `/api/tencent?${params.toString()}`
-    
-    console.log('请求URL:', url)
     
     try {
       const response = await fetch(url)
-      
-      if (!response.ok) {
-        console.error('HTTP错误:', response.status)
-        return { success: false, data: [], message: `HTTP ${response.status}` }
-      }
-      
       const data = await response.json()
-      console.log('API响应:', data)
       
       if (data.status === 0) {
         return {
           success: true,
           data: data.data.map((item: any) => ({
-            id: item.id || `${item.title}_${item.location.lat}_${item.location.lng}`,
+            id: item.id,
             title: item.title,
             address: item.address,
             category: item.category,
