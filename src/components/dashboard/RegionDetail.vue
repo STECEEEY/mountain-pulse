@@ -192,7 +192,7 @@ const loadFacilitiesFromTencent = async (riskPoints: any[]) => {
     const facilityTypes = ['水库', '学校', '医院', '化工厂', '加油站', '桥梁', '隧道', '变电站']
     
     const allFacilities: any[] = []
-    
+    const type = index < facilityTypes.length ? facilityTypes[index] : '其他'
     // 并行请求各类设施
     const promises = facilityTypes.map(type => 
       tencentPOIService.searchByPolygon(type, ningzhenBounds)
