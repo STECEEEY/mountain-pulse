@@ -81,7 +81,6 @@ import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
 import type { CanonicalRiskLevel } from '@/utils/riskLevel'
-import { tencentPOIService } from '@/services/tencentPOIService'
 
 interface Facility {
   id: string
@@ -123,7 +122,6 @@ const selectedRegion = ref({
 
 const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
-const allRiskPoints = ref<any[]>([]) // 存储所有风险点数据
 
 // 设施类型对应的图标映射
 const getFacilityIcon = (type: string): string => {
@@ -136,10 +134,7 @@ const getFacilityIcon = (type: string): string => {
     '桥梁': '🌉',
     '隧道': '🚇',
     '变电站': '⚡',
-    '交通枢纽': '🚉',
-    '地铁站': '🚇',
-    '客运站': '🚌',
-    '风景区': '🏞️'
+    '交通枢纽': '🚉'
   }
   return iconMap[type] || '📍'
 }
@@ -166,7 +161,7 @@ const calculateRiskLevelByDistance = (distance: number): { risk: string; riskCla
   } else if (distance < 2000) {
     return { risk: '中风险', riskClass: 'medium' }
   }
-  return { risk: '关注', riskClass: 'low' }
+  return { risk: '低风险', riskClass: 'low' }
 }
 
 const parseThreatPopulation = (value: string) => {
@@ -201,9 +196,6 @@ const loadRegion = async () => {
       warningLevel: maxLevel === '未知' ? '' : `${maxLevel}预警`,
     }
     
-    // 保存所有风险点数据
-    allRiskPoints.value = pointsPayload.points
-    
   } catch (error) {
     console.error('加载区域数据失败:', error)
     selectedRegion.value = {
@@ -216,108 +208,67 @@ const loadRegion = async () => {
   }
 }
 
-// 监听选中的风险点变化，加载周边设施
+// 监听选中的风险点变化，加载模拟设施数据
 watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
-    console.log('RegionDetail watch 触发, newRiskPoint:', newRiskPoint) 
+  console.log('RegionDetail watch 触发, newRiskPoint:', newRiskPoint)
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
-      console.log('开始加载周边设施, 风险点坐标:', newRiskPoint.lat, newRiskPoint.lng)  // 添加这行
-    await loadFacilitiesAroundRiskPoint(newRiskPoint)
+    await loadMockFacilities(newRiskPoint)
   } else {
-      console.log('风险点数据不完整，跳过加载')  // 添加这行
     facilities.value = []
+    emit('facilitiesUpdate', [])
   }
 }, { immediate: true })
 
-// 加载风险点周边的关键设施
-const loadFacilitiesAroundRiskPoint = async (riskPoint: RiskPoint) => {
-  console.log('===== 开始加载周边设施 =====')
-  console.log('风险点坐标:', riskPoint.lat, riskPoint.lng)
+// 加载模拟的关键设施数据（不调用 API）
+const loadMockFacilities = async (riskPoint: RiskPoint) => {
+  console.log('开始加载模拟设施数据, 风险点:', riskPoint)
   loadingFacilities.value = true
   
-  try {
-    const radius = 2000
-    
-    const facilityTypes = [
-      '水库', '学校', '医院', '化工厂', '加油站', 
-      '桥梁', '隧道', '变电站', '交通枢纽'
+  // 模拟异步加载
+  setTimeout(() => {
+    // 设施类型和对应的图标
+    const facilityData = [
+      { name: '句容水库', type: '水库', detail: '库容1200万m³，距风险点较近' },
+      { name: '南京师范大学', type: '学校', detail: '师生约3万人，需重点关注' },
+      { name: '镇江市第一人民医院', type: '医院', detail: '床位500张，应急医疗资源' },
+      { name: '镇江化工园区', type: '化工厂', detail: '重点监管企业，风险较高' },
+      { name: '宁镇加油站', type: '加油站', detail: 'G312国道旁，日均服务300车次' },
+      { name: '润扬大桥', type: '桥梁', detail: '跨江通道，日均车流5万辆' },
+      { name: '磨盘山隧道', type: '隧道', detail: '宁镇公路关键通道' },
+      { name: '句容变电站', type: '变电站', detail: '区域电力供应关键节点' },
+      { name: '句容客运站', type: '交通枢纽', detail: '日均客流5000人次' }
     ]
     
-    console.log('设施类型列表:', facilityTypes)
+    const mockList: Facility[] = []
     
-    const facilityMap = new Map<string, any>()
-    
-    // 改为串行请求，避免超过并发限制
-    for (let i = 0; i < facilityTypes.length; i++) {
-      const type = facilityTypes[i]
-      console.log(`正在搜索第 ${i + 1}/${facilityTypes.length} 种设施: ${type}`)
+    for (let i = 0; i < facilityData.length; i++) {
+      const data = facilityData[i]
+      // 随机生成距离（100-2000米）
+      const distance = Math.floor(Math.random() * 1900 + 100)
+      const { risk, riskClass } = calculateRiskLevelByDistance(distance)
       
-      try {
-        const result = await tencentPOIService.searchNearby(type, riskPoint.lat, riskPoint.lng, radius)
-        console.log(`${type} 搜索结果:`, result)
-        
-        if (result.success && result.data && result.data.length > 0) {
-          console.log(`${type} 找到 ${result.data.length} 个设施`)
-          result.data.forEach((poi: any) => {
-            const key = `${poi.title}_${poi.location.lat}_${poi.location.lng}`
-            if (!facilityMap.has(key)) {
-              const distance = calculateDistance(
-                riskPoint.lat, riskPoint.lng,
-                poi.location.lat, poi.location.lng
-              )
-              
-              facilityMap.set(key, {
-                id: poi.id || `${poi.title}_${poi.location.lat}_${poi.location.lng}`,
-                name: poi.title,
-                type: type,
-                detail: poi.address || `${type}设施`,
-                lat: poi.location.lat,
-                lng: poi.location.lng,
-                icon: getFacilityIcon(type),
-                distance: distance
-              })
-            }
-          })
-        } else {
-          console.log(`${type} 没有找到设施, 原因:`, result.message)
-        }
-      } catch (err) {
-        console.error(`${type} 搜索出错:`, err)
-      }
-      
-      // 添加延时，避免超过并发限制
-      await new Promise(resolve => setTimeout(resolve, 300))
-    }
-    
-    console.log('总共收集到设施数量:', facilityMap.size)
-    
-    const facilityList: Facility[] = Array.from(facilityMap.values()).map(facility => {
-      const { risk, riskClass } = calculateRiskLevelByDistance(facility.distance)
-      return {
-        id: String(facility.id),
-        icon: facility.icon,
-        name: facility.name,
-        detail: facility.detail,
+      mockList.push({
+        id: `${i + 1}`,
+        icon: getFacilityIcon(data.type),
+        name: data.name,
+        detail: data.detail,
         risk: risk,
         riskClass: riskClass,
-        distance: facility.distance,
-        lat: facility.lat,
-        lng: facility.lng
-      }
-    })
+        distance: distance,
+        lat: riskPoint.lat + (Math.random() - 0.5) * 0.02,
+        lng: riskPoint.lng + (Math.random() - 0.5) * 0.02
+      })
+    }
     
-    facilityList.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
-    console.log('最终设施列表:', facilityList)
+    // 按距离排序
+    mockList.sort((a, b) => (a.distance || 0) - (b.distance || 0))
     
-    facilities.value = facilityList.slice(0, 10)
-    emit('facilitiesUpdate', facilities.value)
-    console.log('===== 加载完成 =====')
-    
-  } catch (error) {
-    console.error('加载周边设施失败:', error)
-    facilities.value = []
-  } finally {
+    facilities.value = mockList
+    emit('facilitiesUpdate', mockList)
     loadingFacilities.value = false
-  }
+    
+    console.log('模拟设施加载完成，共', mockList.length, '个设施')
+  }, 500)
 }
 
 // 点击设施，通知父组件定位
@@ -418,6 +369,35 @@ onMounted(() => {
   color: #ffaa00;
 }
 
+.selected-risk {
+  background: rgba(255, 100, 0, 0.15);
+  border-left: 3px solid #ffaa00;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 16px;
+}
+
+.risk-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffaa00;
+  margin-bottom: 6px;
+}
+
+.risk-icon {
+  font-size: 14px;
+}
+
+.risk-detail {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: #a0c0d0;
+}
+
 .facilities-section {
   border-top: 1px solid rgba(0, 150, 255, 0.1);
   padding-top: 16px;
@@ -429,11 +409,17 @@ onMounted(() => {
   color: #a0d0ff;
 }
 
+.facility-tip {
+  font-size: 11px;
+  color: #88a0b0;
+  font-weight: normal;
+}
+
 .facility-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 400px;
+  max-height: 320px;
   overflow-y: auto;
 }
 
@@ -522,41 +508,6 @@ onMounted(() => {
   color: #88ff88;
 }
 
-.selected-risk {
-  background: rgba(255, 100, 0, 0.15);
-  border-left: 3px solid #ffaa00;
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 16px;
-}
-
-.risk-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #ffaa00;
-  margin-bottom: 6px;
-}
-
-.risk-icon {
-  font-size: 14px;
-}
-
-.risk-detail {
-  display: flex;
-  gap: 16px;
-  font-size: 11px;
-  color: #a0c0d0;
-}
-
-.facility-tip {
-  font-size: 11px;
-  color: #88a0b0;
-  font-weight: normal;
-}
-
 .empty-facility {
   color: #88a0b0;
   font-size: 12px;
@@ -571,7 +522,6 @@ onMounted(() => {
   padding: 20px;
 }
 
-/* 滚动条样式 */
 .facility-list::-webkit-scrollbar {
   width: 4px;
 }
@@ -584,9 +534,5 @@ onMounted(() => {
 .facility-list::-webkit-scrollbar-thumb {
   background: rgba(0, 200, 255, 0.5);
   border-radius: 4px;
-}
-
-.facility-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 200, 255, 0.8);
 }
 </style>
