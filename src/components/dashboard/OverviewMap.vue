@@ -32,6 +32,13 @@
       </div>
     </div>
   </div>
+  
+  <!-- 添加 RegionDetail 组件 -->
+  <RegionDetail 
+    :selectedRiskPoint="selectedRiskPoint"
+    @facilitiesUpdate="handleFacilitiesUpdate"
+    @facilityClick="handleFacilityClick"
+  />
 </template>
 
 <script setup lang="ts">
@@ -41,6 +48,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { riskService } from '@/services/riskService'
 import type { HighRiskGeoJSON, MapConfig, RiskPoint } from '@/types/risk'
 import { getRiskLevelColor } from '@/utils/riskLevel'
+import RegionDetail from './RegionDetail.vue'  // 引入 RegionDetail
 
 const mapRef = ref<HTMLElement>()
 let map: mapboxgl.Map | null = null
@@ -50,6 +58,11 @@ const layers = reactive({
   disasterPoints: true,
 })
 const riskMapOpacity = ref(0.45)
+
+// 添加选中的风险点状态
+const selectedRiskPoint = ref<any>(null)
+// 存储设施标记，用于在地图上显示
+const facilityMarkers = ref<any[]>([])
 
 const OVERVIEW_RISK_MAP_SOURCE_ID = 'overview-risk-map-source'
 const OVERVIEW_RISK_MAP_LAYER_ID = 'overview-risk-map-layer'
@@ -148,21 +161,16 @@ const addRiskMapLayer = () => {
 
   const { west, east, south, north } = mapConfig.bounds
   
-  // 图片缩放参数（直接修改边界值来实现缩放）
-  const scale = 1.2  // 整体放大10%
-  // 偏移参数
-  const rightShift = 0.15 // 右移
-  const downShift = -0.05  // 下移（负值）
+  const scale = 1.2
+  const rightShift = 0.15
+  const downShift = -0.05
   
-  // 计算原始宽高
   const originalWidth = east - west
   const originalHeight = north - south
   
-  // 计算缩放后的宽高
   const scaledWidth = originalWidth * scale
   const scaledHeight = originalHeight * scale
   
-  // 计算缩放后的新边界（居中缩放）
   const centerX = (west + east) / 2
   const centerY = (north + south) / 2
   
@@ -171,7 +179,6 @@ const addRiskMapLayer = () => {
   const newSouth = centerY - scaledHeight / 2 + downShift
   const newNorth = centerY + scaledHeight / 2 + downShift
 
-  // 如果地图源已存在，先移除
   if (map.getSource(OVERVIEW_RISK_MAP_SOURCE_ID)) {
     map.removeSource(OVERVIEW_RISK_MAP_SOURCE_ID)
   }
@@ -180,14 +187,13 @@ const addRiskMapLayer = () => {
     type: 'image',
     url: '/data/risk_map.png', 
     coordinates: [
-      [newWest, newNorth],      // 左上角
-      [newEast, newNorth],      // 右上角
-      [newEast, newSouth],      // 右下角
-      [newWest, newSouth],      // 左下角
+      [newWest, newNorth],
+      [newEast, newNorth],
+      [newEast, newSouth],
+      [newWest, newSouth],
     ],
   })
 
-  // 如果图层已存在，不需要重新添加
   if (!map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) {
     map.addLayer({
       id: OVERVIEW_RISK_MAP_LAYER_ID,
@@ -230,6 +236,51 @@ const addHighRiskAreaLayer = () => {
   })
 }
 
+// 清除设施标记
+const clearFacilityMarkers = () => {
+  facilityMarkers.value.forEach(marker => {
+    marker.remove()
+  })
+  facilityMarkers.value = []
+}
+
+// 添加设施标记到地图
+const addFacilityMarkers = (facilities: any[]) => {
+  clearFacilityMarkers()
+  
+  facilities.forEach(facility => {
+    const popup = new mapboxgl.Popup({ offset: 25, className: 'facility-popup' })
+      .setHTML(`
+        <div class="popup-content">
+          <strong>${facility.name}</strong><br/>
+          <span>类型：${facility.icon}</span><br/>
+          <span>风险等级：${facility.risk}</span><br/>
+          <span>距离风险点：${facility.distance}m</span>
+        </div>
+      `)
+    
+    const marker = new mapboxgl.Marker({
+      color: getFacilityMarkerColor(facility.riskClass),
+      scale: 0.8
+    })
+      .setLngLat([facility.lng, facility.lat])
+      .setPopup(popup)
+      .addTo(map!)
+    
+    facilityMarkers.value.push(marker)
+  })
+}
+
+// 根据风险等级获取标记颜色
+const getFacilityMarkerColor = (riskClass: string): string => {
+  switch (riskClass) {
+    case 'critical': return '#ff0000'
+    case 'high': return '#ff8800'
+    case 'medium': return '#ffdd00'
+    default: return '#00ff88'
+  }
+}
+
 const addDisasterPointsLayer = () => {
   if (!map || map.getLayer(OVERVIEW_DISASTER_POINTS_LAYER_ID)) return
 
@@ -246,6 +297,8 @@ const addDisasterPointsLayer = () => {
           type: item.type,
           velocity: item.velocity,
           threat: item.threat,
+          lat: item.latitude,
+          lng: item.longitude,
         },
         geometry: {
           type: 'Point',
@@ -285,13 +338,16 @@ const addDisasterPointsLayer = () => {
     const feature = e.features?.[0]
     if (!feature || !feature.properties) return
 
-    const pointProps = feature.properties as {
-      id: number
-      name: string
-      level: string
-      type: string
-      velocity: number
-      threat: string
+    const pointProps = feature.properties as any
+
+    // 设置选中的风险点，传递给 RegionDetail
+    selectedRiskPoint.value = {
+      id: pointProps.id,
+      name: pointProps.name,
+      lat: pointProps.lat,
+      lng: pointProps.lng,
+      threat: pointProps.threat,
+      level: pointProps.level,
     }
 
     emit('select-point', {
@@ -316,6 +372,36 @@ const addDisasterPointsLayer = () => {
       `)
       .addTo(map!)
   })
+}
+
+// 处理设施更新，在地图上显示标记
+const handleFacilitiesUpdate = (facilities: any[]) => {
+  if (map) {
+    addFacilityMarkers(facilities)
+  }
+}
+
+// 处理设施点击，定位到设施位置
+const handleFacilityClick = (facility: { name: string; lat: number; lng: number; type: string }) => {
+  if (map) {
+    map.flyTo({
+      center: [facility.lng, facility.lat],
+      zoom: 15,
+      duration: 1000
+    })
+    
+    // 弹出提示
+    new mapboxgl.Popup({ offset: 25, className: 'facility-popup' })
+      .setLngLat([facility.lng, facility.lat])
+      .setHTML(`
+        <div class="popup-content">
+          <strong>${facility.name}</strong><br/>
+          <span>类型：${facility.type}</span>
+        </div>
+      `)
+      .addTo(map!)
+      .setMaxWidth('200px')
+  }
 }
 
 const setLayerVisibility = (layerId: string, visible: boolean) => {
@@ -368,11 +454,26 @@ watch(
 )
 
 onUnmounted(() => {
+  clearFacilityMarkers()
   map?.remove()
 })
 </script>
 
 <style scoped>
+/* 添加设施弹窗样式 */
+:global(.facility-popup .mapboxgl-popup-content) {
+  background: rgba(10, 20, 30, 0.95);
+  color: #e0f0ff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 200, 255, 0.3);
+}
+
+:global(.facility-popup .mapboxgl-popup-tip) {
+  border-top-color: rgba(10, 20, 30, 0.95);
+}
+
+/* 其他样式保持不变 */
 .map-card {
   width: 100%;
   height: 100%;
