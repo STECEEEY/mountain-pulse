@@ -12,6 +12,18 @@
       </div>
     </div>
 
+    <!-- 天气信息卡片 -->
+    <div class="weather-card" v-if="weatherInfo">
+      <div class="weather-icon">🌤️</div>
+      <div class="weather-info">
+        <div class="weather-city">{{ weatherInfo.city }}</div>
+        <div class="weather-detail">{{ weatherInfo.weather }} | {{ weatherInfo.temperature }} | 湿度 {{ weatherInfo.humidity }}</div>
+        <div class="weather-rain" v-if="weatherInfo.rain_intensity !== 'none'">
+          ⚠️ {{ weatherInfo.rainfall }}，请加强巡查
+        </div>
+      </div>
+    </div>
+
     <div class="summary-grid">
       <div class="summary-card">
         <span class="label">高风险点</span>
@@ -27,24 +39,15 @@
       </div>
     </div>
 
-    <div class="input-zone">
-      <label for="dutyNote">现场文本信息</label>
-      <textarea
-        id="dutyNote"
-        v-model="dutyNote"
-        rows="3"
-        placeholder="输入值班记录、巡查备注、降雨异常等文本信息"
-      />
-      <div class="action-row">
-        <button class="generate-btn" :disabled="loading" @click="generateDecision">
-          {{ loading ? '生成中...' : '更新决策' }}
-        </button>
-        <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
-          {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
-        </button>
-      </div>
-      <p v-if="error" class="error-tip">{{ error }}</p>
+    <div class="action-row" style="margin-top: 10px;">
+      <button class="generate-btn" :disabled="loading" @click="generateDecision">
+        {{ loading ? '生成中...' : '更新决策' }}
+      </button>
+      <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
+        {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
+      </button>
     </div>
+    <p v-if="error" class="error-tip">{{ error }}</p>
 
     <div class="demo-script">
       <h4>演示流程状态</h4>
@@ -112,6 +115,109 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { ElMessage } from 'element-plus'
+import { useAiStore } from '@/stores/ai'
+import weatherService, { type WeatherData } from '@/services/weatherService'
+
+const props = defineProps<{
+  point: any
+}>()
+
+const dutyNote = ref('巡查员反馈：汤山北麓沟谷口有新裂缝')
+const weatherInfo = ref<WeatherData | null>(null)
+const isLoadingWeather = ref(false)
+
+const aiStore = useAiStore()
+const { mode, loading, error, modelVersion, lastUpdated, summary, decisions, demoRunning, demoSteps } = storeToRefs(aiStore)
+
+const pointName = computed(() => props.point?.name || '重点监测点')
+const modeLabel = computed(() => (mode.value === 'real' ? '接口(阿里云)' : '模拟数据'))
+
+// 获取天气信息
+const getWeather = async () => {
+  if (!props.point?.lng || !props.point?.lat) {
+    console.log('无坐标信息，无法获取天气')
+    return
+  }
+  
+  isLoadingWeather.value = true
+  try {
+    const weather = await weatherService.getWeatherByLocation(props.point.lng, props.point.lat)
+    if (weather) {
+      weatherInfo.value = weather
+      
+      // 如果有降雨，更新 dutyNote
+      if (weather.rain_intensity !== 'none') {
+        const rainDesc = weatherService.buildWeatherDescription(weather)
+        dutyNote.value = `巡查员反馈：${props.point?.name || '监测点'}有裂缝迹象。${rainDesc}`
+      }
+    }
+  } catch (error) {
+    console.error('获取天气失败:', error)
+  } finally {
+    isLoadingWeather.value = false
+  }
+}
+
+const buildRequest = () => ({
+  pointName: pointName.value,
+  lng: props.point?.lng,
+  lat: props.point?.lat,
+  dutyNote: dutyNote.value,
+  scene: 'workspace' as const,
+})
+
+const generateDecision = async () => {
+  await aiStore.refreshDecision(buildRequest())
+  if (error.value) {
+    ElMessage.error(error.value)
+    return
+  }
+  ElMessage.success('决策结果已更新')
+}
+
+const runDemo = async () => {
+  await aiStore.runDemoScript(buildRequest())
+  if (error.value) {
+    ElMessage.error(error.value)
+    return
+  }
+  ElMessage.success('流程演示已完成')
+}
+
+const switchMode = async () => {
+  aiStore.toggleMode()
+  await generateDecision()
+}
+
+const markExecuted = (id: number) => {
+  aiStore.markExecuted(id)
+}
+
+const markReview = (id: number) => {
+  aiStore.markReview(id)
+}
+
+onMounted(() => {
+  getWeather()
+  if (!decisions.value.length) {
+    generateDecision()
+  }
+})
+
+watch(
+  () => props.point,
+  (newPoint, oldPoint) => {
+    if (!newPoint || newPoint?.id === oldPoint?.id) return
+    getWeather()
+    generateDecision()
+  }
+)
+</script>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
@@ -537,4 +643,41 @@ watch(
   color: #89adc8;
   font-size: 12px;
 }
+
+.weather-card {
+  display: flex;
+  gap: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 180, 255, 0.2);
+  background: linear-gradient(135deg, rgba(0, 80, 120, 0.35), rgba(0, 40, 60, 0.35));
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.weather-icon {
+  font-size: 32px;
+}
+
+.weather-info {
+  flex: 1;
+}
+
+.weather-city {
+  font-size: 14px;
+  font-weight: bold;
+  color: #00f0ff;
+}
+
+.weather-detail {
+  font-size: 12px;
+  color: #c7dced;
+  margin-top: 4px;
+}
+
+.weather-rain {
+  font-size: 11px;
+  color: #ffd98e;
+  margin-top: 6px;
+}
+
 </style>
