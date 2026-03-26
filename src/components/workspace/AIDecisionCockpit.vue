@@ -218,66 +218,6 @@ watch(
   }
 )
 
-const dutyNote = ref('巡查员反馈：汤山北麓沟谷口有新裂缝，昨夜累计降雨38mm。')
-
-const aiStore = useAiStore()
-const { mode, loading, error, modelVersion, lastUpdated, summary, decisions, demoRunning, demoSteps } = storeToRefs(aiStore)
-
-const pointName = computed(() => props.point?.name || '重点监测点')
-const modeLabel = computed(() => (mode.value === 'real' ? '接口(阿里云)' : '模拟数据'))
-
-const buildRequest = () => ({
-  pointName: pointName.value,
-  lng: props.point?.lng,
-  lat: props.point?.lat,
-  dutyNote: dutyNote.value,
-  scene: 'workspace' as const,
-})
-
-const generateDecision = async () => {
-  await aiStore.refreshDecision(buildRequest())
-  if (error.value) {
-    ElMessage.error(error.value)
-    return
-  }
-  ElMessage.success('决策结果已更新')
-}
-
-const runDemo = async () => {
-  await aiStore.runDemoScript(buildRequest())
-  if (error.value) {
-    ElMessage.error(error.value)
-    return
-  }
-  ElMessage.success('流程演示已完成')
-}
-
-const switchMode = async () => {
-  aiStore.toggleMode()
-  await generateDecision()
-}
-
-const markExecuted = (id: number) => {
-  aiStore.markExecuted(id)
-}
-
-const markReview = (id: number) => {
-  aiStore.markReview(id)
-}
-
-onMounted(() => {
-  if (!decisions.value.length) {
-    generateDecision()
-  }
-})
-
-watch(
-  () => props.point,
-  (newPoint, oldPoint) => {
-    if (!newPoint || newPoint?.id === oldPoint?.id) return
-    generateDecision()
-  }
-)
 </script>
 
 <style scoped>
