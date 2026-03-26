@@ -52,9 +52,8 @@ class AIService {
    */
  async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
   console.log('🔧 AI服务调用开始')
-  console.log('📝 API Key:', this.apiKey?.substring(0, 10) + '...')
+  console.log('环境:', import.meta.env.MODE)
   
-  // 检查是否有有效的 API Key
   if (!this.apiKey || this.apiKey === 'YOUR_DASHSCOPE_API_KEY') {
     console.warn('⚠️ 未配置阿里云 API Key，使用模拟数据模式')
     return this.getMockDecisions(request)
@@ -63,16 +62,20 @@ class AIService {
   console.log('✅ 使用真实阿里云 AI 服务')
   
   try {
-    // 使用 POST 方法，路径使用代理
-    const response = await axios.post(
-      '/aliyun/api/v1/services/aigc/text-generation/generation',
-      {
-        model: aliyunConfig.dashscope.model,
+    // 判断环境
+    const isDev = import.meta.env.DEV
+    let apiUrl, requestData, requestHeaders
+    
+    if (isDev) {
+      // 开发环境：使用 Vite 代理
+      apiUrl = '/aliyun/api/v1/services/aigc/text-generation/generation'
+      requestData = {
+        model: 'qwen-plus',
         input: {
           messages: [
             {
               role: 'system',
-              content: '你是一个地质灾害智能决策分析专家。请根据输入信息，输出JSON格式的决策建议数组。不要有任何其他文字说明。'
+              content: '你是一个地质灾害智能决策分析专家。只输出 JSON 数组格式。'
             },
             {
               role: 'user',
@@ -82,30 +85,68 @@ class AIService {
         },
         parameters: {
           result_format: 'message',
-          temperature: 0.7,
-          top_p: 0.9
+          temperature: 0.7
         }
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
       }
-    )
+      requestHeaders = {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    } else {
+      // 生产环境：使用 Vercel Serverless Function
+      apiUrl = '/api/aliyun'  // ← 这里是关键！改为 /api/aliyun
+      requestData = {
+        apiKey: this.apiKey,
+        payload: {
+          model: 'qwen-plus',
+          input: {
+            messages: [
+              {
+                role: 'system',
+                content: '你是一个地质灾害智能决策分析专家。只输出 JSON 数组格式。'
+              },
+              {
+                role: 'user',
+                content: this.buildPrompt(request)
+              }
+            ]
+          },
+          parameters: {
+            result_format: 'message',
+            temperature: 0.7
+          }
+        }
+      }
+      requestHeaders = {
+        'Content-Type': 'application/json'
+      }
+    }
+    
+    console.log('API URL:', apiUrl)
+    console.log('请求数据:', requestData)
+    
+    const response = await axios.post(apiUrl, requestData, {
+      headers: requestHeaders,
+      timeout: 30000
+    })
     
     console.log('✅ API 调用成功')
-    console.log('响应状态:', response.status)
     
-    const aiResponse = response.data.output.choices[0].message.content
+    // 解析响应
+    let aiResponse
+    if (isDev) {
+      aiResponse = response.data.output.choices[0].message.content
+    } else {
+      aiResponse = response.data.output.choices[0].message.content
+    }
+    
     console.log('AI 响应:', aiResponse)
     
     return this.parseAIResponse(aiResponse, request)
   } catch (error: any) {
     console.error('❌ AI 调用失败:', error.message)
     if (error.response) {
-      console.error('错误状态:', error.response.status)
+      console.error('状态码:', error.response.status)
       console.error('错误数据:', error.response.data)
     }
     return this.getMockDecisions(request)
