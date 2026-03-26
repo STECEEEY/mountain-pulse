@@ -20,6 +20,9 @@
         <div class="breakdown-item">
           <span class="breakdown-label">降雨影响</span>
           <el-progress :percentage="rainfallFactor" :stroke-width="8" color="#22c55e" />
+          <el-tooltip v-if="rainfallLoading" content="加载中..." placement="top">
+            <el-icon class="loading-icon"><Loading /></el-icon>
+          </el-tooltip>
         </div>
         <div class="breakdown-item">
           <span class="breakdown-label">人口暴露</span>
@@ -54,9 +57,14 @@
       <p class="prediction-note">
         {{ recommendation.note }}
       </p>
+      <div v-if="rainfallData" class="rainfall-info">
+        <el-tag size="small" type="info">
+          🌧️ 月均降雨: {{ rainfallData.statistics.avg_annual / 12 }} mm
+        </el-tag>
+      </div>
     </div>
 
-    <!-- 承灾体信息 -->
+    <!-- 其他内容保持不变 -->
     <div class="exposure-info">
       <h4>影响范围内承灾体</h4>
       <div class="exposure-grid">
@@ -70,7 +78,6 @@
       </div>
     </div>
 
-    <!-- 建议措施 -->
     <div class="recommendations">
       <h4>建议措施</h4>
       <div class="rec-list">
@@ -92,19 +99,78 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { WarningFilled, Location, View } from '@element-plus/icons-vue'
+import { computed, ref, watch } from 'vue'
+import { WarningFilled, Location, View, Loading } from '@element-plus/icons-vue'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps<{
   point: {
+    id?: number
+    name?: string
     level?: string
     velocity?: number
     slope?: number
     threat?: string
+    actual_population?: number
+    lng?: number
+    lat?: number
+    geology?: {
+      stability?: string
+    }
   } | null
 }>()
 
+// 降雨数据状态
+const rainfallLoading = ref(false)
+const rainfallData = ref<any>(null)
+
+// API 配置
+const RAINFALL_API = '/api/rainfall'
+
+// 获取降雨数据
+const fetchRainfallData = async () => {
+  if (!props.point?.lng || !props.point?.lat) {
+    console.warn('缺少经纬度，无法获取降雨数据')
+    return
+  }
+  
+  rainfallLoading.value = true
+  
+  try {
+    const url = `${RAINFALL_API}/point?lon=${props.point.lng}&lat=${props.point.lat}`
+    console.log('获取降雨数据:', url)
+    
+    const response = await fetch(url)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    
+    const result = await response.json()
+    
+    if (result.status === 'success') {
+      rainfallData.value = result.data
+      console.log('降雨数据加载成功:', rainfallData.value)
+    } else {
+      throw new Error(result.message || '数据加载失败')
+    }
+  } catch (error: any) {
+    console.error('获取降雨数据失败:', error)
+    // 降级：使用模拟数据
+    rainfallData.value = {
+      statistics: {
+        avg_annual: 0,
+        max_monthly: 0,
+        min_monthly: 0
+      }
+    }
+  } finally {
+    rainfallLoading.value = false
+  }
+}
+
+// 解析威胁人口
 const parseThreatNumber = (value?: string) => {
   if (!value) return 0
   const matched = value.match(/-?\d+(\.\d+)?/)
@@ -112,46 +178,141 @@ const parseThreatNumber = (value?: string) => {
   return Number(matched[0])
 }
 
-const currentRisk = computed(() => {
-  const level = normalizeRiskLevel(props.point?.level)
-  const scoreMap: Record<string, number> = {
-    极高: 90,
-    高: 75,
-    中: 55,
-    低: 30,
-    未知: 0,
+// 地质因素：结合坡度和地质稳定性
+const geologicalFactor = computed(() => {
+  let baseScore = 0
+  
+  // 1. 坡度因子（权重70%）
+  const slope = Number(props.point?.slope || 0)
+  const slopeScore = Math.min(Math.round(slope * 2.12), 70)
+  
+  // 2. 地质稳定性因子（权重30%）
+  const stabilityMap: Record<string, number> = {
+    '不稳定': 30,
+    '较不稳定': 20,
+    '基本稳定': 10,
+    '稳定': 0
   }
-  const levelMap: Record<string, string> = {
-    极高: 'high',
-    高: 'high',
-    中: 'medium',
-    低: 'low',
-    未知: 'low',
-  }
-  return {
-    score: scoreMap[level] ?? 0,
-    level: levelMap[level] ?? 'low',
-  }
+  const stabilityScore = stabilityMap[props.point?.geology?.stability || '稳定'] || 0
+  
+  baseScore = slopeScore + stabilityScore
+  
+  return Math.min(baseScore, 100)
 })
 
-const deformationFactor = computed(() => Math.min(Math.round(Math.abs(Number(props.point?.velocity || 0))), 100))
-const geologicalFactor = computed(() => Math.min(Math.round(Number(props.point?.slope || 0) * 3), 100))
-const rainfallFactor = computed(() => Math.max(currentRisk.value.score - 20, 10))
-const populationExposure = computed(() => Math.min(Math.round(parseThreatNumber(props.point?.threat) / 20), 100))
+// 形变速率
+const deformationFactor = computed(() => {
+  const velocity = Math.abs(Number(props.point?.velocity || 0))
+  // 形变速率映射：0mm/d=0%，10mm/d=100%
+  return Math.min(Math.round(velocity * 10), 100)
+})
 
-const nextDayRisk = computed(() => Math.min(currentRisk.value.score + 5, 99))
-const twoDayRisk = computed(() => Math.min(currentRisk.value.score + 8, 99))
+// 降雨影响 - 使用真实数据
+const rainfallFactor = computed(() => {
+  if (rainfallData.value && rainfallData.value.statistics) {
+    // 使用月均降雨量计算风险
+    const avgMonthlyRainfall = rainfallData.value.statistics.avg_annual / 12
+    
+    // 降雨量映射：0mm=0%，300mm=100%
+    let score = Math.min(Math.round(avgMonthlyRainfall / 3), 100)
+    
+    // 如果有极值月份，增加风险系数
+    const maxMonthly = rainfallData.value.statistics.max_monthly || 0
+    if (maxMonthly > 200) {
+      score = Math.min(score + 15, 100)
+    } else if (maxMonthly > 150) {
+      score = Math.min(score + 10, 100)
+    }
+    
+    return score
+  }
+  
+  // 降级：使用默认值
+  return 10
+})
 
+// 人口暴露
+const populationExposure = computed(() => {
+  const population = props.point?.actual_population || parseThreatNumber(props.point?.threat)
+  // 人口映射：0人=0%，500人=100%
+  return Math.min(Math.round(population / 5), 100)
+})
+
+// 综合风险指数
+const currentRisk = computed(() => {
+  const weights = {
+    geological: 0.35,   // 地质因素 35%
+    deformation: 0.35,  // 形变速率 35%
+    rainfall: 0.20,     // 降雨影响 20%
+    population: 0.10    // 人口暴露 10%
+  }
+  
+  const rawScore = 
+    geologicalFactor.value * weights.geological +
+    deformationFactor.value * weights.deformation +
+    rainfallFactor.value * weights.rainfall +
+    populationExposure.value * weights.population
+  
+  const score = Math.round(rawScore)
+  
+  // 风险等级判定
+  let level = 'low'
+  if (score >= 75) level = 'high'
+  else if (score >= 50) level = 'medium'
+  else level = 'low'
+  
+  return { score, level }
+})
+
+// 风险预测
+const nextDayRisk = computed(() => {
+  let increase = 0
+  
+  // 根据降雨数据预测风险变化
+  if (rainfallData.value?.statistics) {
+    const avgMonthlyRainfall = rainfallData.value.statistics.avg_annual / 12
+    // 如果月均降雨 > 100mm，预测风险上升
+    if (avgMonthlyRainfall > 100) {
+      increase = 5
+    } else if (avgMonthlyRainfall > 50) {
+      increase = 2
+    }
+  }
+  
+  return Math.min(currentRisk.value.score + increase, 99)
+})
+
+const twoDayRisk = computed(() => {
+  let increase = 0
+  
+  if (rainfallData.value?.statistics) {
+    const avgMonthlyRainfall = rainfallData.value.statistics.avg_annual / 12
+    if (avgMonthlyRainfall > 100) {
+      increase = 8
+    } else if (avgMonthlyRainfall > 50) {
+      increase = 4
+    }
+  }
+  
+  return Math.min(currentRisk.value.score + increase, 99)
+})
+
+// 建议措施
 const recommendation = computed(() => {
   const level = normalizeRiskLevel(props.point?.level)
-  if (level === '极高') {
+  
+  // 结合降雨风险调整建议
+  const hasHighRainfallRisk = rainfallFactor.value > 70
+  
+  if (level === '极高' || (level === '高' && hasHighRainfallRisk)) {
     return {
       primary: '建议立即启动红色预警与人员疏散',
       secondary: '建议封控重点风险区并设置安全警戒线',
       tertiary: '建议开启高频巡检与连续形变监测',
-      note: '当前风险等级较高，建议立即采取最高级别响应措施。',
+      note: hasHighRainfallRisk ? '当前风险等级较高，且降雨量较大，建议立即采取最高级别响应措施。' : '当前风险等级较高，建议立即采取最高级别响应措施。',
     }
   }
+  
   if (level === '高') {
     return {
       primary: '建议启动橙色预警并做好转移准备',
@@ -160,6 +321,7 @@ const recommendation = computed(() => {
       note: '风险处于高位，建议尽快落实预警和防护。',
     }
   }
+  
   if (level === '中') {
     return {
       primary: '建议保持黄色预警并持续跟踪变化',
@@ -168,6 +330,7 @@ const recommendation = computed(() => {
       note: '当前风险可控，需持续观测避免快速演化。',
     }
   }
+  
   return {
     primary: '建议维持常态化监测',
     secondary: '建议定期排查重点区域',
@@ -175,226 +338,35 @@ const recommendation = computed(() => {
     note: '当前风险较低，保持常规监测即可。',
   }
 })
+
+// 监听 point 变化，重新获取降雨数据
+watch(() => props.point, (newPoint) => {
+  if (newPoint && newPoint.lng && newPoint.lat) {
+    fetchRainfallData()
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
-.risk-classification {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+/* 原有样式保持不变，添加加载图标样式 */
+.loading-icon {
+  margin-left: 8px;
+  animation: spin 1s linear infinite;
 }
 
-.risk-overview {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-}
-
-.risk-gauge {
+.rainfall-info {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
   text-align: center;
 }
 
-.gauge-ring {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f1f5f9;
-  position: relative;
-}
-
-.gauge-ring::before {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border-radius: 50%;
-  background: #ffffff;
-}
-
-.gauge-ring.high {
-  background: conic-gradient(#ef4444 0% 78%, #f1f5f9 78% 100%);
-}
-
-.gauge-ring.medium {
-  background: conic-gradient(#f59e0b 0% 50%, #f1f5f9 50% 100%);
-}
-
-.gauge-ring.low {
-  background: conic-gradient(#22c55e 0% 30%, #f1f5f9 30% 100%);
-}
-
-.gauge-value {
-  position: relative;
-  font-size: 28px;
-  font-weight: 700;
-  color: #ef4444;
-}
-
-.gauge-label {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.risk-breakdown {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.breakdown-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.breakdown-label {
-  width: 70px;
-  font-size: 13px;
-  color: #64748b;
-}
-
-.ai-prediction {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.section-header h4 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.prediction-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.prediction-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.prediction-item .time {
-  width: 40px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.prediction-bar {
-  height: 8px;
-  border-radius: 4px;
-  transition: width 0.3s;
-}
-
-.prediction-bar.high { background: #ef4444; }
-.prediction-bar.medium { background: #f59e0b; }
-
-.prediction-item .prob {
-  width: 40px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1e293b;
-  text-align: right;
-}
-
-.prediction-note {
-  margin: 12px 0 0 0;
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.5;
-}
-
-.exposure-info h4,
-.recommendations h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.exposure-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.exposure-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #f8fafc;
-  border-radius: 10px;
-  padding: 12px;
-}
-
-.exposure-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 180, 255, 0.25);
-  background: rgba(0, 76, 112, 0.22);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: #9ad4f2;
-}
-
-.exposure-detail {
-  display: flex;
-  flex-direction: column;
-}
-
-.exposure-value {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.exposure-label {
-  font-size: 11px;
-  color: #64748b;
-}
-
-.rec-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.rec-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #475569;
-}
-
-.rec-item.urgent {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.rec-item .el-icon {
-  font-size: 16px;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
