@@ -1,196 +1,311 @@
-import { httpClient } from './httpClient'
-import type { AIDecision, DecisionRequest, DecisionResponse, DecisionLevel } from '@/types/ai'
+import axios from 'axios'
+import { aliyunConfig } from '@/config/aliyun'
 
-export type AiMode = 'mock' | 'real'
-
-const aiMode = (import.meta.env.VITE_AI_MODE || 'mock').toLowerCase() as AiMode
-const enableFallbackMock = (import.meta.env.VITE_AI_FALLBACK_MOCK || 'true').toLowerCase() !== 'false'
-
-const nowISO = () => new Date().toISOString()
-
-// 阿里云百炼 API 配置
-const DASHSCOPE_API_KEY = 'sk-35342788c99143de9769dc63f0fb5bf4'
-
-// 构建决策 prompt
-const buildDecisionPrompt = (req: DecisionRequest): string => {
-  const pointName = (req as any).pointName || '未知'
-  const dutyNote = (req as any).dutyNote || '无'
-  const affectedPopulation = (req as any).affectedPopulation || '待评估'
-  
-  return `你是一位地质灾害应急专家。请根据以下数据给出决策建议：
-
-【风险点信息】
-- 风险点名称：${pointName}
-- 巡查员反馈：${dutyNote}
-- 影响人口：${affectedPopulation}
-
-请按以下 JSON 格式输出，只输出 JSON，不要有其他文字：
-{
-  "riskLevel": "高/中/低",
-  "mainThreat": "主要威胁描述",
-  "actions": ["行动1", "行动2", "行动3"],
-  "warning": "预警建议",
-  "confidence": 85
-}`
+export interface DecisionRequest {
+  pointName: string
+  lng?: number
+  lat?: number
+  dutyNote: string
+  scene: string
 }
 
-// 直接调用阿里云百炼 API
-const callQwenDirectly = async (prompt: string): Promise<any> => {
-  const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'qwen3.5-flash',
-      input: {
-        messages: [{ role: 'user', content: prompt }]
-      },
-      parameters: {
-        result_format: 'message',
-        temperature: 0.6
-      }
-    })
-  })
-  
-  const data = await response.json()
-  const content = data.output.choices[0].message.content
-  
-  try {
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
-    }
-    return JSON.parse(content)
-  } catch {
-    return {
-      riskLevel: "中",
-      mainThreat: content,
-      actions: ["加强监测", "加密巡查"],
-      warning: "持续关注",
-      confidence: 70
+export interface DecisionItem {
+  id: number
+  title: string
+  window: string
+  confidence: number
+  level: 'danger' | 'warning' | 'info'
+  action: string
+  target: string
+  explanation: {
+    featureContributions: Array<{
+      featureName: string
+      currentValue: string | number
+      contribution: number
+    }>
+    thresholdHits: Array<{
+      ruleName: string
+      currentValue: number
+      threshold: number
+      unit: string
+      status: 'hit' | 'near' | 'normal'
+    }>
+    dataTimeWindow: {
+      startAt: string
+      endAt: string
+      step: string
+      source: string
     }
   }
+  status: string
 }
 
-// Mock 数据
-const buildMockDecisions = (req: DecisionRequest): AIDecision[] => {
-  const titlePrefix = (req as any).pointName || '重点监测点'
-  const dutyNote = (req as any).dutyNote || ''
-  const rainFlag = dutyNote.includes('降雨') || dutyNote.includes('雨')
+class AIService {
+  private apiKey: string
 
-  return [
-    {
-      id: Date.now(),
-      title: `${titlePrefix}应急处置`,
-      level: (rainFlag ? 'danger' : 'warning') as DecisionLevel,
-      confidence: rainFlag ? 93 : 86,
-      window: '建议时间窗：未来6小时',
-      action: rainFlag
-        ? '启动二级响应，先行转移脆弱人群并布设夜间值守'
-        : '保持一级巡检，重点核查裂缝扩展趋势',
-      target: '街道应急办、教育条线、交警中队',
-      status: '待执行',
-      explanation: {
-        featureContributions: [
-          { featureName: 'InSAR位移速率', currentValue: 25.6, contribution: 0.37, trend: 'up' },
-          { featureName: '24h降雨量', currentValue: 38, contribution: 0.29, trend: 'up' },
-          { featureName: '人口暴露指数', currentValue: 0.78, contribution: 0.21, trend: 'up' },
-          { featureName: '坡体稳定系数', currentValue: 0.44, contribution: 0.13, trend: 'down' },
-        ],
-        thresholdHits: [
-          { ruleName: '降雨触发阈值', currentValue: 38, threshold: 30, unit: 'mm', status: 'hit' },
-          { ruleName: '形变黄色阈值', currentValue: 25.6, threshold: 20, unit: 'mm', status: 'hit' },
-        ],
-        dataTimeWindow: {
-          startAt: '2026-03-13 00:00',
-          endAt: '2026-03-20 08:00',
-          step: '1h',
-          source: 'InSAR + 雨量站 + 风险库',
-        },
-      },
-    },
-  ]
-}
-
-const buildMockResponse = (req: DecisionRequest): DecisionResponse => {
-  const decisions = buildMockDecisions(req)
-  return {
-    modelVersion: 'xgboost-lstm-1.3.2',
-    generatedAt: nowISO(),
-    summary: {
-      highRiskCount: decisions.filter((item) => item.level === 'danger').length,
-      actionCount: decisions.length,
-      affectedPopulation: '2080人',
-    },
-    decisions,
+  constructor() {
+    this.apiKey = aliyunConfig.dashscope.apiKey
   }
-}
 
-// 转换风险等级为 DecisionLevel 类型（只返回 danger 或 warning）
-const mapRiskLevelToDecisionLevel = (riskLevel: string): DecisionLevel => {
-  if (riskLevel === '高') {
-    return 'danger'
-  }
-  // 中风险和低风险都返回 warning
-  return 'warning'
-}
-
-// 真实调用
-const getRealDecision = async (req: DecisionRequest): Promise<DecisionResponse> => {
-  const prompt = buildDecisionPrompt(req)
-  const aiResult = await callQwenDirectly(prompt)
-  
-  // 确保 level 只能是 danger 或 warning
-  const level: DecisionLevel = mapRiskLevelToDecisionLevel(aiResult.riskLevel || '中')
-  
-  return {
-    modelVersion: 'qwen3.5-flash',
-    generatedAt: nowISO(),
-    summary: {
-      highRiskCount: aiResult.riskLevel === '高' ? 1 : 0,
-      actionCount: aiResult.actions?.length || 1,
-      affectedPopulation: (req as any).affectedPopulation || '待评估'
-    },
-    decisions: [{
-      id: Date.now(),
-      title: `${(req as any).pointName || '风险点'}应急处置`,
-      level: level,
-      confidence: aiResult.confidence || 85,
-      window: '建议时间窗：未来6小时',
-      action: aiResult.actions?.join('；') || aiResult.mainThreat || '加强监测',
-      target: '街道应急办',
-      status: '待执行',
-      explanation: {
-        featureContributions: [],
-        thresholdHits: [],
-        dataTimeWindow: {
-          startAt: nowISO(),
-          endAt: nowISO(),
-          step: '1h',
-          source: 'AI 实时分析（通义千问）'
-        }
-      }
-    }]
-  }
-}
-
-export const aiService = {
-  defaultMode: aiMode,
-  async getDecision(req: DecisionRequest, mode: AiMode = aiMode): Promise<DecisionResponse> {
-    if (mode !== 'real') {
-      return buildMockResponse(req)
-    }
-
+  /**
+   * 调用通义千问API进行决策分析
+   */
+  async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
     try {
-      return await getRealDecision(req)
+      // 构建提示词
+      const prompt = this.buildPrompt(request)
+      
+      // 调用通义千问API
+      const response = await axios.post(
+        aliyunConfig.dashscope.endpoint,
+        {
+          model: aliyunConfig.dashscope.model,
+          input: {
+            messages: [
+              {
+                role: 'system',
+                content: `你是一个地质灾害智能决策分析专家。你需要根据输入的监测点信息和现场文本，输出结构化的决策建议。
+                输出格式要求：JSON数组，每个决策包含以下字段：
+                - title: 决策标题
+                - window: 时间窗口描述
+                - confidence: 置信度(0-100)
+                - level: 风险等级(danger/warning/info)
+                - action: 建议动作
+                - target: 执行对象
+                - explanation: 包含featureContributions(特征贡献数组，每个包含featureName、currentValue、contribution)、thresholdHits(阈值命中数组，每个包含ruleName、currentValue、threshold、unit、status)、dataTimeWindow(数据时间窗口信息)
+                - status: 状态(待执行)
+                
+                请基于以下数据生成决策：`
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ]
+          },
+          parameters: {
+            result_format: 'message',
+            temperature: 0.7,
+            top_p: 0.9
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      // 解析AI返回的结果
+      const aiResponse = response.data.output.choices[0].message.content
+      const decisions = this.parseAIResponse(aiResponse, request)
+      
+      return decisions
     } catch (error) {
-      console.error('AI 调用失败，使用降级方案:', error)
-      if (enableFallbackMock) {
-        return buildMockResponse(req)
-      }
-      throw error
+      console.error('AI服务调用失败:', error)
+      // 降级到模拟数据
+      return this.getMockDecisions(request)
     }
-  },
+  }
+
+  /**
+   * 构建提示词
+   */
+  private buildPrompt(request: DecisionRequest): string {
+    return `
+监测点名称: ${request.pointName}
+坐标: 经度=${request.lng || '未知'}, 纬度=${request.lat || '未知'}
+现场信息: ${request.dutyNote}
+场景: ${request.scene}
+
+请基于以上信息，生成地质灾害风险决策建议。考虑以下因素：
+1. 降雨量异常（如果提及）
+2. 裂缝发育情况
+3. 地形地貌特征
+4. 历史灾害记录
+5. 人口分布情况
+
+请输出3-5个决策建议，按风险等级排序。
+    `
+  }
+
+  /**
+   * 解析AI响应
+   */
+  private parseAIResponse(aiResponse: string, request: DecisionRequest): DecisionItem[] {
+    try {
+      // 尝试提取JSON数组
+      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        const decisions = JSON.parse(jsonMatch[0])
+        return decisions.map((d: any, index: number) => ({
+          ...d,
+          id: Date.now() + index,
+          window: this.generateTimeWindow(),
+          status: d.status || '待执行',
+          explanation: {
+            ...d.explanation,
+            dataTimeWindow: {
+              startAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+              endAt: new Date().toISOString(),
+              step: '1小时',
+              source: '实时监测',
+              ...d.explanation?.dataTimeWindow
+            }
+          }
+        }))
+      }
+    } catch (error) {
+      console.error('解析AI响应失败:', error)
+    }
+    
+    return this.getMockDecisions(request)
+  }
+
+  /**
+   * 生成时间窗口
+   */
+  private generateTimeWindow(): string {
+    const end = new Date()
+    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000)
+    return `${start.toLocaleString()} 至 ${end.toLocaleString()}`
+  }
+
+  /**
+   * 模拟数据（降级方案）
+   */
+  private getMockDecisions(request: DecisionRequest): DecisionItem[] {
+    const hasRainfall = request.dutyNote.includes('降雨') || request.dutyNote.includes('mm')
+    const hasCrack = request.dutyNote.includes('裂缝')
+    
+    return [
+      {
+        id: Date.now(),
+        title: hasRainfall ? '持续降雨引发滑坡风险' : '边坡稳定性监测',
+        window: this.generateTimeWindow(),
+        confidence: hasRainfall ? 85 : 65,
+        level: hasRainfall ? 'danger' : 'warning',
+        action: hasRainfall ? '立即组织受影响区域人员转移' : '加强巡查监测频率',
+        target: hasRainfall ? '汤山街道应急办、周边社区' : '监测组、巡查员',
+        explanation: {
+          featureContributions: [
+            {
+              featureName: '降雨量',
+              currentValue: hasRainfall ? '38mm' : '12mm',
+              contribution: hasRainfall ? 0.45 : 0.25
+            },
+            {
+              featureName: '裂缝变形速率',
+              currentValue: hasCrack ? '3.2mm/天' : '0.5mm/天',
+              contribution: hasCrack ? 0.35 : 0.15
+            },
+            {
+              featureName: '土壤含水率',
+              currentValue: hasRainfall ? '32%' : '18%',
+              contribution: hasRainfall ? 0.2 : 0.1
+            }
+          ],
+          thresholdHits: [
+            {
+              ruleName: '降雨量阈值',
+              currentValue: hasRainfall ? 38 : 12,
+              threshold: 25,
+              unit: 'mm',
+              status: hasRainfall ? 'hit' : 'normal'
+            },
+            {
+              ruleName: '裂缝变形速率',
+              currentValue: hasCrack ? 3.2 : 0.5,
+              threshold: 2,
+              unit: 'mm/天',
+              status: hasCrack ? 'hit' : 'normal'
+            }
+          ],
+          dataTimeWindow: {
+            startAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+            endAt: new Date().toISOString(),
+            step: '1小时',
+            source: '模拟数据'
+          }
+        },
+        status: '待执行'
+      },
+      {
+        id: Date.now() + 1,
+        title: '应急处置资源调度',
+        window: this.generateTimeWindow(),
+        confidence: 78,
+        level: 'warning',
+        action: '预置应急物资到关键位置',
+        target: '应急物资储备中心',
+        explanation: {
+          featureContributions: [
+            {
+              featureName: '人口密度',
+              currentValue: '高',
+              contribution: 0.4
+            },
+            {
+              featureName: '交通可达性',
+              currentValue: '中等',
+              contribution: 0.3
+            }
+          ],
+          thresholdHits: [],
+          dataTimeWindow: {
+            startAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+            endAt: new Date().toISOString(),
+            step: '1小时',
+            source: '模拟数据'
+          }
+        },
+        status: '待执行'
+      }
+    ]
+  }
+
+  /**
+   * 验证API Key是否有效
+   */
+  async validateApiKey(): Promise<boolean> {
+    if (this.apiKey === 'YOUR_DASHSCOPE_API_KEY') {
+      return false
+    }
+    
+    try {
+      // 发送一个简单的测试请求
+      const response = await axios.post(
+        aliyunConfig.dashscope.endpoint,
+        {
+          model: aliyunConfig.dashscope.model,
+          input: {
+            messages: [
+              {
+                role: 'user',
+                content: 'test'
+              }
+            ]
+          },
+          parameters: {
+            result_format: 'message'
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 5000
+        }
+      )
+      
+      return response.status === 200
+    } catch (error) {
+      console.error('API Key验证失败:', error)
+      return false
+    }
+  }
 }
+
+export default new AIService()
