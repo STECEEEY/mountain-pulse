@@ -21,7 +21,6 @@ export const useAiStore = defineStore('ai', () => {
     { key: 'fetch', label: '数据获取', detail: '等待执行', status: 'pending' },
     { key: 'analyze', label: 'AI分析', detail: '等待执行', status: 'pending' },
     { key: 'decision', label: '决策生成', detail: '等待执行', status: 'pending' },
-    { key: 'notify', label: '通知下发', detail: '等待执行', status: 'pending' }
   ])
 
   // Actions
