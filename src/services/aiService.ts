@@ -50,31 +50,29 @@ class AIService {
   /**
    * 调用通义千问API进行决策分析
    */
-  async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
+ async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
   console.log('🔧 AI服务调用开始')
+  console.log('📝 API Key:', this.apiKey?.substring(0, 10) + '...')
   
+  // 检查是否有有效的 API Key
   if (!this.apiKey || this.apiKey === 'YOUR_DASHSCOPE_API_KEY') {
     console.warn('⚠️ 未配置阿里云 API Key，使用模拟数据模式')
     return this.getMockDecisions(request)
   }
 
+  console.log('✅ 使用真实阿里云 AI 服务')
+  
   try {
-    console.log('📡 调用阿里云通义千问 API...')
-    
-    // 开发环境使用代理，生产环境使用你的后端
-    const apiUrl = import.meta.env.DEV 
-      ? '/aliyun/api/v1/services/aigc/text-generation/generation'
-      : 'YOUR_BACKEND_URL/api/aliyun'  // 生产环境需要你的后端
-    
+    // 使用 POST 方法，路径使用代理
     const response = await axios.post(
-      apiUrl,
+      '/aliyun/api/v1/services/aigc/text-generation/generation',
       {
         model: aliyunConfig.dashscope.model,
         input: {
           messages: [
             {
               role: 'system',
-              content: `你是一个地质灾害智能决策分析专家。只输出 JSON 数组格式。`
+              content: '你是一个地质灾害智能决策分析专家。请根据输入信息，输出JSON格式的决策建议数组。不要有任何其他文字说明。'
             },
             {
               role: 'user',
@@ -84,22 +82,32 @@ class AIService {
         },
         parameters: {
           result_format: 'message',
-          temperature: 0.7
+          temperature: 0.7,
+          top_p: 0.9
         }
       },
       {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000
       }
     )
-
+    
     console.log('✅ API 调用成功')
+    console.log('响应状态:', response.status)
+    
     const aiResponse = response.data.output.choices[0].message.content
+    console.log('AI 响应:', aiResponse)
+    
     return this.parseAIResponse(aiResponse, request)
   } catch (error: any) {
     console.error('❌ AI 调用失败:', error.message)
+    if (error.response) {
+      console.error('错误状态:', error.response.status)
+      console.error('错误数据:', error.response.data)
+    }
     return this.getMockDecisions(request)
   }
 }
