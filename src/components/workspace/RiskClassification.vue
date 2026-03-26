@@ -125,37 +125,56 @@ import { computed, ref, watch } from 'vue'
 import { Cpu, ChatDotRound, Location, Opportunity, Warning, View, Monitor, User, DataAnalysis, TrendCharts } from '@element-plus/icons-vue'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
 
+// 定义更完整的类型
+interface PointData {
+  id?: number
+  name?: string
+  level?: string
+  velocity?: number
+  slope?: number
+  threat?: string
+  actual_population?: number
+  lng?: number
+  lat?: number
+  type?: string
+  geology?: {
+    stability?: string
+    lithology?: string
+    structure?: string
+    confidence?: number
+  }
+}
+
+interface RainfallStatistics {
+  avg_annual: number
+  max_monthly: number
+  min_monthly: number
+  max_month?: { date: string; precip_mm: number }
+  min_month?: { date: string; precip_mm: number }
+}
+
+interface RainfallData {
+  status?: string
+  data?: {
+    statistics: RainfallStatistics
+    timeseries?: Array<{ date: string; precip_mm: number }>
+  }
+}
+
 const props = defineProps<{
-  point: {
-    id?: number
-    name?: string
-    level?: string
-    velocity?: number
-    slope?: number
-    threat?: string
-    actual_population?: number
-    lng?: number
-    lat?: number
-    type?: string
-    geology?: {
-      stability?: string
-      lithology?: string
-      structure?: string
-      confidence?: number
-    }
-  } | null
+  point: PointData | null
 }>()
 
 // 降雨数据（从父组件传入）
-const rainfallData = ref<any>(null)
+const rainfallData = ref<RainfallData | null>(null)
 
 // AI 模型特征
 const modelFeatures = computed(() => {
-  const features = []
-  if (props.point?.velocity !== undefined) features.push('形变速率')
-  if (props.point?.slope !== undefined) features.push('地形坡度')
+  const features: string[] = []
+  if (props.point?.velocity !== undefined && props.point.velocity !== null) features.push('形变速率')
+  if (props.point?.slope !== undefined && props.point.slope !== null) features.push('地形坡度')
   if (props.point?.geology?.stability) features.push('地质稳定性')
-  if (rainfallData.value) features.push('降雨影响')
+  if (rainfallData.value?.data?.statistics) features.push('降雨影响')
   if (props.point?.actual_population) features.push('人口暴露')
   return features
 })
@@ -166,7 +185,7 @@ const aiConfidence = computed(() => {
   if (props.point?.velocity !== undefined && props.point.velocity > 0) confidence += 10
   if (props.point?.slope !== undefined && props.point.slope > 0) confidence += 10
   if (props.point?.geology?.confidence) confidence += props.point.geology.confidence * 10
-  if (rainfallData.value) confidence += 10
+  if (rainfallData.value?.data?.statistics) confidence += 10
   return Math.min(confidence, 98)
 })
 
@@ -182,66 +201,16 @@ const riskLevelText = computed(() => {
   return map[level] || '正常监测'
 })
 
-// 风险因子列表（包含形变速率）
-const riskFactors = computed(() => {
-  // 计算形变速率分数
-  const velocityScore = computedDeformationFactor()
-  
-  // 计算地质因素分数
-  const geoScore = computedGeologicalFactor()
-  
-  // 计算降雨分数
-  const rainScore = computedRainfallFactor()
-  
-  // 计算人口分数
-  const popScore = computedPopulationExposure()
-  
-  return [
-    {
-      name: '形变速率',
-      icon: '📈',
-      value: velocityScore,
-      color: '#f59e0b',
-      original: props.point?.velocity || 0,
-      unit: 'mm/d'
-    },
-    {
-      name: '地质因素',
-      icon: '⛰️',
-      value: geoScore,
-      color: '#3b82f6',
-      original: props.point?.slope || 0,
-      unit: '°'
-    },
-    {
-      name: '降雨影响',
-      icon: '🌧️',
-      value: rainScore,
-      color: '#22c55e',
-      original: rainfallData.value?.statistics?.avg_annual / 12 || 0,
-      unit: 'mm/月'
-    },
-    {
-      name: '人口暴露',
-      icon: '👥',
-      value: popScore,
-      color: '#8b5cf6',
-      original: props.point?.actual_population || 0,
-      unit: '人'
-    }
-  ]
-})
-
-// 形变速率计算（非线性映射，确保参与计算）
+// 形变速率计算（非线性映射）
 function computedDeformationFactor(): number {
   const velocity = Math.abs(Number(props.point?.velocity || 0))
   
   // 非线性映射，确保微小形变也有体现
   if (velocity <= 0) return 0
-  if (velocity <= 0.1) return 5 + velocity * 50  // 0-0.1 → 5-10分
-  if (velocity <= 1) return 10 + velocity * 30   // 0.1-1 → 10-40分
-  if (velocity <= 5) return 40 + velocity * 8    // 1-5 → 40-80分
-  if (velocity <= 10) return 80 + velocity * 2   // 5-10 → 80-100分
+  if (velocity <= 0.1) return 5 + velocity * 50
+  if (velocity <= 1) return 10 + velocity * 30
+  if (velocity <= 5) return 40 + velocity * 8
+  if (velocity <= 10) return 80 + velocity * 2
   return 100
 }
 
@@ -265,11 +234,12 @@ function computedGeologicalFactor(): number {
 
 // 降雨影响计算
 function computedRainfallFactor(): number {
-  if (rainfallData.value?.statistics) {
-    const avgMonthly = rainfallData.value.statistics.avg_annual / 12
+  const stats = rainfallData.value?.data?.statistics
+  if (stats) {
+    const avgMonthly = stats.avg_annual / 12
     let score = Math.min(Math.round(avgMonthly / 3), 70)
     
-    const maxMonthly = rainfallData.value.statistics.max_monthly || 0
+    const maxMonthly = stats.max_monthly || 0
     if (maxMonthly > 200) score += 20
     else if (maxMonthly > 150) score += 15
     else if (maxMonthly > 100) score += 10
@@ -291,6 +261,56 @@ function parseThreatNumber(value?: string): number {
   return matched ? Number(matched[0]) : 0
 }
 
+// 风险因子列表
+const riskFactors = computed(() => {
+  const velocityScore = computedDeformationFactor()
+  const geoScore = computedGeologicalFactor()
+  const rainScore = computedRainfallFactor()
+  const popScore = computedPopulationExposure()
+  
+  const velocity = props.point?.velocity ?? 0
+  const slope = props.point?.slope ?? 0
+  const avgMonthlyRainfall = rainfallData.value?.data?.statistics?.avg_annual 
+    ? rainfallData.value.data.statistics.avg_annual / 12 
+    : 0
+  const population = props.point?.actual_population ?? parseThreatNumber(props.point?.threat)
+  
+  return [
+    {
+      name: '形变速率',
+      icon: '📈',
+      value: velocityScore,
+      color: '#f59e0b',
+      original: velocity,
+      unit: 'mm/d'
+    },
+    {
+      name: '地质因素',
+      icon: '⛰️',
+      value: geoScore,
+      color: '#3b82f6',
+      original: slope,
+      unit: '°'
+    },
+    {
+      name: '降雨影响',
+      icon: '🌧️',
+      value: rainScore,
+      color: '#22c55e',
+      original: avgMonthlyRainfall,
+      unit: 'mm/月'
+    },
+    {
+      name: '人口暴露',
+      icon: '👥',
+      value: popScore,
+      color: '#8b5cf6',
+      original: population,
+      unit: '人'
+    }
+  ]
+})
+
 // 综合风险指数
 const currentRisk = computed(() => {
   const weights = {
@@ -302,12 +322,12 @@ const currentRisk = computed(() => {
   
   const factors = riskFactors.value
   const rawScore = 
-    factors[0].value * weights.deformation +
-    factors[1].value * weights.geological +
-    factors[2].value * weights.rainfall +
-    factors[3].value * weights.population
+    factors[0]?.value * weights.deformation +
+    factors[1]?.value * weights.geological +
+    factors[2]?.value * weights.rainfall +
+    factors[3]?.value * weights.population
   
-  const score = Math.round(rawScore)
+  const score = Math.round(rawScore || 0)
   
   let level = 'low'
   if (score >= 75) level = 'high'
@@ -321,9 +341,12 @@ const currentRisk = computed(() => {
 const predictions = computed(() => {
   const current = currentRisk.value.score
   
-  // AI 预测逻辑：基于各因子趋势
-  const deformationTrend = riskFactors.value[0].value > 50 ? 1.2 : 1
-  const rainfallTrend = riskFactors.value[2].value > 50 ? 1.15 : 1
+  // 安全获取因子值
+  const deformationFactorValue = riskFactors.value[0]?.value ?? 0
+  const rainfallFactorValue = riskFactors.value[2]?.value ?? 0
+  
+  const deformationTrend = deformationFactorValue > 50 ? 1.2 : 1
+  const rainfallTrend = rainfallFactorValue > 50 ? 1.15 : 1
   
   const day1 = Math.min(Math.round(current * deformationTrend * rainfallTrend), 99)
   const day2 = Math.min(Math.round(day1 * (1 + (deformationTrend - 1) * 0.8)), 99)
@@ -338,26 +361,32 @@ const predictions = computed(() => {
 // AI 洞察
 const aiInsight = computed(() => {
   const score = currentRisk.value.score
-  const factors = riskFactors.value
-  const deformation = factors[0]
-  const rainfall = factors[2]
+  const deformationFactorValue = riskFactors.value[0]
+  const rainfallFactorValue = riskFactors.value[2]
+  
+  const deformationOriginal = deformationFactorValue?.original ?? 0
+  const rainfallOriginal = rainfallFactorValue?.original ?? 0
+  const deformationValue = deformationFactorValue?.value ?? 0
   
   if (score >= 75) {
-    return `⚠️ 高风险预警！形变速率 ${deformation.original}mm/d 持续活跃，${rainfall.original > 100 ? '近期降雨充沛' : '地质条件不利'}，建议立即响应`
+    return `⚠️ 高风险预警！形变速率 ${deformationOriginal}mm/d 持续活跃，${rainfallOriginal > 100 ? '近期降雨充沛' : '地质条件不利'}，建议立即响应`
   }
   if (score >= 50) {
-    return `📊 中风险监测中，主要风险源：${deformation.value > 30 ? '形变速率偏高' : '地质条件不稳定'}，需加强巡查`
+    return `📊 中风险监测中，主要风险源：${deformationValue > 30 ? '形变速率偏高' : '地质条件不稳定'}，需加强巡查`
   }
-  if (deformation.value > 30) {
-    return `🔍 形变速率 ${deformation.original}mm/d 呈上升趋势，虽当前风险可控，建议加密监测频次`
+  if (deformationValue > 30) {
+    return `🔍 形变速率 ${deformationOriginal}mm/d 呈上升趋势，虽当前风险可控，建议加密监测频次`
   }
-  return `✅ 各指标平稳，形变速率 ${deformation.original}mm/d，处于正常范围，保持常规监测即可`
+  return `✅ 各指标平稳，形变速率 ${deformationOriginal}mm/d，处于正常范围，保持常规监测即可`
 })
 
 // 承灾体信息
 const exposureItems = computed(() => {
-  const population = props.point?.actual_population || parseThreatNumber(props.point?.threat)
-  const hasVelocity = (props.point?.velocity || 0) > 0.1
+  const population = props.point?.actual_population ?? parseThreatNumber(props.point?.threat)
+  const velocity = props.point?.velocity ?? 0
+  const hasVelocity = velocity > 0.1
+  const geologyStability = props.point?.geology?.stability ?? '暂无'
+  const currentScore = currentRisk.value.score
   
   return [
     {
@@ -370,23 +399,23 @@ const exposureItems = computed(() => {
     {
       icon: 'Monitor',
       label: '形变速率',
-      value: props.point?.velocity !== undefined ? `${props.point.velocity.toFixed(2)} mm/d` : '暂无',
+      value: velocity !== undefined ? `${velocity.toFixed(2)} mm/d` : '暂无',
       gradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
       trend: hasVelocity ? { type: 'warning', icon: '↑', value: '活跃中' } : { type: 'safe', icon: '→', value: '稳定' }
     },
     {
       icon: 'DataAnalysis',
       label: '地质稳定性',
-      value: props.point?.geology?.stability || '暂无',
+      value: geologyStability,
       gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
       trend: null
     },
     {
       icon: 'TrendCharts',
       label: '风险趋势',
-      value: currentRisk.value.score >= 50 ? '上升中' : '平稳',
+      value: currentScore >= 50 ? '上升中' : '平稳',
       gradient: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-      trend: currentRisk.value.score >= 50 ? { type: 'warning', icon: '↗', value: '+15%' } : { type: 'safe', icon: '→', value: '稳定' }
+      trend: currentScore >= 50 ? { type: 'warning', icon: '↗', value: '+15%' } : { type: 'safe', icon: '→', value: '稳定' }
     }
   ]
 })
@@ -394,8 +423,9 @@ const exposureItems = computed(() => {
 // 建议措施
 const recommendation = computed(() => {
   const score = currentRisk.value.score
-  const deformation = riskFactors.value[0]
-  const rainfall = riskFactors.value[2]
+  const deformationValue = riskFactors.value[0]?.value ?? 0
+  const deformationOriginal = riskFactors.value[0]?.original ?? 0
+  const rainfallValue = riskFactors.value[2]?.value ?? 0
   const level = normalizeRiskLevel(props.point?.level)
   
   // 基于 AI 分析的建议
@@ -407,7 +437,7 @@ const recommendation = computed(() => {
           type: 'urgent', 
           icon: 'Warning', 
           text: '立即启动红色预警，组织人员疏散', 
-          reason: `形变速率 ${deformation.original}mm/d 已达预警阈值`,
+          reason: `形变速率 ${deformationOriginal}mm/d 已达预警阈值`,
           priority: '紧急'
         },
         { 
@@ -436,7 +466,7 @@ const recommendation = computed(() => {
           type: 'warning', 
           icon: 'Warning', 
           text: '启动橙色预警，做好转移准备', 
-          reason: deformation.value > 40 ? '形变速率持续上升' : '风险等级较高',
+          reason: deformationValue > 40 ? '形变速率持续上升' : '风险等级较高',
           priority: '高优'
         },
         { 
@@ -472,7 +502,7 @@ const recommendation = computed(() => {
           type: 'normal', 
           icon: 'View', 
           text: '完善排水设施和边坡巡检', 
-          reason: rainfall.value > 30 ? '降雨季节需加强防护' : '例行维护',
+          reason: rainfallValue > 30 ? '降雨季节需加强防护' : '例行维护',
           priority: '常规'
         },
         { 
@@ -493,7 +523,7 @@ const recommendation = computed(() => {
         type: 'normal', 
         icon: 'View', 
         text: '维持常态化监测', 
-        reason: deformation.value < 20 ? '形变速率正常' : '风险可控',
+        reason: deformationValue < 20 ? '形变速率正常' : '风险可控',
         priority: '常规'
       },
       { 
