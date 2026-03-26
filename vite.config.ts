@@ -46,7 +46,8 @@ export default defineConfig({
           proxy.on('proxyReq', (proxyReq, req, res) => {
             console.log('代理请求:', req.method, req.url)
           })
-       }
-    }
-  }
-})
+        }
+      }  
+    }  
+  } 
+})  
