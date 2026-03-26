@@ -51,10 +51,10 @@ class RiskPointService {
 
   // 根据点名称获取风险点信息
   getRiskPointByName(pointName: string): RiskPoint | null {
-    if (!this.riskPointsData) return null
+    if (!this.riskPointsData?.points) return null
     
     // 模糊匹配点名称
-    const point = this.riskPointsData.points?.find(p => 
+    const point = this.riskPointsData.points.find(p => 
       p.name.includes(pointName) || pointName.includes(p.name)
     )
     
@@ -63,7 +63,7 @@ class RiskPointService {
 
   // 根据坐标获取最近的风险点
   getRiskPointByLocation(lng: number, lat: number): RiskPoint | null {
-    if (!this.riskPointsData) return null
+    if (!this.riskPointsData?.points) return null
     
     let minDistance = Infinity
     let closestPoint: RiskPoint | null = null
@@ -84,13 +84,13 @@ class RiskPointService {
 
   // 获取总人口
   getTotalPopulation(): number {
-    if (!this.riskPointsData) return 0
+    if (!this.riskPointsData?.points) return 0
     return this.riskPointsData.points.reduce((sum, point) => sum + point.actual_population, 0)
   }
 
   // 获取高风险点数量（极高风险 + 高风险）
   getHighRiskCount(): number {
-    if (!this.riskPointsData) return 0
+    if (!this.riskPointsData?.points) return 0
     return this.riskPointsData.points.filter(p => 
       p.level === '极高风险' || p.level === '高风险'
     ).length
@@ -98,7 +98,7 @@ class RiskPointService {
 
   // 获取指定点的影响人口
   getAffectedPopulation(pointName: string, lng?: number, lat?: number): number {
-    if (!this.riskPointsData) return 0
+    if (!this.riskPointsData?.points) return 0
     
     let riskPoint: RiskPoint | null = null
     
