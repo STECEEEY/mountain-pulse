@@ -280,7 +280,7 @@ private extractTitle(suggestion: string, riskLevel: string): string {
 }
 
 // 辅助方法：从现场信息中提取特征贡献
-private extractFeatureContributions(dutyNote: string, rationale: string): Array<{
+private extractFeatureContributionsFromAI(dutyNote: string, rationale: string): Array<{
   featureName: string
   currentValue: string | number
   contribution: number
@@ -291,13 +291,14 @@ private extractFeatureContributions(dutyNote: string, rationale: string): Array<
     contribution: number
   }> = []
   
+  // 从 dutyNote 中提取实际数据
   if (dutyNote.includes('降雨') || dutyNote.includes('mm')) {
     const rainfallMatch = dutyNote.match(/(\d+(?:\.\d+)?)mm/)
     const rainfall = rainfallMatch && rainfallMatch[1] ? rainfallMatch[1] : '38'
     contributions.push({
       featureName: '降雨量',
       currentValue: `${rainfall}mm`,
-      contribution: 0.45
+      contribution: 0.55  // 提高权重
     })
   }
   
@@ -307,14 +308,15 @@ private extractFeatureContributions(dutyNote: string, rationale: string): Array<
     contributions.push({
       featureName: '裂缝变形速率',
       currentValue: `${crackRate}mm/天`,
-      contribution: 0.35
+      contribution: 0.45
     })
   }
   
-  if (contributions.length === 0) {
+  // 如果没有降雨数据，尝试从 rationale 中提取天气信息
+  if (contributions.length === 0 && rationale.includes('雨')) {
     contributions.push({
-      featureName: '综合风险指数',
-      currentValue: '较高',
+      featureName: '降雨情况',
+      currentValue: '持续降雨',
       contribution: 0.6
     })
   }
