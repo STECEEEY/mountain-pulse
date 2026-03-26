@@ -217,13 +217,6 @@ watch(
     generateDecision()
   }
 )
-</script>
-
-<script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { ElMessage } from 'element-plus'
-import { useAiStore } from '@/stores/ai'
 
 const props = defineProps<{
   point: any
