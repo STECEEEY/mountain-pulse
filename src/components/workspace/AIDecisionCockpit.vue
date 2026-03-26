@@ -3,7 +3,7 @@
     <div class="cockpit-header">
       <div class="title-wrap">
         <h3>智能决策分析台</h3>
-        <el-tag size="small" type="warning">模拟数据</el-tag>
+        <el-tag size="small" type="warning">AI 实时分析</el-tag>
       </div>
       <div class="meta">
         <span class="model-tag">模型 {{ modelVersion }}</span>
@@ -129,7 +129,7 @@ const aiStore = useAiStore()
 const { mode, loading, error, modelVersion, lastUpdated, summary, decisions, demoRunning, demoSteps } = storeToRefs(aiStore)
 
 const pointName = computed(() => props.point?.name || '重点监测点')
-const modeLabel = computed(() => (mode.value === 'real' ? '接口' : '模拟'))
+const modeLabel = computed(() => (mode.value === 'real' ? '接口(阿里云)' : '模拟数据'))
 
 const buildRequest = () => ({
   pointName: pointName.value,
