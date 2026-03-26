@@ -165,6 +165,8 @@ const props = defineProps<{
   point: PointData | null
 }>()
 
+
+import { computed, ref, watch, onMounted } from 'vue'
 // 添加调试
 onMounted(() => {
   console.log('=== RiskClassification 接收到的数据 ===')
@@ -174,6 +176,7 @@ onMounted(() => {
   console.log('geology:', props.point?.geology)
   console.log('threat:', props.point?.threat)
 })
+
 
 // 降雨数据（从父组件传入）
 const rainfallData = ref<RainfallData | null>(null)
