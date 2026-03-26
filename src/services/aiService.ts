@@ -53,7 +53,7 @@ class AIService {
   async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
   console.log('🔧 AI服务调用开始')
   
-  if (this.apiKey === 'sk-35342788c99143de9769dc63f0fb5bf4' || !this.apiKey) {
+  if (!this.apiKey || this.apiKey === 'YOUR_DASHSCOPE_API_KEY') {
     console.warn('⚠️ 未配置阿里云 API Key，使用模拟数据模式')
     return this.getMockDecisions(request)
   }
