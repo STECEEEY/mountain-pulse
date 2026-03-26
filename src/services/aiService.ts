@@ -186,7 +186,7 @@ class AIService {
     
     // 如果响应包含 markdown 代码块，提取其中的 JSON
     const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-    if (codeBlockMatch) {
+    if (codeBlockMatch && codeBlockMatch[1]) {
       jsonStr = codeBlockMatch[1]
     }
     
@@ -285,11 +285,15 @@ private extractFeatureContributions(dutyNote: string, rationale: string): Array<
   currentValue: string | number
   contribution: number
 }> {
-  const contributions = []
+  const contributions: Array<{
+    featureName: string
+    currentValue: string | number
+    contribution: number
+  }> = []
   
   if (dutyNote.includes('降雨') || dutyNote.includes('mm')) {
     const rainfallMatch = dutyNote.match(/(\d+(?:\.\d+)?)mm/)
-    const rainfall = rainfallMatch ? rainfallMatch[1] : '38'
+    const rainfall = rainfallMatch && rainfallMatch[1] ? rainfallMatch[1] : '38'
     contributions.push({
       featureName: '降雨量',
       currentValue: `${rainfall}mm`,
@@ -299,7 +303,7 @@ private extractFeatureContributions(dutyNote: string, rationale: string): Array<
   
   if (dutyNote.includes('裂缝')) {
     const crackMatch = dutyNote.match(/裂缝[^\d]*(\d+(?:\.\d+)?)/)
-    const crackRate = crackMatch ? crackMatch[1] : '3.2'
+    const crackRate = crackMatch && crackMatch[1] ? crackMatch[1] : '3.2'
     contributions.push({
       featureName: '裂缝变形速率',
       currentValue: `${crackRate}mm/天`,
@@ -318,7 +322,6 @@ private extractFeatureContributions(dutyNote: string, rationale: string): Array<
   return contributions
 }
 
-// 辅助方法：提取阈值命中
 private extractThresholdHits(dutyNote: string, rationale: string): Array<{
   ruleName: string
   currentValue: number
@@ -326,11 +329,17 @@ private extractThresholdHits(dutyNote: string, rationale: string): Array<{
   unit: string
   status: 'hit' | 'near' | 'normal'
 }> {
-  const thresholdHits = []
+  const thresholdHits: Array<{
+    ruleName: string
+    currentValue: number
+    threshold: number
+    unit: string
+    status: 'hit' | 'near' | 'normal'
+  }> = []
   
   if (dutyNote.includes('降雨') || dutyNote.includes('mm')) {
     const rainfallMatch = dutyNote.match(/(\d+(?:\.\d+)?)mm/)
-    const rainfall = rainfallMatch ? parseFloat(rainfallMatch[1]) : 38
+    const rainfall = rainfallMatch && rainfallMatch[1] ? parseFloat(rainfallMatch[1]) : 38
     
     thresholdHits.push({
       ruleName: '24小时降雨量阈值',
