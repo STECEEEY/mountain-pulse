@@ -114,11 +114,6 @@ export const useAiStore = defineStore('ai', () => {
       await new Promise(resolve => setTimeout(resolve, 1500))
       updateStep('decision', 'done', `生成${decisions.value.length}条决策建议`)
       
-      // 步骤4: 通知下发
-      updateStep('notify', 'running', '通过短信、APP推送通知...')
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      updateStep('notify', 'done', '已通知相关责任人，等待确认执行')
-      
     } catch (error) {
       updateStep('fetch', 'error', '执行失败')
     } finally {
