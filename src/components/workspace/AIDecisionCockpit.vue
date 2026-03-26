@@ -218,10 +218,6 @@ watch(
   }
 )
 
-const props = defineProps<{
-  point: any
-}>()
-
 const dutyNote = ref('巡查员反馈：汤山北麓沟谷口有新裂缝，昨夜累计降雨38mm。')
 
 const aiStore = useAiStore()
