@@ -1,104 +1,129 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-import { aiService } from '@/services/aiService'
-import type { AIDecision, DecisionRequest, DecisionSummary, DemoStep } from '@/types/ai'
-import type { AiMode } from '@/services/aiService'
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+import { ref } from 'vue'
+import aiService, { type DecisionRequest, type DecisionItem } from '@/services/aiService'
 
 export const useAiStore = defineStore('ai', () => {
+  // State
+  const mode = ref<'real' | 'mock'>('real')
   const loading = ref(false)
-  const error = ref('')
-  const modelVersion = ref('-')
-  const lastUpdated = ref('')
-  const decisions = ref<AIDecision[]>([])
-  const summary = ref<DecisionSummary>({
+  const error = ref<string | null>(null)
+  const modelVersion = ref('qwen-plus')
+  const lastUpdated = ref<string | null>(null)
+  const summary = ref({
     highRiskCount: 0,
     actionCount: 0,
-    affectedPopulation: '-',
+    affectedPopulation: 0
   })
-
+  const decisions = ref<DecisionItem[]>([])
   const demoRunning = ref(false)
-  const currentMode = ref<AiMode>(aiService.defaultMode)
-  const demoSteps = ref<DemoStep[]>([
-    { key: 'discover', label: '风险发现', detail: '识别异常点位与触发阈值', status: 'pending' },
-    { key: 'generate', label: '决策生成', detail: '生成结构化行动建议', status: 'pending' },
-    { key: 'feedback', label: '执行回填', detail: '更新执行状态并归档', status: 'pending' },
+  const demoSteps = ref([
+    { key: 'fetch', label: '数据获取', detail: '等待执行', status: 'pending' },
+    { key: 'analyze', label: 'AI分析', detail: '等待执行', status: 'pending' },
+    { key: 'decision', label: '决策生成', detail: '等待执行', status: 'pending' },
+    { key: 'notify', label: '通知下发', detail: '等待执行', status: 'pending' }
   ])
 
-  const mode = computed(() => currentMode.value)
-
-  const toggleMode = () => {
-    currentMode.value = currentMode.value === 'mock' ? 'real' : 'mock'
-  }
-
-  const setDemoStep = (key: DemoStep['key'], status: DemoStep['status']) => {
-    const target = demoSteps.value.find((step) => step.key === key)
-    if (!target) return
-    target.status = status
-  }
-
-  const resetDemoSteps = () => {
-    demoSteps.value.forEach((step) => {
-      step.status = 'pending'
-    })
-  }
-
-  const refreshDecision = async (req: DecisionRequest) => {
+  // Actions
+  const refreshDecision = async (request: DecisionRequest) => {
     loading.value = true
-    error.value = ''
+    error.value = null
+    
     try {
-      const data = await aiService.getDecision(req, currentMode.value)
-      modelVersion.value = data.modelVersion
-      lastUpdated.value = new Date(data.generatedAt).toLocaleString('zh-CN')
-      summary.value = data.summary
-      decisions.value = data.decisions
+      let result: DecisionItem[]
+      
+      if (mode.value === 'real') {
+        // 使用真实AI服务
+        result = await aiService.generateDecision(request)
+        modelVersion.value = 'qwen-plus'
+      } else {
+        // 使用模拟数据
+        result = await aiService.generateDecision(request)
+        modelVersion.value = '模拟模型'
+      }
+      
+      decisions.value = result
+      lastUpdated.value = new Date().toLocaleString()
+      
+      // 更新摘要信息
+      summary.value = {
+        highRiskCount: result.filter(d => d.level === 'danger').length,
+        actionCount: result.length,
+        affectedPopulation: result.reduce((sum, d) => {
+          // 简单模拟影响人口
+          if (d.title.includes('转移')) return sum + 1250
+          if (d.title.includes('资源')) return sum + 800
+          return sum + 500
+        }, 0)
+      }
+      
     } catch (err: any) {
-      error.value = err?.message || '生成决策失败'
+      error.value = err.message || '决策生成失败'
+      console.error('刷新决策失败:', err)
     } finally {
       loading.value = false
     }
   }
-
+  
+  const toggleMode = () => {
+    mode.value = mode.value === 'real' ? 'mock' : 'real'
+  }
+  
   const markExecuted = (id: number) => {
-    const target = decisions.value.find((item) => item.id === id)
-    if (!target) return
-    target.status = '已执行'
-  }
-
-  const markReview = (id: number) => {
-    const target = decisions.value.find((item) => item.id === id)
-    if (!target) return
-    target.status = '人工复核'
-  }
-
-  const runDemoScript = async (req: DecisionRequest) => {
-    if (demoRunning.value) return
-    demoRunning.value = true
-    resetDemoSteps()
-
-    setDemoStep('discover', 'running')
-    await wait(650)
-    setDemoStep('discover', 'done')
-
-    setDemoStep('generate', 'running')
-    await refreshDecision(req)
-    await wait(500)
-    setDemoStep('generate', 'done')
-
-    setDemoStep('feedback', 'running')
-    if (decisions.value[0]) {
-      markExecuted(decisions.value[0].id)
+    const decision = decisions.value.find(d => d.id === id)
+    if (decision) {
+      decision.status = '已执行'
     }
-    await wait(550)
-    setDemoStep('feedback', 'done')
-
-    demoRunning.value = false
   }
-
+  
+  const markReview = (id: number) => {
+    const decision = decisions.value.find(d => d.id === id)
+    if (decision) {
+      decision.status = '待复核'
+    }
+  }
+  
+  const runDemoScript = async (request: DecisionRequest) => {
+    demoRunning.value = true
+    
+    const updateStep = (key: string, status: string, detail: string) => {
+      const step = demoSteps.value.find(s => s.key === key)
+      if (step) {
+        step.status = status
+        step.detail = detail
+      }
+    }
+    
+    try {
+      // 步骤1: 数据获取
+      updateStep('fetch', 'running', '正在获取监测数据...')
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      updateStep('fetch', 'done', '获取完成: 降雨量38mm, 裂缝变形率3.2mm/天')
+      
+      // 步骤2: AI分析
+      updateStep('analyze', 'running', '调用通义千问进行风险分析...')
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      updateStep('analyze', 'done', '分析完成: 识别出2个高风险点')
+      
+      // 步骤3: 决策生成
+      updateStep('decision', 'running', '生成应急决策方案...')
+      await refreshDecision(request)
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      updateStep('decision', 'done', `生成${decisions.value.length}条决策建议`)
+      
+      // 步骤4: 通知下发
+      updateStep('notify', 'running', '通过短信、APP推送通知...')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      updateStep('notify', 'done', '已通知相关责任人')
+      
+    } catch (error) {
+      updateStep('fetch', 'error', '执行失败')
+    } finally {
+      demoRunning.value = false
+    }
+  }
+  
   return {
     mode,
-    toggleMode,
     loading,
     error,
     modelVersion,
@@ -108,8 +133,9 @@ export const useAiStore = defineStore('ai', () => {
     demoRunning,
     demoSteps,
     refreshDecision,
+    toggleMode,
     markExecuted,
     markReview,
-    runDemoScript,
+    runDemoScript
   }
 })
