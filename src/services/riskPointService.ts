@@ -31,23 +31,24 @@ class RiskPointService {
 
   // 加载风险点数据
   async loadRiskPoints(): Promise<RiskPointsData | null> {
-    if (this.riskPointsData) {
-      return this.riskPointsData
-    }
-
-    try {
-      const response = await fetch('/data/risk_points.json')
-      if (!response.ok) {
-        throw new Error('加载风险点数据失败')
-      }
-      this.riskPointsData = await response.json()
-      console.log('风险点数据加载成功:', this.riskPointsData.total_count, '个点')
-      return this.riskPointsData
-    } catch (error) {
-      console.error('加载风险点数据失败:', error)
-      return null
-    }
+  if (this.riskPointsData) {
+    return this.riskPointsData
   }
+
+  try {
+    const response = await fetch('/data/risk_points.json')
+    if (!response.ok) {
+      throw new Error('加载风险点数据失败')
+    }
+    this.riskPointsData = await response.json()
+    // 添加可选链，或者先判断再输出
+    console.log('风险点数据加载成功:', this.riskPointsData?.total_count, '个点')
+    return this.riskPointsData
+  } catch (error) {
+    console.error('加载风险点数据失败:', error)
+    return null
+  }
+}
 
   // 根据点名称获取风险点信息
   getRiskPointByName(pointName: string): RiskPoint | null {
