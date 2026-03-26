@@ -51,63 +51,58 @@ class AIService {
    * 调用通义千问API进行决策分析
    */
   async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
-    try {
-      // 构建提示词
-      const prompt = this.buildPrompt(request)
-      
-      // 调用通义千问API
-      const response = await axios.post(
-        aliyunConfig.dashscope.endpoint,
-        {
-          model: aliyunConfig.dashscope.model,
-          input: {
-            messages: [
-              {
-                role: 'system',
-                content: `你是一个地质灾害智能决策分析专家。你需要根据输入的监测点信息和现场文本，输出结构化的决策建议。
-                输出格式要求：JSON数组，每个决策包含以下字段：
-                - title: 决策标题
-                - window: 时间窗口描述
-                - confidence: 置信度(0-100)
-                - level: 风险等级(danger/warning/info)
-                - action: 建议动作
-                - target: 执行对象
-                - explanation: 包含featureContributions(特征贡献数组，每个包含featureName、currentValue、contribution)、thresholdHits(阈值命中数组，每个包含ruleName、currentValue、threshold、unit、status)、dataTimeWindow(数据时间窗口信息)
-                - status: 状态(待执行)
-                
-                请基于以下数据生成决策：`
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ]
-          },
-          parameters: {
-            result_format: 'message',
-            temperature: 0.7,
-            top_p: 0.9
-          }
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-
-      // 解析AI返回的结果
-      const aiResponse = response.data.output.choices[0].message.content
-      const decisions = this.parseAIResponse(aiResponse, request)
-      
-      return decisions
-    } catch (error) {
-      console.error('AI服务调用失败:', error)
-      // 降级到模拟数据
-      return this.getMockDecisions(request)
-    }
+  console.log('🔧 AI服务调用开始')
+  
+  if (this.apiKey === 'sk-35342788c99143de9769dc63f0fb5bf4' || !this.apiKey) {
+    console.warn('⚠️ 未配置阿里云 API Key，使用模拟数据模式')
+    return this.getMockDecisions(request)
   }
+
+  try {
+    console.log('📡 调用阿里云通义千问 API...')
+    
+    // 开发环境使用代理，生产环境使用你的后端
+    const apiUrl = import.meta.env.DEV 
+      ? '/aliyun/api/v1/services/aigc/text-generation/generation'
+      : 'YOUR_BACKEND_URL/api/aliyun'  // 生产环境需要你的后端
+    
+    const response = await axios.post(
+      apiUrl,
+      {
+        model: aliyunConfig.dashscope.model,
+        input: {
+          messages: [
+            {
+              role: 'system',
+              content: `你是一个地质灾害智能决策分析专家。只输出 JSON 数组格式。`
+            },
+            {
+              role: 'user',
+              content: this.buildPrompt(request)
+            }
+          ]
+        },
+        parameters: {
+          result_format: 'message',
+          temperature: 0.7
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+    console.log('✅ API 调用成功')
+    const aiResponse = response.data.output.choices[0].message.content
+    return this.parseAIResponse(aiResponse, request)
+  } catch (error: any) {
+    console.error('❌ AI 调用失败:', error.message)
+    return this.getMockDecisions(request)
+  }
+}
 
   /**
    * 构建提示词
