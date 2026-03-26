@@ -39,15 +39,25 @@
       </div>
     </div>
 
-    <div class="action-row" style="margin-top: 10px;">
-      <button class="generate-btn" :disabled="loading" @click="generateDecision">
-        {{ loading ? '生成中...' : '更新决策' }}
-      </button>
-      <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
-        {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
-      </button>
+    <!-- 现场文本输入区域 -->
+    <div class="input-zone">
+      <label for="dutyNote">现场文本信息</label>
+      <textarea
+        id="dutyNote"
+        v-model="dutyNote"
+        rows="3"
+        placeholder="输入值班记录、巡查备注、降雨异常等文本信息"
+      />
+      <div class="action-row">
+        <button class="generate-btn" :disabled="loading" @click="generateDecision">
+          {{ loading ? '生成中...' : '更新决策' }}
+        </button>
+        <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
+          {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
+        </button>
+      </div>
+      <p v-if="error" class="error-tip">{{ error }}</p>
     </div>
-    <p v-if="error" class="error-tip">{{ error }}</p>
 
     <div class="demo-script">
       <h4>演示流程状态</h4>
@@ -127,7 +137,8 @@ const props = defineProps<{
   point: any
 }>()
 
-const dutyNote = ref('巡查员反馈：汤山北麓沟谷口有新裂缝')
+// 可编辑的现场文本
+const dutyNote = ref('巡查员反馈：汤山北麓沟谷口有新裂缝，昨夜累计降雨38mm。')
 const weatherInfo = ref<WeatherData | null>(null)
 const isLoadingWeather = ref(false)
 
@@ -150,10 +161,10 @@ const getWeather = async () => {
     if (weather) {
       weatherInfo.value = weather
       
-      // 如果有降雨，更新 dutyNote
-      if (weather.rain_intensity !== 'none') {
-        const rainDesc = weatherService.buildWeatherDescription(weather)
-        dutyNote.value = `巡查员反馈：${props.point?.name || '监测点'}有裂缝迹象。${rainDesc}`
+      // 如果有降雨，可选：添加到 dutyNote（但保留用户输入）
+      if (weather.rain_intensity !== 'none' && !dutyNote.value.includes('降雨')) {
+        // 不自动覆盖，让用户自己决定
+        console.log(`当前天气: ${weather.rainfall}`)
       }
     }
   } catch (error) {
@@ -217,7 +228,6 @@ watch(
     generateDecision()
   }
 )
-
 </script>
 
 <style scoped>
@@ -329,7 +339,6 @@ watch(
 }
 
 .generate-btn {
-  align-self: flex-end;
   border: 1px solid rgba(0, 220, 255, 0.45);
   background: linear-gradient(135deg, rgba(0, 133, 214, 0.95), rgba(0, 92, 205, 0.95));
   color: #fff;
@@ -608,5 +617,4 @@ watch(
   color: #ffd98e;
   margin-top: 6px;
 }
-
 </style>
