@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import aiService, { type DecisionRequest, type DecisionItem } from '@/services/aiService'
+import { ElMessage } from 'element-plus'
+import aiService, { type DecisionRequest, type DecisionItem } from '../services/aiService'
 
 export const useAiStore = defineStore('ai', () => {
   // State
-  const mode = ref<'real' | 'mock'>('real')
+  const mode = ref<'real' | 'mock'>('real')  // ← 确保这里是 'real'
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const modelVersion = ref('qwen-plus')
+  const modelVersion = ref('通义千问-plus')
   const lastUpdated = ref<string | null>(null)
   const summary = ref({
     highRiskCount: 0,
@@ -32,11 +33,13 @@ export const useAiStore = defineStore('ai', () => {
       let result: DecisionItem[]
       
       if (mode.value === 'real') {
-        // 使用真实AI服务
+        // 使用真实 AI 服务
+        console.log('🤖 调用真实阿里云 AI 服务...')
         result = await aiService.generateDecision(request)
-        modelVersion.value = 'qwen-plus'
+        modelVersion.value = '通义千问-plus'
       } else {
         // 使用模拟数据
+        console.log('📊 使用模拟数据模式')
         result = await aiService.generateDecision(request)
         modelVersion.value = '模拟模型'
       }
@@ -49,7 +52,6 @@ export const useAiStore = defineStore('ai', () => {
         highRiskCount: result.filter(d => d.level === 'danger').length,
         actionCount: result.length,
         affectedPopulation: result.reduce((sum, d) => {
-          // 简单模拟影响人口
           if (d.title.includes('转移')) return sum + 1250
           if (d.title.includes('资源')) return sum + 800
           return sum + 500
@@ -66,12 +68,14 @@ export const useAiStore = defineStore('ai', () => {
   
   const toggleMode = () => {
     mode.value = mode.value === 'real' ? 'mock' : 'real'
+    ElMessage.info(`已切换到${mode.value === 'real' ? '真实AI' : '模拟数据'}模式`)
   }
   
   const markExecuted = (id: number) => {
     const decision = decisions.value.find(d => d.id === id)
     if (decision) {
       decision.status = '已执行'
+      ElMessage.success('已标记为执行')
     }
   }
   
@@ -79,6 +83,7 @@ export const useAiStore = defineStore('ai', () => {
     const decision = decisions.value.find(d => d.id === id)
     if (decision) {
       decision.status = '待复核'
+      ElMessage.info('已转人工复核')
     }
   }
   
@@ -97,12 +102,12 @@ export const useAiStore = defineStore('ai', () => {
       // 步骤1: 数据获取
       updateStep('fetch', 'running', '正在获取监测数据...')
       await new Promise(resolve => setTimeout(resolve, 1500))
-      updateStep('fetch', 'done', '获取完成: 降雨量38mm, 裂缝变形率3.2mm/天')
+      updateStep('fetch', 'done', `获取完成: ${request.dutyNote.substring(0, 50)}...`)
       
       // 步骤2: AI分析
       updateStep('analyze', 'running', '调用通义千问进行风险分析...')
       await new Promise(resolve => setTimeout(resolve, 2000))
-      updateStep('analyze', 'done', '分析完成: 识别出2个高风险点')
+      updateStep('analyze', 'done', 'AI分析完成，正在提取风险特征')
       
       // 步骤3: 决策生成
       updateStep('decision', 'running', '生成应急决策方案...')
@@ -113,7 +118,7 @@ export const useAiStore = defineStore('ai', () => {
       // 步骤4: 通知下发
       updateStep('notify', 'running', '通过短信、APP推送通知...')
       await new Promise(resolve => setTimeout(resolve, 1000))
-      updateStep('notify', 'done', '已通知相关责任人')
+      updateStep('notify', 'done', '已通知相关责任人，等待确认执行')
       
     } catch (error) {
       updateStep('fetch', 'error', '执行失败')
