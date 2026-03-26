@@ -42,11 +42,11 @@ export default defineConfig({
         target: 'https://dashscope.aliyuncs.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/aliyun/, ''),
-        headers: {
-          'Origin': 'https://dashscope.aliyuncs.com',
-          'Referer': 'https://dashscope.aliyuncs.com'
-        }
-      }
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('代理请求:', req.method, req.url)
+          })
+       }
     }
   }
 })
