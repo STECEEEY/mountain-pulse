@@ -55,10 +55,10 @@
               <div class="bar-glow"></div>
             </div>
           </div>
-          <div class="timeline-trend" v-if="idx > 0">
-            <span :class="getTrendClass(pred.score, predictions[idx-1].score)">
-              {{ getTrendIcon(pred.score, predictions[idx-1].score) }}
-              {{ getTrendValue(pred.score, predictions[idx-1].score) }}%
+          <div class="timeline-trend" v-if="idx > 0 && predictions[idx-1]">
+            <span :class="getTrendClass(pred.score, predictions[idx-1]?.score ?? 0)">
+                {{ getTrendIcon(pred.score, predictions[idx-1]?.score ?? 0) }}
+                {{ getTrendValue(pred.score, predictions[idx-1]?.score ?? 0) }}%
             </span>
           </div>
         </div>
@@ -322,10 +322,10 @@ const currentRisk = computed(() => {
   
   const factors = riskFactors.value
   const rawScore = 
-    factors[0]?.value * weights.deformation +
-    factors[1]?.value * weights.geological +
-    factors[2]?.value * weights.rainfall +
-    factors[3]?.value * weights.population
+    (factors[0]?.value ?? 0) * weights.deformation +
+    (factors[1]?.value ?? 0) * weights.geological +
+    (factors[2]?.value ?? 0) * weights.rainfall +
+    (factors[3]?.value ?? 0) * weights.population
   
   const score = Math.round(rawScore || 0)
   
