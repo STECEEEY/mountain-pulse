@@ -54,7 +54,7 @@ class RiskPointService {
     if (!this.riskPointsData) return null
     
     // 模糊匹配点名称
-    const point = this.riskPointsData.points.find(p => 
+    const point = this.riskPointsData.points?.find(p => 
       p.name.includes(pointName) || pointName.includes(p.name)
     )
     
