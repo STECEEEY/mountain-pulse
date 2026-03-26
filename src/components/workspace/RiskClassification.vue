@@ -121,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { Cpu, ChatDotRound, Location, Opportunity, Warning, View, Monitor, User, DataAnalysis, TrendCharts } from '@element-plus/icons-vue'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
 
@@ -166,7 +166,6 @@ const props = defineProps<{
 }>()
 
 
-import { computed, ref, watch, onMounted } from 'vue'
 // 添加调试
 onMounted(() => {
   console.log('=== RiskClassification 接收到的数据 ===')
