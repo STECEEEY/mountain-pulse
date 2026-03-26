@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { aliyunConfig } from '@/config/aliyun'
+import { aliyunConfig } from '../config/aliyun'
 
 export interface DecisionRequest {
   pointName: string
