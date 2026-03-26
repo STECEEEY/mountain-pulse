@@ -2,10 +2,11 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import aiService, { type DecisionRequest, type DecisionItem } from '../services/aiService'
+import riskPointService from '../services/riskPointService'
 
 export const useAiStore = defineStore('ai', () => {
   // State
-  const mode = ref<'real' | 'mock'>('real')  // ← 确保这里是 'real'
+  const mode = ref<'real' | 'mock'>('real')
   const loading = ref(false)
   const error = ref<string | null>(null)
   const modelVersion = ref('通义千问-plus')
@@ -20,8 +21,27 @@ export const useAiStore = defineStore('ai', () => {
   const demoSteps = ref([
     { key: 'fetch', label: '数据获取', detail: '等待执行', status: 'pending' },
     { key: 'analyze', label: 'AI分析', detail: '等待执行', status: 'pending' },
-    { key: 'decision', label: '决策生成', detail: '等待执行', status: 'pending' },
+    { key: 'decision', label: '决策生成', detail: '等待执行', status: 'pending' }
   ])
+
+  // 加载风险点数据
+  const loadRiskPoints = async () => {
+    await riskPointService.loadRiskPoints()
+  }
+
+  // 更新摘要信息
+  const updateSummary = (decisionsList: DecisionItem[], pointName: string, lng?: number, lat?: number) => {
+    // 高风险点数量：从风险点数据中获取，或者从决策中统计
+    const highRiskFromData = riskPointService.getHighRiskCount()
+    const totalPopulation = riskPointService.getTotalPopulation()
+    const affectedPop = riskPointService.getAffectedPopulation(pointName, lng, lat)
+    
+    summary.value = {
+      highRiskCount: highRiskFromData > 0 ? highRiskFromData : decisionsList.filter(d => d.level === 'danger').length,
+      actionCount: decisionsList.length,
+      affectedPopulation: affectedPop > 0 ? affectedPop : totalPopulation
+    }
+  }
 
   // Actions
   const refreshDecision = async (request: DecisionRequest) => {
@@ -32,12 +52,10 @@ export const useAiStore = defineStore('ai', () => {
       let result: DecisionItem[]
       
       if (mode.value === 'real') {
-        // 使用真实 AI 服务
         console.log('🤖 调用真实阿里云 AI 服务...')
         result = await aiService.generateDecision(request)
         modelVersion.value = '通义千问-plus'
       } else {
-        // 使用模拟数据
         console.log('📊 使用模拟数据模式')
         result = await aiService.generateDecision(request)
         modelVersion.value = '模拟模型'
@@ -46,16 +64,8 @@ export const useAiStore = defineStore('ai', () => {
       decisions.value = result
       lastUpdated.value = new Date().toLocaleString()
       
-      // 更新摘要信息
-      summary.value = {
-        highRiskCount: result.filter(d => d.level === 'danger').length,
-        actionCount: result.length,
-        affectedPopulation: result.reduce((sum, d) => {
-          if (d.title.includes('转移')) return sum + 1250
-          if (d.title.includes('资源')) return sum + 800
-          return sum + 500
-        }, 0)
-      }
+      // 更新摘要信息（使用实际风险点数据）
+      updateSummary(result, request.pointName, request.lng, request.lat)
       
     } catch (err: any) {
       error.value = err.message || '决策生成失败'
@@ -120,6 +130,9 @@ export const useAiStore = defineStore('ai', () => {
       demoRunning.value = false
     }
   }
+  
+  // 初始化加载风险点数据
+  loadRiskPoints()
   
   return {
     mode,
