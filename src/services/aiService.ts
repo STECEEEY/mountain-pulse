@@ -226,7 +226,7 @@ class AIService {
             action: action,
             target: target,
             explanation: {
-              featureContributions: this.extractFeatureContributions(request.dutyNote, d.rationale),
+              featureContributions: this.extractFeatureContributionsFromAI(request.dutyNote, d.rationale),
               thresholdHits: this.extractThresholdHits(request.dutyNote, d.rationale),
               dataTimeWindow: {
                 startAt: new Date(Date.now() - 24 * 3600000).toISOString(),
