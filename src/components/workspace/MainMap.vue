@@ -142,25 +142,54 @@ const addRiskMapLayer = () => {
   if (!map || map.getLayer(RISK_MAP_LAYER_ID)) return
 
   const { west, east, south, north } = mapConfig.bounds
+  
+  // 坐标调整参数
+  const scale = 1.2        // 缩放系数
+  const rightShift = 0.15  // 右移
+  const downShift = -0.05  // 下移
+  
+  // 计算调整后的坐标
+  const originalWidth = east - west
+  const originalHeight = north - south
+  
+  const scaledWidth = originalWidth * scale
+  const scaledHeight = originalHeight * scale
+  
+  const centerX = (west + east) / 2
+  const centerY = (north + south) / 2
+  
+  const newWest = centerX - scaledWidth / 2 + rightShift
+  const newEast = centerX + scaledWidth / 2 + rightShift
+  const newSouth = centerY - scaledHeight / 2 + downShift
+  const newNorth = centerY + scaledHeight / 2 + downShift
+
+  // 如果 source 已存在，先移除再添加
+  if (map.getSource(RISK_MAP_SOURCE_ID)) {
+    map.removeSource(RISK_MAP_SOURCE_ID)
+  }
+
   map.addSource(RISK_MAP_SOURCE_ID, {
     type: 'image',
     url: '/data/risk_map.png',
     coordinates: [
-      [west, north],
-      [east, north],
-      [east, south],
-      [west, south],
+      [newWest, newNorth],
+      [newEast, newNorth],
+      [newEast, newSouth],
+      [newWest, newSouth],
     ],
   })
 
-  map.addLayer({
-    id: RISK_MAP_LAYER_ID,
-    type: 'raster',
-    source: RISK_MAP_SOURCE_ID,
-    paint: {
-      'raster-opacity': props.riskMapOpacity,
-    },
-  })
+  // 如果图层已存在，不需要重复添加
+  if (!map.getLayer(RISK_MAP_LAYER_ID)) {
+    map.addLayer({
+      id: RISK_MAP_LAYER_ID,
+      type: 'raster',
+      source: RISK_MAP_SOURCE_ID,
+      paint: {
+        'raster-opacity': props.riskMapOpacity,
+      },
+    })
+  }
 
   map.setLayoutProperty(RISK_MAP_LAYER_ID, 'visibility', props.layerState.riskMap ? 'visible' : 'none')
 }
