@@ -99,7 +99,7 @@ const normalizeCenter = (center: [number, number]): [number, number] => {
 }
 
 const loadStaticData = async () => {
-  const [configRes, pointsRes, highRiskRes] = await Promise.allSettled([
+  const [configRes, pointsRes] = await Promise.allSettled([
     riskService.loadMapConfig(),
     riskService.loadRiskPoints(),
   ])
