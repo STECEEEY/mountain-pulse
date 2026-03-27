@@ -179,27 +179,6 @@ const addRiskMapLayer = () => {
   map.setLayoutProperty(RISK_MAP_LAYER_ID, 'visibility', props.layerState.riskMap ? 'visible' : 'none')
 }
 
-  map.addLayer({
-    id: HIGH_RISK_FILL_LAYER_ID,
-    type: 'fill',
-    source: HIGH_RISK_SOURCE_ID,
-    paint: {
-      'fill-color': '#ff2d2d',
-      'fill-opacity': 0.28,
-    },
-  })
-
-  map.addLayer({
-    id: HIGH_RISK_LINE_LAYER_ID,
-    type: 'line',
-    source: HIGH_RISK_SOURCE_ID,
-    paint: {
-      'line-color': '#ff4444',
-      'line-width': 2,
-      'line-opacity': 0.9,
-    },
-  })
-
 const addDisasterPointsLayer = () => {
   if (!map || map.getLayer(DISASTER_POINTS_LAYER_ID)) return
 
