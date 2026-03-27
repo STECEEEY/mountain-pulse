@@ -512,13 +512,13 @@ const refreshAIAnalysis = async () => {
       // 尝试从 AI 返回的内容中解析
       let analysisData = null
       
-      // 如果 AI 返回的是标准格式，直接使用
-      if (firstDecision.title && firstDecision.action) {
+      // 如果 AI 返回的是标准格式，直接使用（添加空值检查）
+      if (firstDecision && firstDecision.title && firstDecision.action) {
         analysisData = {
-          summary: firstDecision.title,
+          summary: firstDecision.title || '形变趋势分析完成',
           riskLevel: firstDecision.level === 'danger' ? 'high' : firstDecision.level === 'warning' ? 'medium' : 'low',
           riskText: firstDecision.level === 'danger' ? '高风险' : firstDecision.level === 'warning' ? '中风险' : '低风险',
-          riskDescription: firstDecision.action,
+          riskDescription: firstDecision.action || '请关注形变数据变化',
           predictions: [
             `未来7天形变速率预计${Math.abs(stats.value.rate || 0) > 5 ? '持续加快' : '保持稳定'}`,
             `若${Math.abs(stats.value.rate || 0) > 3 ? '持续降雨' : '无极端天气'}，风险将${Math.abs(stats.value.rate || 0) > 5 ? '显著上升' : '基本可控'}`,
@@ -553,9 +553,13 @@ const refreshAIAnalysis = async () => {
         }
       }
       
-      aiResult.value = {
-        ...analysisData,
-        analysisTime: new Date().toLocaleString()
+      if (analysisData) {
+        aiResult.value = {
+          ...analysisData,
+          analysisTime: new Date().toLocaleString()
+        }
+      } else {
+        generateDefaultAnalysis()
       }
     } else {
       // 没有返回决策，使用默认分析
