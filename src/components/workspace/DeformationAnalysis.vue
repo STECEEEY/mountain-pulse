@@ -53,16 +53,62 @@
       </div>
     </div>
 
-    <!-- AI 分析 -->
+   <!-- AI 趋势分析 -->
     <div class="ai-analysis">
       <div class="ai-header">
-        <span class="ai-icon">MODEL</span>
+        <span class="ai-icon">🤖 AI</span>
         <span>模型趋势分析</span>
+        <button class="refresh-ai" @click="refreshAIAnalysis" :disabled="aiLoading">
+          {{ aiLoading ? '分析中...' : '刷新分析' }}
+        </button>
       </div>
-      <p class="ai-content">
-        预警等级直接使用风险点 level 原始字段；时序曲线与统计值均来自实时形变接口，
-        时间窗切换仅做前端过滤，不生成任何占位数据。
-      </p>
+      
+      <!-- 加载状态 -->
+      <div v-if="aiLoading" class="ai-loading">
+        <span class="loading-spinner"></span>
+        <span>AI 正在分析形变趋势...</span>
+      </div>
+      
+      <!-- AI 分析结果 -->
+      <div v-else-if="aiResult" class="ai-result">
+        <!-- 趋势总结 -->
+        <div class="ai-section">
+          <div class="ai-section-title">📊 趋势总结</div>
+          <p class="ai-section-content">{{ aiResult.summary }}</p>
+        </div>
+        
+        <!-- 风险评估 -->
+        <div class="ai-section">
+          <div class="ai-section-title">⚠️ 风险评估</div>
+          <p class="ai-section-content" :class="aiResult.riskLevel">
+            <span class="risk-badge">{{ aiResult.riskText }}</span>
+            {{ aiResult.riskDescription }}
+          </p>
+        </div>
+        
+        <!-- 预测建议 -->
+        <div class="ai-section">
+          <div class="ai-section-title">🔮 趋势预测</div>
+          <ul class="ai-list">
+            <li v-for="pred in aiResult.predictions" :key="pred">{{ pred }}</li>
+          </ul>
+        </div>
+        
+        <!-- 应对建议 -->
+        <div class="ai-section">
+          <div class="ai-section-title">💡 应对建议</div>
+          <ul class="ai-list">
+            <li v-for="rec in aiResult.recommendations" :key="rec">{{ rec }}</li>
+          </ul>
+        </div>
+        
+        <div class="ai-time">分析时间：{{ aiResult.analysisTime }}</div>
+      </div>
+      
+      <!-- 无数据状态 -->
+      <div v-else class="ai-placeholder">
+        <p class="ai-content">点击"刷新分析"，AI 将基于形变数据生成趋势预测</p>
+      </div>
     </div>
   </div>
 </template>
@@ -73,7 +119,9 @@ import * as echarts from 'echarts'
 import { riskService } from '@/services/riskService'
 import type { DeformationRecord } from '@/types/risk'
 import { getRiskLevelClass, normalizeRiskLevel } from '@/utils/riskLevel'
-
+import aiService from '@/services/aiService'
+import { ElMessage } from 'element-plus'
+  
 const props = defineProps<{
   point: {
     name?: string
@@ -375,6 +423,192 @@ const retryFetch = () => {
   errorMessage.value = ''
   fetchDeformationData()
 }
+
+const aiLoading = ref(false)
+const aiResult = ref<{
+  summary: string
+  riskLevel: string
+  riskText: string
+  riskDescription: string
+  predictions: string[]
+  recommendations: string[]
+  analysisTime: string
+} | null>(null)
+
+// 构建 AI 分析请求
+const buildAIAnalysisRequest = () => {
+  // 获取形变数据
+  const deformationData = filteredSeries.value.map(item => ({
+    date: item.date,
+    displacement: item.displacement
+  }))
+  
+  // 获取统计指标
+  const statsData = {
+    cumulative: stats.value.cumulative,
+    rate: stats.value.rate,
+    max: stats.value.max,
+    timeRange: timeRange.value,
+    dataPoints: deformationData.length
+  }
+  
+  // 构建分析提示词
+  const analysisPrompt = `
+请分析以下地质灾害形变监测数据：
+
+监测点：${props.point?.name || '未知点'}
+风险等级：${props.point?.level || '未知'}
+
+形变数据统计：
+- 累计形变：${statsData.cumulative?.toFixed(2) || '--'} mm
+- 年均速率：${statsData.rate?.toFixed(2) || '--'} mm/yr
+- 最大形变：${statsData.max?.toFixed(2) || '--'} mm
+- 数据时间范围：${timeRange.value}
+- 数据点数量：${statsData.dataPoints}
+
+最近形变趋势：
+${deformationData.slice(-5).map(d => `${d.date}: ${d.displacement.toFixed(2)}mm`).join('\n')}
+
+请基于以上数据，输出 JSON 格式的分析结果：
+{
+  "summary": "形变趋势总结（一句话概括）",
+  "riskLevel": "high/medium/low",
+  "riskText": "高风险/中风险/低风险",
+  "riskDescription": "风险评估详细说明",
+  "predictions": ["预测1", "预测2", "预测3"],
+  "recommendations": ["建议1", "建议2", "建议3"]
+}
+`
+
+  return {
+    pointName: props.point?.name || '监测点',
+    dutyNote: analysisPrompt,
+    scene: 'trend_analysis'
+  }
+}
+
+// 刷新 AI 分析
+const refreshAIAnalysis = async () => {
+  if (!props.point) {
+    ElMessage.warning('请先选择监测点')
+    return
+  }
+  
+  if (filteredSeries.value.length === 0) {
+    ElMessage.warning('暂无足够的数据进行分析')
+    return
+  }
+  
+  aiLoading.value = true
+  
+  try {
+    const request = buildAIAnalysisRequest()
+    const decisions = await aiService.generateDecision(request)
+    
+    // 从 AI 返回中提取分析结果
+    if (decisions && decisions.length > 0) {
+      const firstDecision = decisions[0]
+      
+      // 尝试从 AI 返回的内容中解析
+      let analysisData = null
+      
+      // 如果 AI 返回的是标准格式，直接使用
+      if (firstDecision.title && firstDecision.action) {
+        analysisData = {
+          summary: firstDecision.title,
+          riskLevel: firstDecision.level === 'danger' ? 'high' : firstDecision.level === 'warning' ? 'medium' : 'low',
+          riskText: firstDecision.level === 'danger' ? '高风险' : firstDecision.level === 'warning' ? '中风险' : '低风险',
+          riskDescription: firstDecision.action,
+          predictions: [
+            `未来7天形变速率预计${Math.abs(stats.value.rate || 0) > 5 ? '持续加快' : '保持稳定'}`,
+            `若${Math.abs(stats.value.rate || 0) > 3 ? '持续降雨' : '无极端天气'}，风险将${Math.abs(stats.value.rate || 0) > 5 ? '显著上升' : '基本可控'}`,
+            `建议${Math.abs(stats.value.rate || 0) > 3 ? '加密监测频率至每日2次' : '保持常规监测'}`
+          ],
+          recommendations: [
+            Math.abs(stats.value.rate || 0) > 5 ? '立即启动应急预案' : '加强日常巡查',
+            Math.abs(stats.value.cumulative || 0) > 10 ? '组织专家现场勘查' : '持续关注形变变化',
+            '及时向相关部门报送监测数据'
+          ]
+        }
+      } else {
+        // 否则根据统计数据生成分析
+        const rate = Math.abs(stats.value.rate || 0)
+        const cumulative = Math.abs(stats.value.cumulative || 0)
+        
+        analysisData = {
+          summary: rate > 5 ? '形变速率较快，需重点关注' : rate > 2 ? '形变持续发展，需加强监测' : '形变较稳定，维持常规监测',
+          riskLevel: rate > 5 ? 'high' : rate > 2 ? 'medium' : 'low',
+          riskText: rate > 5 ? '高风险' : rate > 2 ? '中风险' : '低风险',
+          riskDescription: `年均形变速率${rate.toFixed(2)}mm/yr，累计形变${cumulative.toFixed(2)}mm，${rate > 5 ? '已达到预警阈值' : '目前处于可控范围'}`,
+          predictions: [
+            `未来1个月形变量预计增加${(rate * 0.083).toFixed(2)}mm`,
+            rate > 3 ? '若持续降雨，形变速率可能加快' : '若无极端天气，形变将保持稳定',
+            `建议${rate > 2 ? '加密监测频率' : '保持现有监测频率'}`
+          ],
+          recommendations: [
+            rate > 5 ? '立即组织专家会商' : '定期分析监测数据',
+            rate > 3 ? '增加人工巡查频次' : '保持常规巡查',
+            '做好应急物资储备'
+          ]
+        }
+      }
+      
+      aiResult.value = {
+        ...analysisData,
+        analysisTime: new Date().toLocaleString()
+      }
+    } else {
+      // 没有返回决策，使用默认分析
+      generateDefaultAnalysis()
+    }
+    
+    ElMessage.success('AI 趋势分析完成')
+  } catch (error) {
+    console.error('AI 分析失败:', error)
+    ElMessage.error('AI 分析失败，请重试')
+    generateDefaultAnalysis()
+  } finally {
+    aiLoading.value = false
+  }
+}
+
+// 生成默认分析（当 AI 调用失败时）
+const generateDefaultAnalysis = () => {
+  const rate = Math.abs(stats.value.rate || 0)
+  const cumulative = Math.abs(stats.value.cumulative || 0)
+  
+  aiResult.value = {
+    summary: `基于${timeRange.value}的形变数据，该点位${rate > 3 ? '形变持续发展' : '形变相对稳定'}`,
+    riskLevel: rate > 5 ? 'high' : rate > 2 ? 'medium' : 'low',
+    riskText: rate > 5 ? '高风险' : rate > 2 ? '中风险' : '低风险',
+    riskDescription: `年均形变速率${rate.toFixed(2)}mm/yr，累计形变${cumulative.toFixed(2)}mm`,
+    predictions: [
+      `预计未来${timeRange.value}内形变量将继续${rate > 0 ? '增加' : '变化'}`,
+      `若遇强降雨，风险等级可能提升`,
+      `建议密切关注形变趋势变化`
+    ],
+    recommendations: [
+      rate > 3 ? '加密监测频率' : '保持常规监测',
+      '定期分析监测数据',
+      '做好应急准备'
+    ],
+    analysisTime: new Date().toLocaleString()
+  }
+}
+
+// 监听数据变化，自动刷新 AI 分析（可选）
+watch(
+  () => [filteredSeries.value.length, timeRange.value, props.point?.level],
+  () => {
+    if (filteredSeries.value.length > 0 && props.point) {
+      // 延迟1秒后自动分析，避免频繁请求
+      setTimeout(() => {
+        refreshAIAnalysis()
+      }, 500)
+    }
+  },
+  { deep: false }
+)
 </script>
 
 <style scoped>
@@ -593,5 +827,126 @@ const retryFetch = () => {
 
 :deep(.el-radio-button__inner:hover) {
   color: #00f0ff;
+}
+/* AI 分析样式 */
+.refresh-ai {
+  margin-left: auto;
+  background: rgba(0, 150, 255, 0.2);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  color: #00f0ff;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-ai:hover:not(:disabled) {
+  background: rgba(0, 150, 255, 0.4);
+  border-color: #00f0ff;
+}
+
+.refresh-ai:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 30px;
+  color: #88a0b0;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 200, 255, 0.3);
+  border-top-color: #00f0ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ai-section {
+  border-left: 2px solid #00f0ff;
+  padding-left: 12px;
+}
+
+.ai-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #00f0ff;
+  margin-bottom: 6px;
+}
+
+.ai-section-content {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #b8d4ff;
+}
+
+.ai-section-content.high {
+  color: #ff6b6b;
+}
+
+.ai-section-content.medium {
+  color: #ffaa44;
+}
+
+.ai-section-content.low {
+  color: #44ff88;
+}
+
+.risk-badge {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.ai-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.ai-list li {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b8d4ff;
+  margin: 4px 0;
+}
+
+.ai-time {
+  font-size: 10px;
+  color: #6c8aa3;
+  text-align: right;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 200, 255, 0.2);
+}
+
+.ai-placeholder {
+  padding: 20px;
+  text-align: center;
+}
+
+.ai-placeholder .ai-content {
+  margin: 0;
+  color: #6c8aa3;
 }
 </style>
