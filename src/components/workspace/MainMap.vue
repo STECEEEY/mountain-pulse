@@ -200,35 +200,6 @@ const addRiskMapLayer = () => {
     },
   })
 
-  map.on('click', HIGH_RISK_FILL_LAYER_ID, (e) => {
-    const feature = e.features?.[0]
-    if (!feature || !feature.properties) return
-
-    const riskProbability =
-      feature.properties.risk_probability ?? feature.properties.probability ?? feature.properties.risk ?? '未知'
-    const riskLevel = feature.properties.risk_level ?? feature.properties.level ?? '高风险'
-
-    new mapboxgl.Popup({ offset: 18, className: 'dark-popup' })
-      .setLngLat(e.lngLat)
-      .setHTML(`
-        <div class="popup-content">
-          <strong>高风险区域</strong><br/>
-          <span>风险概率：${riskProbability}</span><br/>
-          <span style="color:#ff7777;">风险等级：${riskLevel}</span>
-        </div>
-      `)
-      .addTo(map!)
-  })
-
-  map.on('mouseenter', HIGH_RISK_FILL_LAYER_ID, () => {
-    if (map) map.getCanvas().style.cursor = 'pointer'
-  })
-
-  map.on('mouseleave', HIGH_RISK_FILL_LAYER_ID, () => {
-    if (map) map.getCanvas().style.cursor = ''
-  })
-}
-
 const addDisasterPointsLayer = () => {
   if (!map || map.getLayer(DISASTER_POINTS_LAYER_ID)) return
 
