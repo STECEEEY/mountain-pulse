@@ -194,9 +194,6 @@ const addRiskMapLayer = () => {
   map.setLayoutProperty(RISK_MAP_LAYER_ID, 'visibility', props.layerState.riskMap ? 'visible' : 'none')
 }
 
-const addHighRiskAreaLayer = () => {
-  if (!map || map.getLayer(HIGH_RISK_FILL_LAYER_ID) || highRiskGeoJSON.features.length === 0) return
-
   map.addSource(HIGH_RISK_SOURCE_ID, {
     type: 'geojson',
     data: highRiskGeoJSON,
@@ -389,7 +386,6 @@ const initMap = () => {
     map?.setProjection('mercator')
     map?.setFog(null)
     addRiskMapLayer()
-    addHighRiskAreaLayer()
     addDisasterPointsLayer()
     syncLayerVisibility()
   })
