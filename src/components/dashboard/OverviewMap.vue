@@ -159,9 +159,9 @@ const addRiskMapLayer = () => {
 
   const { west, east, south, north } = mapConfig.bounds
   
-  const scale = 1.2
-  const rightShift = 0.15
-  const downShift = -0.05
+  const scale = 1.35        // 缩放系数
+  const rightShift = 0.21  // 右移
+  const downShift = -0.07  // 下移
   
   const originalWidth = east - west
   const originalHeight = north - south
