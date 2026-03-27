@@ -9,10 +9,6 @@
           <span>风险底图</span>
         </label>
         <label class="layer-item">
-          <el-checkbox :model-value="props.layerState.highRiskArea" @change="onHighRiskAreaChange" />
-          <span>高风险区</span>
-        </label>
-        <label class="layer-item">
           <el-checkbox :model-value="props.layerState.disasterPoints" @change="onDisasterPointsChange" />
           <span>灾害点</span>
         </label>
@@ -57,7 +53,6 @@ const updateLayer = (key: keyof LayerState, value: unknown) => {
 }
 
 const onRiskMapChange = (value: unknown) => updateLayer('riskMap', value)
-const onHighRiskAreaChange = (value: unknown) => updateLayer('highRiskArea', value)
 const onDisasterPointsChange = (value: unknown) => updateLayer('disasterPoints', value)
 
 const updateOpacity = (value: number | number[]) => {
