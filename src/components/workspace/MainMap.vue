@@ -21,14 +21,13 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { riskService } from '@/services/riskService'
-import type { HighRiskGeoJSON, MapConfig, RiskPoint } from '@/types/risk'
+import type { MapConfig, RiskPoint } from '@/types/risk'
 import { getRiskLevelColor } from '@/utils/riskLevel'
 
 const emit = defineEmits(['select-point'])
 
 interface LayerState {
   riskMap: boolean
-  highRiskArea: boolean
   disasterPoints: boolean
 }
 
@@ -50,9 +49,6 @@ let map: mapboxgl.Map | null = null
 
 const RISK_MAP_SOURCE_ID = 'risk-map-source'
 const RISK_MAP_LAYER_ID = 'risk-map-layer'
-const HIGH_RISK_SOURCE_ID = 'high-risk-source'
-const HIGH_RISK_FILL_LAYER_ID = 'high-risk-fill'
-const HIGH_RISK_LINE_LAYER_ID = 'high-risk-line'
 const DISASTER_POINTS_SOURCE_ID = 'disaster-points-source'
 const DISASTER_POINTS_LAYER_ID = 'disaster-points-layer'
 
@@ -79,7 +75,6 @@ const fallbackMapConfig: MapConfig = {
 
 let mapConfig: MapConfig = fallbackMapConfig
 let monitoringPoints: RiskPoint[] = []
-let highRiskGeoJSON: HighRiskGeoJSON = { type: 'FeatureCollection', features: [] }
 
 const withinBounds = (point: RiskPoint, bounds: MapConfig['bounds']) => {
   return (
@@ -107,7 +102,6 @@ const loadStaticData = async () => {
   const [configRes, pointsRes, highRiskRes] = await Promise.allSettled([
     riskService.loadMapConfig(),
     riskService.loadRiskPoints(),
-    riskService.loadHighRiskGeoJSON(),
   ])
 
   if (configRes.status === 'fulfilled') {
@@ -126,15 +120,6 @@ const loadStaticData = async () => {
   } else {
     monitoringPoints = []
     mapHint.value = 'risk_points.json 加载失败或为空，当前暂无可展示监测点。'
-  }
-
-  if (highRiskRes.status === 'fulfilled') {
-    highRiskGeoJSON = highRiskRes.value
-    if (highRiskGeoJSON.features.length === 0) {
-      mapHint.value = 'high_risk_points.geojson 当前为空，未渲染高风险面图层。'
-    }
-  } else {
-    mapHint.value = 'high_risk_points.geojson 加载失败，未渲染高风险面图层。'
   }
 }
 
@@ -193,11 +178,6 @@ const addRiskMapLayer = () => {
 
   map.setLayoutProperty(RISK_MAP_LAYER_ID, 'visibility', props.layerState.riskMap ? 'visible' : 'none')
 }
-
-  map.addSource(HIGH_RISK_SOURCE_ID, {
-    type: 'geojson',
-    data: highRiskGeoJSON,
-  })
 
   map.addLayer({
     id: HIGH_RISK_FILL_LAYER_ID,
@@ -357,8 +337,6 @@ const setLayerVisibility = (layerId: string, visible: boolean) => {
 const syncLayerVisibility = () => {
   if (!map) return
   setLayerVisibility(RISK_MAP_LAYER_ID, props.layerState.riskMap)
-  setLayerVisibility(HIGH_RISK_FILL_LAYER_ID, props.layerState.highRiskArea)
-  setLayerVisibility(HIGH_RISK_LINE_LAYER_ID, props.layerState.highRiskArea)
   setLayerVisibility(DISASTER_POINTS_LAYER_ID, props.layerState.disasterPoints)
   if (map.getLayer(RISK_MAP_LAYER_ID)) {
     map.setPaintProperty(RISK_MAP_LAYER_ID, 'raster-opacity', props.riskMapOpacity)
