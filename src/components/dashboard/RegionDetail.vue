@@ -41,7 +41,17 @@
     </div>
     
     <div class="facilities-section">
-      <h4>关键设施</h4>
+      <div class="facilities-header">
+        <h4>关键设施</h4>
+        <button 
+          v-if="currentRiskPoint" 
+          class="refresh-btn" 
+          @click="refreshFacilities"
+          :disabled="loadingFacilities"
+        >
+          {{ loadingFacilities ? '刷新中...' : '🔄 刷新' }}
+        </button>
+      </div>
       
       <!-- 调试信息 -->
       <div class="debug-bar">
@@ -49,7 +59,6 @@
         <div>选中风险点: {{ currentRiskPoint ? currentRiskPoint.name : '无' }}</div>
         <div>加载状态: {{ loadingFacilities ? '加载中' : '已完成' }}</div>
         <div>设施数量: {{ facilities.length }}</div>
-        <div>props值: {{ props.selectedRiskPoint ? props.selectedRiskPoint.name : '无' }}</div>
       </div>
       
       <!-- 未选择风险点时显示提示 -->
@@ -96,7 +105,8 @@
       <div v-else class="empty-facility">
         <div class="empty-icon">🏗️</div>
         <div class="empty-text">该风险点周边5km内暂无关键设施</div>
-        <div class="empty-sub">请尝试选择其他风险点</div>
+        <div class="empty-sub">请尝试点击刷新按钮或选择其他风险点</div>
+        <button class="retry-btn" @click="refreshFacilities">重新搜索</button>
       </div>
     </div>
   </div>
@@ -361,7 +371,6 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   }
   
   loadingFacilities.value = true
-  facilities.value = []
   
   try {
     console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
@@ -385,6 +394,14 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   } finally {
     loadingFacilities.value = false
     await nextTick()
+  }
+}
+
+// 刷新设施数据
+const refreshFacilities = async () => {
+  if (currentRiskPoint.value) {
+    console.log('🔄 手动刷新设施数据')
+    await loadFacilities(currentRiskPoint.value)
   }
 }
 
@@ -424,7 +441,6 @@ watch(() => props.selectedRiskPoint, (newPoint) => {
   console.log('   lat/lng:', newPoint?.lat, newPoint?.lng)
   
   if (newPoint && newPoint.lat && newPoint.lng) {
-    // 直接赋值
     currentRiskPoint.value = newPoint
     console.log('✅ currentRiskPoint 已设置:', currentRiskPoint.value?.name)
     loadFacilities(newPoint)
@@ -434,23 +450,6 @@ watch(() => props.selectedRiskPoint, (newPoint) => {
     emit('facilitiesUpdate', [])
   }
 }, { immediate: true })
-
-// 暴露一个方法供父组件调用
-const setRiskPoint = (point: RiskPoint | null) => {
-  console.log('📞 手动调用 setRiskPoint:', point)
-  if (point && point.lat && point.lng) {
-    currentRiskPoint.value = point
-    loadFacilities(point)
-  } else {
-    currentRiskPoint.value = null
-    facilities.value = []
-  }
-}
-
-// 暴露给父组件
-defineExpose({
-  setRiskPoint
-})
 
 const onFacilityClick = (facility: Facility) => {
   console.log('点击设施:', facility.name)
@@ -464,13 +463,11 @@ const onFacilityClick = (facility: Facility) => {
 
 onMounted(() => {
   console.log('关键设施组件已挂载')
-  console.log('初始 props.selectedRiskPoint:', props.selectedRiskPoint)
   loadRegion()
 })
 </script>
 
 <style scoped>
-/* 样式保持不变 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -587,10 +584,38 @@ onMounted(() => {
   padding-top: 16px;
 }
 
+.facilities-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .facilities-section h4 {
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 13px;
   color: #a0d0ff;
+}
+
+.refresh-btn {
+  background: rgba(0, 150, 255, 0.2);
+  border: 1px solid rgba(0, 200, 255, 0.3);
+  color: #00f0ff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: rgba(0, 200, 255, 0.3);
+  transform: scale(1.02);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .debug-bar {
@@ -821,6 +846,24 @@ onMounted(() => {
 .empty-sub {
   font-size: 11px;
   color: #6688a0;
+  margin-bottom: 12px;
+}
+
+.retry-btn {
+  background: rgba(0, 150, 255, 0.3);
+  border: 1px solid rgba(0, 200, 255, 0.5);
+  color: #00f0ff;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: rgba(0, 200, 255, 0.4);
+  transform: scale(1.02);
 }
 
 .facility-list::-webkit-scrollbar {
