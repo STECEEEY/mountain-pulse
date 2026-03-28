@@ -45,10 +45,21 @@
       
       <!-- 调试信息：显示当前状态 -->
       <div class="debug-bar">
-        调试: 选中={{ !!currentRiskPoint }} | 加载中={{ loadingFacilities }} | 设施数={{ facilities.length }}
-        <div v-if="currentRiskPoint" style="font-size: 9px; margin-top: 2px;">
-          {{ currentRiskPoint.name }} ({{ currentRiskPoint.lat }}, {{ currentRiskPoint.lng }})
+        🔍 调试信息:
+        <div>选中风险点: {{ currentRiskPoint ? currentRiskPoint.name : '无' }}</div>
+        <div>加载状态: {{ loadingFacilities ? '加载中' : '已完成' }}</div>
+        <div>设施数量: {{ facilities.length }}</div>
+        <div v-if="facilities.length > 0" style="color: #0f0;">✅ 已加载 {{ facilities.length }} 个设施</div>
+        <div v-else-if="currentRiskPoint && !loadingFacilities" style="color: #ff0;">⚠️ 未找到设施</div>
+      </div>
+      
+      <!-- 直接显示设施列表（用于测试） -->
+      <div v-if="facilities.length > 0" style="margin-bottom: 16px; padding: 12px; background: rgba(0,100,0,0.2); border-radius: 8px;">
+        <div style="font-weight: bold; margin-bottom: 8px;">📋 设施列表（共 {{ facilities.length }} 个）:</div>
+        <div v-for="(facility, idx) in facilities.slice(0, 5)" :key="idx" style="font-size: 11px; padding: 4px 0;">
+          {{ idx+1 }}. {{ facility.name }} - {{ facility.distance }}m - {{ facility.risk }}
         </div>
+        <div v-if="facilities.length > 5" style="font-size: 10px; color: #888;">...还有 {{ facilities.length - 5 }} 个</div>
       </div>
       
       <!-- 未选择风险点时显示提示 -->
@@ -64,7 +75,7 @@
         <div>正在搜索 {{ currentRiskPoint.name }} 周边关键设施...</div>
       </div>
       
-      <!-- 已选择风险点，有设施数据 -->
+      <!-- 已选择风险点，有设施数据 - 详细列表 -->
       <div v-else-if="facilities.length > 0" class="facility-list-wrapper">
         <div class="facility-header">
           <span>{{ currentRiskPoint.name }} 周边5km关键设施</span>
@@ -73,7 +84,7 @@
         <div class="facility-list">
           <div 
             v-for="(facility, index) in facilities" 
-            :key="`${facility.id}-${index}`" 
+            :key="index" 
             class="facility-item"
             @click="onFacilityClick(facility)"
           >
@@ -102,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, nextTick } from 'vue'
+import { onMounted, ref, watch, nextTick, triggerRef } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
@@ -144,7 +155,7 @@ const emit = defineEmits<{
   (e: 'facilityClick', facility: { name: string; lat: number; lng: number; type: string }): void
 }>()
 
-// 使用本地 ref 来存储当前选中的风险点
+// 使用本地 ref
 const currentRiskPoint = ref<RiskPoint | null>(null)
 const selectedRegion = ref({
   name: '',
@@ -370,12 +381,14 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     
     console.log('🎯 获取到的设施数量:', results.length)
     
-    facilities.value = results
+    // 强制更新
+    facilities.value = results.slice()
     
     console.log('✅ facilities.value 已更新，长度:', facilities.value.length)
     
     emit('facilitiesUpdate', facilities.value)
     
+    // 强制刷新
     await nextTick()
     
   } catch (error) {
@@ -417,14 +430,13 @@ const loadRegion = async () => {
   }
 }
 
-// 监听 props 变化，更新本地 currentRiskPoint
+// 监听 props 变化
 watch(() => props.selectedRiskPoint, (newPoint) => {
   console.log('🔄 props.selectedRiskPoint 变化:', newPoint)
   console.log('   name:', newPoint?.name)
   console.log('   lat/lng:', newPoint?.lat, newPoint?.lng)
   
-  // 直接赋值给本地 ref
-  currentRiskPoint.value = newPoint || null
+  currentRiskPoint.value = newPoint ? { ...newPoint } : null
   
   if (newPoint && newPoint.lat && newPoint.lng) {
     loadFacilities(newPoint)
@@ -578,11 +590,15 @@ onMounted(() => {
   font-family: monospace;
   background: rgba(0, 0, 0, 0.6);
   color: #0f0;
-  padding: 6px 8px;
+  padding: 8px 12px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 11px;
   margin-bottom: 12px;
   border-left: 2px solid #0f0;
+}
+
+.debug-bar div {
+  margin: 2px 0;
 }
 
 .facility-placeholder {
