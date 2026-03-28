@@ -97,3 +97,22 @@ export interface DeformationResponse {
   location: DeformationLocation
   deformation_data: DeformationRecord[]
 }
+
+// 动态风险因子数据
+export interface DynamicRiskFactor {
+  name: string
+  actualValue: number
+  weight: number
+  riskLevel: 'low' | 'medium' | 'high'
+  contribution: number
+  unit: string
+}
+
+export interface DynamicRiskFactors {
+  pointId: string
+  pointName: string
+  factors: DynamicRiskFactor[]
+  totalRiskScore: number
+  topRiskFactor: string
+  riskLevel: string
+}
