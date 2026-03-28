@@ -3,18 +3,6 @@
     <div class="card-header">
       <h3 class="card-title">区域详情</h3>
     </div>
-    
-    <!-- 风险点选择器 -->
-    <div class="risk-selector">
-      <label>选择风险点：</label>
-      <select v-model="selectedPointId" class="risk-select">
-        <option value="">-- 请选择风险点 --</option>
-        <option v-for="point in allRiskPoints" :key="point.id" :value="point.id">
-          {{ point.name }} ({{ point.level }})
-        </option>
-      </select>
-    </div>
-    
     <div class="region-info">
       <div class="region-name">
         <span class="region-icon">REGION</span>
@@ -41,21 +29,21 @@
       </div>
     </div>
     
-    <div v-if="currentRiskPoint" class="selected-risk">
+    <div v-if="selectedRiskPoint" class="selected-risk">
       <div class="risk-title">
         <span class="risk-icon">⚠️</span>
-        <span>当前风险点：{{ currentRiskPoint.name }}</span>
+        <span>当前风险点：{{ selectedRiskPoint.name }}</span>
       </div>
       <div class="risk-detail">
-        <span>威胁人口：{{ currentRiskPoint.threat }}</span>
-        <span>风险等级：{{ currentRiskPoint.level }}</span>
+        <span>威胁人口：{{ selectedRiskPoint.threat }}</span>
+        <span>风险等级：{{ selectedRiskPoint.level }}</span>
       </div>
     </div>
     
     <div class="facilities-section">
       <h4>
         关键设施
-        <span v-if="currentRiskPoint" class="facility-tip">（{{ currentRiskPoint.name }} 周边5km）</span>
+        <span v-if="selectedRiskPoint" class="facility-tip">（{{ selectedRiskPoint.name }} 周边10km）</span>
         <span v-if="apiError" class="api-error-tip">⚠️ {{ apiError }}</span>
       </h4>
       
@@ -86,19 +74,15 @@
       </div>
       
       <!-- 没有设施时显示提示 -->
-      <div v-else-if="!loadingFacilities && currentRiskPoint" class="empty-facility">
-        该风险点周边5km内暂无关键设施
-      </div>
-      
       <div v-else class="empty-facility">
-        请选择风险点查看周边关键设施
+        该风险点周边10km内暂无关键设施
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, computed } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
@@ -131,7 +115,12 @@ interface RiskPoint {
   level: string
 }
 
+const props = defineProps<{
+  selectedRiskPoint?: RiskPoint | null
+}>()
+
 const emit = defineEmits<{
+  (e: 'facilitiesUpdate', facilities: Facility[]): void
   (e: 'facilityClick', facility: { name: string; lat: number; lng: number; type: string }): void
 }>()
 
@@ -143,16 +132,9 @@ const selectedRegion = ref({
   warningLevel: '',
 })
 
-const allRiskPoints = ref<RiskPoint[]>([])
-const selectedPointId = ref('')
 const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 const apiError = ref('')
-
-// 当前选中的风险点
-const currentRiskPoint = computed(() => {
-  return allRiskPoints.value.find(p => p.id === selectedPointId.value)
-})
 
 // 公共设施关键词
 const PUBLIC_KEYWORDS = [
@@ -172,6 +154,7 @@ const getFacilityIcon = (type: string, name: string, category: string): string =
   const lowerName = name.toLowerCase()
   const lowerType = type.toLowerCase()
   
+  // 公共设施图标
   if (lowerName.includes('医院') || lowerType.includes('医院')) return '🏥'
   if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '🏫'
   if (lowerName.includes('村委会') || lowerName.includes('村委')) return '🏛️'
@@ -182,6 +165,8 @@ const getFacilityIcon = (type: string, name: string, category: string): string =
   if (lowerName.includes('养老') || lowerName.includes('居家')) return '👴'
   if (lowerName.includes('服务中心')) return '🏪'
   if (lowerName.includes('社区') || lowerName.includes('居委会')) return '🏘️'
+  
+  // 生活服务设施图标
   if (lowerName.includes('加油站')) return '⛽'
   if (lowerName.includes('超市') || lowerName.includes('商店') || lowerName.includes('便利店')) return '🏪'
   if (lowerName.includes('药店') || lowerName.includes('药房')) return '💊'
@@ -223,6 +208,7 @@ const getTypeName = (poi: any, category: string): string => {
     return '公共设施'
   }
   
+  // 生活服务设施
   const name = poi.name
   const type = poi.type
   if (name.includes('加油站') || type.includes('加油')) return '加油站'
@@ -230,18 +216,15 @@ const getTypeName = (poi: any, category: string): string => {
   if (name.includes('药店') || name.includes('药房')) return '药店'
   if (name.includes('银行') || type.includes('银行')) return '银行'
   if (name.includes('公交') || name.includes('车站')) return '公交站'
-  if (name.includes('餐饮') || name.includes('饭店') || name.includes('餐厅')) return '餐饮'
-  if (name.includes('奶茶') || name.includes('咖啡')) return '饮品店'
-  if (name.includes('理发') || name.includes('美容')) return '美容美发'
-  if (type.includes('中餐厅')) return '中餐厅'
-  if (type.includes('咖啡厅')) return '咖啡厅'
-  if (type.includes('冷饮店')) return '饮品店'
   return '生活服务'
 }
 
 // 获取设施详情描述
 const getFacilityDetail = (poi: any, category: string): string => {
-  return poi.address || (category === 'public' ? '公共设施' : '生活服务')
+  if (category === 'public') {
+    return poi.address || '公共设施'
+  }
+  return poi.address || '生活服务'
 }
 
 // 根据距离计算风险等级
@@ -253,13 +236,15 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
 }
 
 // 调用高德地图 API 搜索周边设施
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 5000) => {
+const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 10000) => {
   try {
     const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON`
     
     console.log('🔍 搜索周边设施:', url)
     const response = await fetch(url)
     const data = await response.json()
+    
+    console.log('📡 API 返回数据:', data)
     
     if (data.status === '1' && data.pois && data.pois.length > 0) {
       console.log(`✅ 找到 ${data.pois.length} 个 POI`)
@@ -300,9 +285,11 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
         }
       }
       
+      // 按距离排序
       publicResults.sort((a, b) => a.distance - b.distance)
       lifeResults.sort((a, b) => a.distance - b.distance)
       
+      // 优先显示公共设施，最多10个；公共设施不足时用生活服务设施补充，最多总数15个
       const finalResults = [...publicResults]
       const remainingSlots = 15 - finalResults.length
       if (remainingSlots > 0 && lifeResults.length > 0) {
@@ -312,8 +299,10 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
       console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
       
       return finalResults
+    } else {
+      console.log('⚠️ API 返回无数据, status:', data.status, 'info:', data.info)
+      return []
     }
-    return []
   } catch (error) {
     console.error('❌ 搜索设施失败:', error)
     return []
@@ -323,7 +312,9 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
 // 加载周边设施
 const loadFacilities = async (riskPoint: RiskPoint) => {
   if (!riskPoint.lat || !riskPoint.lng) {
+    console.warn('⚠️ 风险点缺少坐标')
     facilities.value = []
+    emit('facilitiesUpdate', [])
     return
   }
   
@@ -331,43 +322,35 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   apiError.value = ''
   
   try {
-    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 5000)
+    console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
+    
+    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 10000)
     
     if (results.length > 0) {
       facilities.value = [...results]
+      emit('facilitiesUpdate', results)
       console.log(`✅ 显示 ${results.length} 个设施`)
     } else {
       facilities.value = []
+      emit('facilitiesUpdate', [])
+      apiError.value = ''
     }
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
+    apiError.value = '加载失败，请重试'
     facilities.value = []
+    emit('facilitiesUpdate', [])
   } finally {
     loadingFacilities.value = false
   }
 }
 
-// 加载所有风险点
-const loadRiskPoints = async () => {
-  try {
-    const pointsPayload = await riskService.loadRiskPoints()
-    allRiskPoints.value = pointsPayload.points.map((p, idx) => ({
-      id: String(idx + 1),
-      name: p.name,
-      lat: p.latitude,
-      lng: p.longitude,
-      threat: p.threat,
-      level: p.level
-    }))
-  } catch (error) {
-    console.error('加载风险点失败:', error)
-  }
-}
-
 const loadRegion = async () => {
   try {
-    const config = await riskService.loadMapConfig()
-    const pointsPayload = await riskService.loadRiskPoints()
+    const [config, pointsPayload] = await Promise.all([
+      riskService.loadMapConfig(),
+      riskService.loadRiskPoints(),
+    ])
 
     const widthKm = Math.abs(config.bounds.east - config.bounds.west) * 95
     const heightKm = Math.abs(config.bounds.north - config.bounds.south) * 111
@@ -392,15 +375,19 @@ const loadRegion = async () => {
 }
 
 // 监听选中的风险点变化
-watch(selectedPointId, async (newId) => {
-  if (newId && currentRiskPoint.value) {
-    await loadFacilities(currentRiskPoint.value)
+watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
+  console.log('📍 selectedRiskPoint 变化:', newRiskPoint)
+  if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
+    await loadFacilities(newRiskPoint)
   } else {
     facilities.value = []
+    emit('facilitiesUpdate', [])
+    apiError.value = ''
   }
-})
+}, { immediate: true, deep: true })
 
 const onFacilityClick = (facility: Facility) => {
+  console.log('点击设施:', facility.name)
   emit('facilityClick', {
     name: facility.name,
     lat: facility.lat,
@@ -409,49 +396,13 @@ const onFacilityClick = (facility: Facility) => {
   })
 }
 
-onMounted(async () => {
-  await Promise.all([loadRegion(), loadRiskPoints()])
+onMounted(() => {
+  console.log('关键设施组件已挂载')
+  loadRegion()
 })
 </script>
 
 <style scoped>
-/* 添加风险点选择器样式 */
-.risk-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 10px;
-  background: rgba(0, 40, 60, 0.3);
-  border-radius: 8px;
-}
-
-.risk-selector label {
-  font-size: 12px;
-  color: #88a0b0;
-}
-
-.risk-select {
-  flex: 1;
-  background: rgba(0, 30, 50, 0.8);
-  border: 1px solid rgba(0, 200, 255, 0.3);
-  border-radius: 6px;
-  padding: 8px 12px;
-  color: #e0f0ff;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.risk-select:focus {
-  outline: none;
-  border-color: #00f0ff;
-}
-
-.risk-select option {
-  background: #0a1a2a;
-}
-
-/* 其他样式保持不变 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -591,8 +542,9 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 400px;
+  max-height: 320px;
   overflow-y: auto;
+  padding-right: 4px;
 }
 
 .facility-item {
@@ -666,6 +618,9 @@ onMounted(async () => {
   font-size: 11px;
   color: #88a0b0;
   margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .facility-distance {
