@@ -82,7 +82,7 @@ import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
 import type { CanonicalRiskLevel } from '@/utils/riskLevel'
 
-// 高德地图配置 - 使用你测试成功的 Key
+// 高德地图配置
 const AMAP_KEY = 'd8af8724a9dd15ca3f117b7d0adaab8a'
 
 interface Facility {
@@ -128,6 +128,18 @@ const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 const apiError = ref('')
 
+// 关键设施类型关键词（医院、学校、政府、应急设施等）
+const IMPORTANT_KEYWORDS = [
+  '医院', '卫生院', '诊所', '医疗',
+  '学校', '小学', '中学', '幼儿园', '大学',
+  '村委会', '村委', '镇政府', '街道办事处', '政府',
+  '派出所', '公安局', '警务站',
+  '消防', '消防站', '应急', '避难所',
+  '加油站',
+  '超市', '商店',
+  '公交站', '车站', '交通枢纽'
+]
+
 // 根据 POI 类型获取图标
 const getFacilityIcon = (type: string, name: string): string => {
   const lowerName = name.toLowerCase()
@@ -138,9 +150,9 @@ const getFacilityIcon = (type: string, name: string): string => {
   if (lowerName.includes('村委会') || lowerName.includes('村委')) return '🏛️'
   if (lowerName.includes('政府') || lowerName.includes('镇') || lowerType.includes('政府')) return '🏢'
   if (lowerName.includes('派出所') || lowerName.includes('公安')) return '👮'
+  if (lowerName.includes('消防') || lowerName.includes('应急')) return '🚒'
   if (lowerName.includes('加油站') || lowerType.includes('加油')) return '⛽'
   if (lowerName.includes('超市') || lowerName.includes('商店') || lowerName.includes('便利店')) return '🏪'
-  if (lowerName.includes('饭店') || lowerName.includes('餐厅') || lowerName.includes('农家乐')) return '🍽️'
   if (lowerName.includes('公交') || lowerName.includes('车站')) return '🚏'
   if (lowerName.includes('银行') || lowerName.includes('信用社')) return '🏦'
   
@@ -158,31 +170,35 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
 // 调用高德地图 API 搜索周边设施
 const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 2000) => {
   try {
-    // 直接搜索周边所有 POI，不限制类型
-    const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=30&page=1&output=JSON`
+    const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON`
     
-    console.log('搜索周边设施:', url)
+    console.log('🔍 搜索周边设施:', url)
     const response = await fetch(url)
     const data = await response.json()
     
-    console.log('API 返回数据:', data)
+    console.log('📡 API 返回数据:', data)
     
     if (data.status === '1' && data.pois && data.pois.length > 0) {
-      console.log(`找到 ${data.pois.length} 个周边设施`)
+      console.log(`✅ 找到 ${data.pois.length} 个 POI`)
       
-      // 过滤并转换数据
       const results: Facility[] = []
       const seenNames = new Set()
       
       for (const poi of data.pois) {
-        // 跳过名称重复的
+        // 检查是否是关键设施
+        const isImportant = IMPORTANT_KEYWORDS.some(kw => 
+          poi.name.includes(kw) || poi.type.includes(kw)
+        )
+        
+        // 只保留关键设施
+        if (!isImportant) continue
+        
         if (seenNames.has(poi.name)) continue
         seenNames.add(poi.name)
         
         const distance = Math.round(poi.distance || 0)
         const { risk, riskClass } = calculateRiskByDistance(distance)
         
-        // 只保留距离在 2km 内的设施
         if (distance <= radius) {
           results.push({
             id: poi.id,
@@ -199,17 +215,18 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
         }
       }
       
+      console.log(`📋 过滤后关键设施: ${results.length} 个`)
+      
       // 按距离排序
       results.sort((a, b) => a.distance - b.distance)
       
-      // 限制最多显示 15 条
       return results.slice(0, 15)
     } else {
-      console.log('API 返回无数据, status:', data.status, 'info:', data.info)
+      console.log('⚠️ API 返回无数据, status:', data.status, 'info:', data.info)
       return []
     }
   } catch (error) {
-    console.error('搜索设施失败:', error)
+    console.error('❌ 搜索设施失败:', error)
     return []
   }
 }
@@ -217,7 +234,7 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
 // 加载周边设施
 const loadFacilities = async (riskPoint: RiskPoint) => {
   if (!riskPoint.lat || !riskPoint.lng) {
-    console.warn('风险点缺少坐标')
+    console.warn('⚠️ 风险点缺少坐标')
     facilities.value = []
     emit('facilitiesUpdate', [])
     return
@@ -227,21 +244,22 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   apiError.value = ''
   
   try {
-    console.log(`搜索周边设施: ${riskPoint.name} (${riskPoint.lng}, ${riskPoint.lat})`)
+    console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
     
     const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 2000)
     
     if (results.length > 0) {
       facilities.value = results
       emit('facilitiesUpdate', results)
-      console.log(`找到 ${results.length} 个周边设施`)
+      console.log(`✅ 显示 ${results.length} 个关键设施:`, results.map(f => `${f.name}(${f.distance}m)`))
     } else {
       facilities.value = []
       emit('facilitiesUpdate', [])
       apiError.value = '周边2km内暂无关键设施'
+      console.log('⚠️ 周边2km内暂无关键设施')
     }
   } catch (error) {
-    console.error('加载设施失败:', error)
+    console.error('❌ 加载设施失败:', error)
     apiError.value = '加载失败，请重试'
     facilities.value = []
     emit('facilitiesUpdate', [])
@@ -281,17 +299,20 @@ const loadRegion = async () => {
 
 // 监听选中的风险点变化
 watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
-  console.log('selectedRiskPoint 变化:', newRiskPoint)
+  console.log('📍 selectedRiskPoint 变化:', newRiskPoint)
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
+    console.log('✅ 有坐标，开始加载设施...')
     await loadFacilities(newRiskPoint)
   } else {
+    console.log('⚠️ 无风险点或无坐标')
     facilities.value = []
     emit('facilitiesUpdate', [])
     apiError.value = ''
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
 
 const onFacilityClick = (facility: Facility) => {
+  console.log('点击设施:', facility.name)
   emit('facilityClick', {
     name: facility.name,
     lat: facility.lat,
@@ -301,6 +322,7 @@ const onFacilityClick = (facility: Facility) => {
 }
 
 onMounted(() => {
+  console.log('关键设施组件已挂载')
   loadRegion()
 })
 </script>
