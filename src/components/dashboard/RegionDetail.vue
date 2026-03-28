@@ -161,6 +161,10 @@ interface RiskPoint {
   level: string
 }
 
+const props = defineProps<{
+  selectedRiskPoint?: RiskPoint | null
+}>()
+
 const emit = defineEmits<{
   (e: 'facilityClick', facility: { name: string; lat: number; lng: number; type: string; category: string }): void
   (e: 'facilitiesUpdate', facilities: Facility[]): void
@@ -281,7 +285,7 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
   return { risk: '低风险', riskClass: 'low' }
 }
 
-// API调用函数 - 使用指定的KEY
+// JSONP调用函数
 const callAMapAPI = (lng: number, lat: number, radius: number, apiKey: string): Promise<any> => {
   return new Promise((resolve, reject) => {
     const callbackName = `AMAP_CALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -313,7 +317,7 @@ const callAMapAPI = (lng: number, lat: number, radius: number, apiKey: string): 
   })
 }
 
-// 搜索周边设施 - 侧边栏用（使用第一个KEY）
+// 搜索周边设施 - 侧边栏用
 const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: number = 10000) => {
   try {
     const data = await callAMapAPI(lng, lat, radius, AMAP_KEY_SIDEBAR)
@@ -365,7 +369,7 @@ const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: numb
   }
 }
 
-// 搜索周边设施 - 地图用（使用第二个KEY）
+// 搜索周边设施 - 地图用（返回完整数据供地图显示）
 const searchFacilitiesForMap = async (lng: number, lat: number, radius: number = 10000) => {
   try {
     const data = await callAMapAPI(lng, lat, radius, AMAP_KEY_MAP)
@@ -453,7 +457,7 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
       searchFacilitiesForMap(riskPoint.lng, riskPoint.lat, 10000)
     ])
     
-    // 侧边栏使用sidebarResults
+    // 侧边栏显示使用sidebarResults
     if (sidebarResults.length > 0) {
       facilities.value = [...sidebarResults]
       nearestFacilities.value = getNearestFacilities(sidebarResults)
@@ -463,7 +467,7 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
       nearestFacilities.value = []
     }
     
-    // 地图使用mapResults，发送给父组件
+    // 地图显示使用mapResults，发送给父组件
     if (mapResults.length > 0) {
       emit('facilitiesUpdate', mapResults)
       console.log(`✅ [地图] 发送 ${mapResults.length} 个设施给地图显示`)
@@ -574,13 +578,24 @@ const onFacilityClick = (facility: Facility) => {
   })
 }
 
+// 监听外部传入的风险点（地图点击）
+watch(() => props.selectedRiskPoint, async (newPoint) => {
+  console.log('📍 外部传入风险点:', newPoint)
+  if (newPoint && newPoint.lat && newPoint.lng) {
+    // 同步到本地
+    currentRiskPoint.value = newPoint
+    searchKeyword.value = newPoint.name
+    await loadFacilities(newPoint)
+  }
+}, { deep: true })
+
 onMounted(async () => {
   await Promise.all([loadRegion(), loadRiskPoints()])
 })
 </script>
 
 <style scoped>
-/* 样式保持不变 */
+/* 样式保持不变，使用之前完整的样式 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
