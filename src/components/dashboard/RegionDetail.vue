@@ -29,14 +29,14 @@
       </div>
     </div>
     
-    <div v-if="displayRiskPoint" class="selected-risk">
+    <div v-if="currentRiskPoint" class="selected-risk">
       <div class="risk-title">
         <span class="risk-icon">⚠️</span>
-        <span>当前风险点：{{ displayRiskPoint.name }}</span>
+        <span>当前风险点：{{ currentRiskPoint.name }}</span>
       </div>
       <div class="risk-detail">
-        <span>威胁人口：{{ displayRiskPoint.threat }}</span>
-        <span>风险等级：{{ displayRiskPoint.level }}</span>
+        <span>威胁人口：{{ currentRiskPoint.threat }}</span>
+        <span>风险等级：{{ currentRiskPoint.level }}</span>
       </div>
     </div>
     
@@ -44,13 +44,15 @@
       <h4>关键设施</h4>
       
       <!-- 调试信息：显示当前状态 -->
-      <div class="debug-bar" style="font-size: 10px; color: #0f0; margin-bottom: 8px; padding: 4px; background: rgba(0,0,0,0.5); border-radius: 4px; font-family: monospace;">
-        调试: 选中={{ !!displayRiskPoint }} | 加载中={{ loadingFacilities }} | 设施数={{ facilities.length }}
-        <div v-if="displayRiskPoint" style="font-size: 9px;">当前风险点: {{ displayRiskPoint.name }} ({{ displayRiskPoint.lat }}, {{ displayRiskPoint.lng }})</div>
+      <div class="debug-bar">
+        调试: 选中={{ !!currentRiskPoint }} | 加载中={{ loadingFacilities }} | 设施数={{ facilities.length }}
+        <div v-if="currentRiskPoint" style="font-size: 9px; margin-top: 2px;">
+          {{ currentRiskPoint.name }} ({{ currentRiskPoint.lat }}, {{ currentRiskPoint.lng }})
+        </div>
       </div>
       
       <!-- 未选择风险点时显示提示 -->
-      <div v-if="!displayRiskPoint" class="facility-placeholder">
+      <div v-if="!currentRiskPoint" class="facility-placeholder">
         <div class="placeholder-icon">📍</div>
         <div class="placeholder-text">请点击地图上的风险点</div>
         <div class="placeholder-sub">查看周边5km范围内的关键设施</div>
@@ -59,13 +61,13 @@
       <!-- 已选择风险点，加载中 -->
       <div v-else-if="loadingFacilities" class="loading-facility">
         <div class="loading-spinner"></div>
-        <div>正在搜索 {{ displayRiskPoint.name }} 周边关键设施...</div>
+        <div>正在搜索 {{ currentRiskPoint.name }} 周边关键设施...</div>
       </div>
       
       <!-- 已选择风险点，有设施数据 -->
       <div v-else-if="facilities.length > 0" class="facility-list-wrapper">
         <div class="facility-header">
-          <span>{{ displayRiskPoint.name }} 周边5km关键设施</span>
+          <span>{{ currentRiskPoint.name }} 周边5km关键设施</span>
           <span class="facility-count">共 {{ facilities.length }} 个</span>
         </div>
         <div class="facility-list">
@@ -100,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, nextTick, computed } from 'vue'
+import { onMounted, ref, watch, nextTick } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
@@ -142,9 +144,8 @@ const emit = defineEmits<{
   (e: 'facilityClick', facility: { name: string; lat: number; lng: number; type: string }): void
 }>()
 
-// 使用 computed 来确保响应式
-const displayRiskPoint = computed(() => props.selectedRiskPoint)
-
+// 使用本地 ref 来存储当前选中的风险点
+const currentRiskPoint = ref<RiskPoint | null>(null)
 const selectedRegion = ref({
   name: '',
   area: -1,
@@ -314,7 +315,6 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
           }
           
           console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
-          console.log('📋 设施列表详情:', finalResults.slice(0, 3))
           
           resolve(finalResults)
         } else {
@@ -370,15 +370,12 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     
     console.log('🎯 获取到的设施数量:', results.length)
     
-    // 强制创建一个新数组触发更新
-    facilities.value = [...results]
+    facilities.value = results
     
     console.log('✅ facilities.value 已更新，长度:', facilities.value.length)
-    console.log('✅ facilities.value 前3个:', facilities.value.slice(0, 3))
     
     emit('facilitiesUpdate', facilities.value)
     
-    // 强制更新视图
     await nextTick()
     
   } catch (error) {
@@ -387,8 +384,6 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     emit('facilitiesUpdate', [])
   } finally {
     loadingFacilities.value = false
-    console.log('🏁 加载完成，loadingFacilities:', loadingFacilities.value)
-    // 再次强制更新
     await nextTick()
   }
 }
@@ -422,15 +417,17 @@ const loadRegion = async () => {
   }
 }
 
-// 监听选中的风险点变化
-watch(() => props.selectedRiskPoint, async (newRiskPoint, oldRiskPoint) => {
-  console.log('📍 selectedRiskPoint 变化:')
-  console.log('   new:', newRiskPoint)
-  console.log('   old:', oldRiskPoint)
-  console.log('   has lat/lng:', newRiskPoint?.lat, newRiskPoint?.lng)
+// 监听 props 变化，更新本地 currentRiskPoint
+watch(() => props.selectedRiskPoint, (newPoint) => {
+  console.log('🔄 props.selectedRiskPoint 变化:', newPoint)
+  console.log('   name:', newPoint?.name)
+  console.log('   lat/lng:', newPoint?.lat, newPoint?.lng)
   
-  if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
-    await loadFacilities(newRiskPoint)
+  // 直接赋值给本地 ref
+  currentRiskPoint.value = newPoint || null
+  
+  if (newPoint && newPoint.lat && newPoint.lng) {
+    loadFacilities(newPoint)
   } else {
     facilities.value = []
     emit('facilitiesUpdate', [])
@@ -449,13 +446,12 @@ const onFacilityClick = (facility: Facility) => {
 
 onMounted(() => {
   console.log('关键设施组件已挂载')
-  console.log('初始 selectedRiskPoint:', props.selectedRiskPoint)
+  console.log('初始 props.selectedRiskPoint:', props.selectedRiskPoint)
   loadRegion()
 })
 </script>
 
 <style scoped>
-/* 样式保持不变，和之前一样 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -580,10 +576,13 @@ onMounted(() => {
 
 .debug-bar {
   font-family: monospace;
-  background: rgba(0, 0, 0, 0.5) !important;
-  color: #0f0 !important;
+  background: rgba(0, 0, 0, 0.6);
+  color: #0f0;
+  padding: 6px 8px;
   border-radius: 4px;
   font-size: 10px;
+  margin-bottom: 12px;
+  border-left: 2px solid #0f0;
 }
 
 .facility-placeholder {
