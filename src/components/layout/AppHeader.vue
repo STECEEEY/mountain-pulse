@@ -1,7 +1,6 @@
 <template>
   <header class="app-header dark-mode">
     <div class="header-left">
-      <div class="logo-tag">DZ</div>
       <div class="logo-title">山体脉搏 — 融合InSAR与机器学习的地质灾害识别与风险预警系统</div>
     </div>
 
@@ -101,22 +100,8 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.logo-tag {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 200, 255, 0.35);
-  background: rgba(0, 56, 88, 0.42);
-  color: #cfefff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-}
-
 .logo-title {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #00f0ff;
   letter-spacing: 0.2px;
