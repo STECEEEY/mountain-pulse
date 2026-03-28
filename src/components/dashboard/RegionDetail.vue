@@ -29,114 +29,84 @@
       </div>
     </div>
     
-    <div v-if="currentRiskPoint" class="selected-risk">
+    <div v-if="selectedRiskPoint" class="selected-risk">
       <div class="risk-title">
         <span class="risk-icon">⚠️</span>
-        <span>当前风险点：{{ currentRiskPoint.name }}</span>
+        <span>当前风险点：{{ selectedRiskPoint.name }}</span>
       </div>
       <div class="risk-detail">
-        <span>威胁人口：{{ currentRiskPoint.threat }}</span>
-        <span>风险等级：{{ currentRiskPoint.level }}</span>
+        <span>威胁人口：{{ selectedRiskPoint.threat }}</span>
+        <span>风险等级：{{ selectedRiskPoint.level }}</span>
       </div>
     </div>
     
     <div class="facilities-section">
-      <div class="facilities-header">
-        <h4>关键设施</h4>
-        <button 
-          class="refresh-btn" 
-          @click="refreshFacilities"
-          :disabled="loadingFacilities"
+      <h4>关键设施</h4>
+      
+      <!-- 直接显示设施数量 -->
+      <div style="background: rgba(0,100,0,0.3); padding: 8px; margin-bottom: 10px; border-radius: 4px;">
+        当前设施数量: {{ testFacilities.length }}
+      </div>
+      
+      <!-- 测试：直接显示设施列表 -->
+      <div v-if="testFacilities.length > 0" style="background: rgba(0,0,0,0.5); padding: 10px; margin-bottom: 10px;">
+        <div style="font-weight: bold; margin-bottom: 5px;">设施列表（测试显示）:</div>
+        <div v-for="(f, idx) in testFacilities.slice(0, 5)" :key="idx" style="font-size: 12px; padding: 4px; border-bottom: 1px solid #333;">
+          {{ f.name }} - {{ f.distance }}m
+        </div>
+      </div>
+      
+      <!-- 原始设施列表 -->
+      <div v-if="facilities && facilities.length > 0" class="facility-list">
+        <div 
+          v-for="(facility, index) in facilities" 
+          :key="index" 
+          class="facility-item"
+          @click="onFacilityClick(facility)"
         >
-          {{ loadingFacilities ? '⏳ 搜索中...' : '🔄 刷新设施' }}
-        </button>
-      </div>
-      
-      <!-- 调试信息 -->
-      <div class="debug-bar">
-        📊 状态信息:
-        <div>✓ 选中风险点: {{ currentRiskPoint ? currentRiskPoint.name : '未选中' }}</div>
-        <div>✓ 加载状态: {{ loadingFacilities ? '搜索中' : '空闲' }}</div>
-        <div>✓ 设施数量: {{ facilities.length }} 个</div>
-        <div v-if="currentRiskPoint && facilities.length === 0 && !loadingFacilities" style="color: #ffaa00;">
-          ⚠️ 暂无设施数据，请点击刷新按钮
-        </div>
-      </div>
-      
-      <!-- 未选择风险点时显示提示 -->
-      <div v-if="!currentRiskPoint" class="facility-placeholder">
-        <div class="placeholder-icon">📍</div>
-        <div class="placeholder-text">请点击地图上的风险点</div>
-        <div class="placeholder-sub">然后点击刷新按钮查看周边关键设施</div>
-      </div>
-      
-      <!-- 加载中 -->
-      <div v-else-if="loadingFacilities" class="loading-facility">
-        <div class="loading-spinner"></div>
-        <div>正在搜索 {{ currentRiskPoint.name }} 周边5km内的关键设施...</div>
-      </div>
-      
-      <!-- 有设施数据 -->
-      <div v-else-if="facilities.length > 0" class="facility-list-wrapper">
-        <div class="facility-header">
-          <span>{{ currentRiskPoint.name }} 周边5km关键设施</span>
-          <span class="facility-count">共 {{ facilities.length }} 个</span>
-        </div>
-        <div class="facility-list">
-          <div 
-            v-for="(facility, index) in facilities" 
-            :key="index" 
-            class="facility-item"
-            @click="onFacilityClick(facility)"
-          >
-            <span class="facility-icon">{{ facility.icon }}</span>
-            <div class="facility-info">
-              <div class="facility-name-row">
-                <span class="facility-name">{{ facility.name }}</span>
-                <span class="facility-type" :class="facility.category">{{ facility.typeName }}</span>
-              </div>
-              <span class="facility-detail">{{ facility.detail }}</span>
-              <span class="facility-distance">距离: {{ facility.distance }}m</span>
-            </div>
-            <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
+          <span class="facility-icon">{{ facility.icon }}</span>
+          <div class="facility-info">
+            <div class="facility-name">{{ facility.name }}</div>
+            <div class="facility-distance">距离: {{ facility.distance }}m</div>
           </div>
+          <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
         </div>
       </div>
       
-      <!-- 无设施数据 -->
-      <div v-else class="empty-facility">
-        <div class="empty-icon">🏗️</div>
-        <div class="empty-text">暂无关键设施数据</div>
-        <div class="empty-sub">点击上方刷新按钮搜索周边5km内的关键设施</div>
-        <button class="retry-btn" @click="refreshFacilities">立即搜索</button>
+      <div v-else-if="!loadingFacilities && selectedRiskPoint" class="empty-facility">
+        暂无设施数据
+        <button @click="loadDataDirectly" style="margin-left: 10px; padding: 4px 12px;">手动加载</button>
+      </div>
+      
+      <div v-if="loadingFacilities" class="loading-facility">
+        加载中...
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, nextTick } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
 import type { CanonicalRiskLevel } from '@/utils/riskLevel'
 
-// 高德地图配置
 const AMAP_KEY = 'd8af8724a9dd15ca3f117b7d0adaab8a'
 
 interface Facility {
   id: string
   icon: string
   name: string
-  typeName: string
-  detail: string
-  risk: string
-  riskClass: string
   distance: number
   lat: number
   lng: number
+  risk: string
+  riskClass: string
+  category: string
+  typeName: string
+  detail: string
   type: string
-  category: 'public' | 'life'
 }
 
 interface RiskPoint {
@@ -153,11 +123,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'facilitiesUpdate', facilities: Facility[]): void
   (e: 'facilityClick', facility: { name: string; lat: number; lng: number; type: string }): void
 }>()
 
-const currentRiskPoint = ref<RiskPoint | null>(null)
 const selectedRegion = ref({
   name: '',
   area: -1,
@@ -167,247 +135,87 @@ const selectedRegion = ref({
 })
 
 const facilities = ref<Facility[]>([])
+const testFacilities = ref<Facility[]>([]) // 测试用
 const loadingFacilities = ref(false)
 
-// 公共设施关键词
-const PUBLIC_KEYWORDS = [
-  '医院', '卫生院', '诊所', '医疗',
-  '学校', '小学', '中学', '幼儿园', '大学',
-  '村委会', '村委', '镇政府', '街道办事处', '政府', '党群服务中心',
-  '派出所', '公安局', '警务站',
-  '消防', '消防站', '应急', '避难所',
-  '邮局', '邮政',
-  '养老院', '居家养老',
-  '便民服务中心', '服务中心',
-  '社区', '居委会'
-]
-
-// 根据 POI 类型获取图标
-const getFacilityIcon = (type: string, name: string, category: string): string => {
-  const lowerName = name.toLowerCase()
-  const lowerType = type.toLowerCase()
+// 简化的设施搜索
+const searchFacilities = async (lng: number, lat: number) => {
+  loadingFacilities.value = true
   
-  if (lowerName.includes('医院') || lowerType.includes('医院')) return '🏥'
-  if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '🏫'
-  if (lowerName.includes('村委会') || lowerName.includes('村委')) return '🏛️'
-  if (lowerName.includes('政府') || lowerName.includes('镇')) return '🏢'
-  if (lowerName.includes('派出所') || lowerName.includes('公安')) return '👮'
-  if (lowerName.includes('消防') || lowerName.includes('应急')) return '🚒'
-  if (lowerName.includes('邮局') || lowerName.includes('邮政')) return '📮'
-  if (lowerName.includes('养老') || lowerName.includes('居家')) return '👴'
-  if (lowerName.includes('服务中心')) return '🏪'
-  if (lowerName.includes('社区') || lowerName.includes('居委会')) return '🏘️'
-  if (lowerName.includes('加油站')) return '⛽'
-  if (lowerName.includes('超市') || lowerName.includes('商店') || lowerName.includes('便利店')) return '🏪'
-  if (lowerName.includes('药店') || lowerName.includes('药房')) return '💊'
-  if (lowerName.includes('银行') || lowerName.includes('信用社')) return '🏦'
-  if (lowerName.includes('公交') || lowerName.includes('车站')) return '🚏'
-  if (lowerName.includes('餐饮') || lowerName.includes('饭店') || lowerName.includes('餐厅')) return '🍽️'
-  
-  return '📍'
-}
-
-// 判断设施类别
-const getFacilityCategory = (name: string, type: string): 'public' | 'life' => {
-  const fullText = `${name} ${type}`
-  for (const kw of PUBLIC_KEYWORDS) {
-    if (fullText.includes(kw)) return 'public'
-  }
-  return 'life'
-}
-
-// 获取设施类型名称
-const getTypeName = (poi: any, category: string): string => {
-  if (category === 'public') {
-    const name = poi.name
-    const type = poi.type
-    if (name.includes('医院') || type.includes('医院')) return '医院'
-    if (name.includes('卫生院')) return '卫生院'
-    if (name.includes('学校') || name.includes('小学') || name.includes('中学')) return '学校'
-    if (name.includes('幼儿园')) return '幼儿园'
-    if (name.includes('村委会') || name.includes('村委')) return '村委会'
-    if (name.includes('政府') || name.includes('镇政府')) return '政府机构'
-    if (name.includes('派出所') || name.includes('公安')) return '派出所'
-    if (name.includes('消防')) return '消防站'
-    if (name.includes('邮局') || name.includes('邮政')) return '邮局'
-    if (name.includes('养老')) return '养老院'
-    if (name.includes('服务中心')) return '服务中心'
-    if (name.includes('社区')) return '社区服务中心'
-    return '公共设施'
-  }
-  
-  const name = poi.name
-  const type = poi.type
-  if (name.includes('加油站') || type.includes('加油')) return '加油站'
-  if (name.includes('超市') || name.includes('商店') || name.includes('便利店')) return '超市/商店'
-  if (name.includes('药店') || name.includes('药房')) return '药店'
-  if (name.includes('银行') || type.includes('银行')) return '银行'
-  if (name.includes('公交') || name.includes('车站')) return '公交站'
-  if (name.includes('餐饮') || name.includes('饭店') || name.includes('餐厅')) return '餐饮'
-  return '生活服务'
-}
-
-// 获取设施详情描述
-const getFacilityDetail = (poi: any, category: string): string => {
-  if (category === 'public') {
-    return poi.address || '公共设施'
-  }
-  return poi.address || '生活服务'
-}
-
-// 根据距离计算风险等级
-const calculateRiskByDistance = (distance: number): { risk: string; riskClass: string } => {
-  if (distance < 500) return { risk: '极高风险', riskClass: 'critical' }
-  if (distance < 1000) return { risk: '高风险', riskClass: 'high' }
-  if (distance < 2000) return { risk: '中风险', riskClass: 'medium' }
-  return { risk: '低风险', riskClass: 'low' }
-}
-
-// 使用 JSONP 方式调用高德地图 API
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 5000) => {
-  return new Promise<Facility[]>((resolve, reject) => {
-    try {
-      const callbackName = `AMAP_CALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  return new Promise((resolve) => {
+    const callbackName = `callback_${Date.now()}`
+    
+    const script = document.createElement('script')
+    script.src = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=5000&output=JSON&callback=${callbackName}`
+    
+    ;(window as any)[callbackName] = (data: any) => {
+      delete (window as any)[callbackName]
+      document.body.removeChild(script)
       
-      const script = document.createElement('script')
-      const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON&callback=${callbackName}`
-      
-      ;(window as any)[callbackName] = (data: any) => {
-        console.log('📡 高德API返回数据:', data)
+      if (data.status === '1' && data.pois) {
+        const results = data.pois.slice(0, 15).map((poi: any) => ({
+          id: poi.id,
+          name: poi.name,
+          icon: '📍',
+          distance: Math.round(poi.distance || 0),
+          lat: parseFloat(poi.location.split(',')[1]),
+          lng: parseFloat(poi.location.split(',')[0]),
+          risk: poi.distance < 1000 ? '高风险' : '中风险',
+          riskClass: poi.distance < 1000 ? 'high' : 'medium',
+          category: 'life',
+          typeName: '设施',
+          detail: poi.address || '',
+          type: poi.type
+        }))
         
-        delete (window as any)[callbackName]
-        document.body.removeChild(script)
-        
-        if (data.status === '1' && data.pois && data.pois.length > 0) {
-          console.log(`✅ 找到 ${data.pois.length} 个 POI`)
-          
-          const publicResults: Facility[] = []
-          const lifeResults: Facility[] = []
-          const seenNames = new Set()
-          
-          for (const poi of data.pois) {
-            if (seenNames.has(poi.name)) continue
-            seenNames.add(poi.name)
-            
-            const category = getFacilityCategory(poi.name, poi.type)
-            const distance = Math.round(poi.distance || 0)
-            const { risk, riskClass } = calculateRiskByDistance(distance)
-            
-            if (distance <= radius) {
-              const facility: Facility = {
-                id: poi.id,
-                name: poi.name,
-                type: poi.type.split(';')[0] || '其他',
-                typeName: getTypeName(poi, category),
-                icon: getFacilityIcon(poi.type, poi.name, category),
-                detail: getFacilityDetail(poi, category),
-                distance: distance,
-                lat: parseFloat(poi.location.split(',')[1]),
-                lng: parseFloat(poi.location.split(',')[0]),
-                risk: risk,
-                riskClass: riskClass,
-                category: category
-              }
-              
-              if (category === 'public') {
-                publicResults.push(facility)
-              } else {
-                lifeResults.push(facility)
-              }
-            }
-          }
-          
-          publicResults.sort((a, b) => a.distance - b.distance)
-          lifeResults.sort((a, b) => a.distance - b.distance)
-          
-          const finalResults = [...publicResults]
-          const remainingSlots = 15 - finalResults.length
-          if (remainingSlots > 0 && lifeResults.length > 0) {
-            finalResults.push(...lifeResults.slice(0, remainingSlots))
-          }
-          
-          console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
-          
-          resolve(finalResults)
-        } else {
-          console.log('⚠️ API 返回无数据, status:', data.status, 'info:', data.info)
-          resolve([])
-        }
-      }
-      
-      const timeout = setTimeout(() => {
-        if ((window as any)[callbackName]) {
-          console.error('❌ 高德API请求超时')
-          delete (window as any)[callbackName]
-          document.body.removeChild(script)
-          resolve([])
-        }
-      }, 10000)
-      
-      script.onerror = (error) => {
-        console.error('❌ 加载高德API失败:', error)
-        clearTimeout(timeout)
-        if ((window as any)[callbackName]) {
-          delete (window as any)[callbackName]
-        }
-        document.body.removeChild(script)
+        console.log('✅ 搜索到设施:', results.length)
+        resolve(results)
+      } else {
         resolve([])
       }
       
-      script.src = url
-      document.body.appendChild(script)
-      
-    } catch (error) {
-      console.error('❌ 搜索设施失败:', error)
-      reject(error)
+      loadingFacilities.value = false
     }
+    
+    document.body.appendChild(script)
   })
 }
 
-// 加载周边设施
-const loadFacilities = async (riskPoint: RiskPoint) => {
-  if (!riskPoint.lat || !riskPoint.lng) {
-    console.warn('⚠️ 风险点缺少坐标')
-    facilities.value = []
+// 手动加载数据
+const loadDataDirectly = async () => {
+  if (!props.selectedRiskPoint) {
+    console.log('没有选中的风险点')
     return
   }
   
-  loadingFacilities.value = true
-  
-  try {
-    console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
-    
-    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 5000)
-    
-    console.log('🎯 获取到的设施数量:', results.length)
-    
-    facilities.value = [...results]
-    
-    console.log('✅ facilities.value 已更新，长度:', facilities.value.length)
-    
-    emit('facilitiesUpdate', facilities.value)
-    
-    await nextTick()
-    
-  } catch (error) {
-    console.error('❌ 加载设施失败:', error)
-    facilities.value = []
-    emit('facilitiesUpdate', [])
-  } finally {
-    loadingFacilities.value = false
-    await nextTick()
-  }
+  console.log('手动加载数据:', props.selectedRiskPoint.name)
+  const results = await searchFacilities(props.selectedRiskPoint.lng, props.selectedRiskPoint.lat)
+  facilities.value = results as Facility[]
+  testFacilities.value = results as Facility[]
+  console.log('手动加载完成，设施数量:', facilities.value.length)
 }
 
-// 刷新设施数据
-const refreshFacilities = async () => {
-  if (currentRiskPoint.value) {
-    console.log('🔄 手动刷新设施数据')
-    await loadFacilities(currentRiskPoint.value)
+// 监听风险点变化
+watch(() => props.selectedRiskPoint, async (newPoint) => {
+  console.log('风险点变化:', newPoint?.name)
+  
+  if (newPoint && newPoint.lat && newPoint.lng) {
+    loadingFacilities.value = true
+    
+    const results = await searchFacilities(newPoint.lng, newPoint.lat)
+    
+    facilities.value = results as Facility[]
+    testFacilities.value = results as Facility[]
+    
+    console.log('设施数量:', facilities.value.length)
+    console.log('testFacilities数量:', testFacilities.value.length)
+    
+    loadingFacilities.value = false
   } else {
-    console.log('⚠️ 没有选中的风险点，无法刷新')
+    facilities.value = []
+    testFacilities.value = []
   }
-}
+}, { immediate: true })
 
 const loadRegion = async () => {
   try {
@@ -438,26 +246,7 @@ const loadRegion = async () => {
   }
 }
 
-// 监听 props 变化
-watch(() => props.selectedRiskPoint, (newPoint) => {
-  console.log('🔄 watch 触发, newPoint:', newPoint)
-  console.log('   name:', newPoint?.name)
-  console.log('   lat/lng:', newPoint?.lat, newPoint?.lng)
-  
-  if (newPoint && newPoint.lat && newPoint.lng) {
-    currentRiskPoint.value = newPoint
-    console.log('✅ currentRiskPoint 已设置:', currentRiskPoint.value?.name)
-    // 自动加载数据
-    loadFacilities(newPoint)
-  } else {
-    currentRiskPoint.value = null
-    facilities.value = []
-    emit('facilitiesUpdate', [])
-  }
-}, { immediate: true })
-
 const onFacilityClick = (facility: Facility) => {
-  console.log('点击设施:', facility.name)
   emit('facilityClick', {
     name: facility.name,
     lat: facility.lat,
@@ -467,27 +256,19 @@ const onFacilityClick = (facility: Facility) => {
 }
 
 onMounted(() => {
-  console.log('关键设施组件已挂载')
+  console.log('组件已挂载')
   loadRegion()
 })
 </script>
 
 <style scoped>
-/* 样式保持不变 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
   border-radius: 12px;
   padding: 16px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: 16px;
   margin-bottom: 16px;
-}
-
-.detail-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 0 8px 30px rgba(0, 200, 255, 0.15);
 }
 
 .card-header {
@@ -590,133 +371,18 @@ onMounted(() => {
   padding-top: 16px;
 }
 
-.facilities-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
 .facilities-section h4 {
-  margin: 0;
+  margin: 0 0 12px 0;
   font-size: 13px;
   color: #a0d0ff;
-}
-
-.refresh-btn {
-  background: rgba(0, 150, 255, 0.2);
-  border: 1px solid rgba(0, 200, 255, 0.3);
-  color: #00f0ff;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: rgba(0, 200, 255, 0.3);
-  transform: scale(1.02);
-}
-
-.refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.debug-bar {
-  background: rgba(0, 0, 0, 0.6);
-  color: #0f0;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 11px;
-  margin-bottom: 12px;
-  border-left: 2px solid #0f0;
-}
-
-.debug-bar div {
-  margin: 2px 0;
-}
-
-.facility-placeholder {
-  text-align: center;
-  padding: 40px 20px;
-  background: rgba(0, 40, 60, 0.3);
-  border-radius: 12px;
-  border: 1px dashed rgba(0, 180, 255, 0.3);
-}
-
-.placeholder-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-  opacity: 0.6;
-}
-
-.placeholder-text {
-  font-size: 14px;
-  color: #a0d0ff;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.placeholder-sub {
-  font-size: 11px;
-  color: #88a0b0;
-}
-
-.loading-facility {
-  text-align: center;
-  padding: 40px 20px;
-  color: #88a0b0;
-  font-size: 12px;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 30px;
-  height: 30px;
-  border: 2px solid rgba(0, 200, 255, 0.3);
-  border-top-color: #00f0ff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 12px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.facility-list-wrapper {
-  margin-top: 8px;
-}
-
-.facility-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  background: rgba(0, 80, 120, 0.3);
-  border-radius: 8px;
-  font-size: 12px;
-  color: #a0d0ff;
-}
-
-.facility-count {
-  background: rgba(0, 200, 255, 0.2);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  color: #00f0ff;
 }
 
 .facility-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 360px;
+  max-height: 400px;
   overflow-y: auto;
-  padding-right: 4px;
 }
 
 .facility-item {
@@ -724,94 +390,47 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   background: rgba(0, 40, 60, 0.4);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 10px;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .facility-item:hover {
   background: rgba(0, 100, 150, 0.4);
-  transform: translateX(4px);
 }
 
 .facility-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 180, 255, 0.3);
-  background: rgba(0, 76, 112, 0.3);
-  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  flex-shrink: 0;
+  background: rgba(0, 76, 112, 0.3);
+  border-radius: 6px;
 }
 
 .facility-info {
   flex: 1;
-  min-width: 0;
-}
-
-.facility-name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
 }
 
 .facility-name {
   font-size: 13px;
   font-weight: 500;
   color: #e0f0ff;
-}
-
-.facility-type {
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: rgba(0, 100, 150, 0.3);
-  color: #88ccff;
-}
-
-.facility-type.public {
-  background: rgba(0, 150, 255, 0.25);
-  color: #66ccff;
-}
-
-.facility-type.life {
-  background: rgba(100, 200, 100, 0.2);
-  color: #88ff88;
-}
-
-.facility-detail {
-  display: block;
-  font-size: 11px;
-  color: #88a0b0;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 4px;
 }
 
 .facility-distance {
-  display: block;
   font-size: 10px;
   color: #66c0ff;
 }
 
 .facility-risk {
   font-size: 11px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 12px;
   white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.facility-risk.critical {
-  background: rgba(255, 0, 0, 0.3);
-  color: #ff6666;
 }
 
 .facility-risk.high {
@@ -824,51 +443,11 @@ onMounted(() => {
   color: #ffcc88;
 }
 
-.facility-risk.low {
-  background: rgba(100, 200, 100, 0.2);
-  color: #88ff88;
-}
-
-.empty-facility {
+.empty-facility, .loading-facility {
   text-align: center;
-  padding: 40px 20px;
-  background: rgba(0, 40, 60, 0.3);
-  border-radius: 12px;
-}
-
-.empty-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: 13px;
+  padding: 30px;
   color: #88a0b0;
-  margin-bottom: 6px;
-}
-
-.empty-sub {
-  font-size: 11px;
-  color: #6688a0;
-  margin-bottom: 12px;
-}
-
-.retry-btn {
-  background: rgba(0, 150, 255, 0.3);
-  border: 1px solid rgba(0, 200, 255, 0.5);
-  color: #00f0ff;
-  padding: 6px 16px;
-  border-radius: 6px;
   font-size: 12px;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: all 0.2s;
-}
-
-.retry-btn:hover {
-  background: rgba(0, 200, 255, 0.4);
-  transform: scale(1.02);
 }
 
 .facility-list::-webkit-scrollbar {
@@ -877,11 +456,9 @@ onMounted(() => {
 
 .facility-list::-webkit-scrollbar-track {
   background: rgba(0, 50, 70, 0.5);
-  border-radius: 4px;
 }
 
 .facility-list::-webkit-scrollbar-thumb {
   background: rgba(0, 200, 255, 0.5);
-  border-radius: 4px;
 }
 </style>
