@@ -82,9 +82,8 @@ import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
 import type { CanonicalRiskLevel } from '@/utils/riskLevel'
 
-// 高德地图配置
-const AMAP_KEY = 'f327ec13024b397dba6cb28432442b58'  // 替换为你申请的 Key
-const AMAP_SECURITY_CODE = '5480cc63aad861ec5e973decc75d6b17'  // 替换为你的安全密钥
+// 高德地图配置 - 使用你测试成功的 Key
+const AMAP_KEY = 'd8af8724a9dd15ca3f117b7d0adaab8a'
 
 interface Facility {
   id: string
@@ -108,20 +107,6 @@ interface RiskPoint {
   level: string
 }
 
-// 设施类型映射
-const FACILITY_TYPES = [
-  { type: '医院', keyword: '医院', icon: '🏥', priority: 1 },
-  { type: '学校', keyword: '学校|小学|中学|大学', icon: '🏫', priority: 2 },
-  { type: '消防站', keyword: '消防|消防队', icon: '🚒', priority: 3 },
-  { type: '派出所', keyword: '派出所|公安局', icon: '👮', priority: 4 },
-  { type: '应急避难所', keyword: '避难所|应急场所', icon: '🛡️', priority: 5 },
-  { type: '加油站', keyword: '加油站', icon: '⛽', priority: 6 },
-  { type: '化工厂', keyword: '化工|化工厂', icon: '🏭', priority: 7 },
-  { type: '水库', keyword: '水库', icon: '💧', priority: 8 },
-  { type: '交通枢纽', keyword: '车站|客运站|高铁站', icon: '🚉', priority: 9 },
-  { type: '桥梁', keyword: '大桥|桥梁', icon: '🌉', priority: 10 },
-]
-
 const props = defineProps<{
   selectedRiskPoint?: RiskPoint | null
 }>()
@@ -143,21 +128,23 @@ const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 const apiError = ref('')
 
-// 获取设施图标
-const getFacilityIcon = (type: string): string => {
-  const mapping: Record<string, string> = {
-    '医院': '🏥',
-    '学校': '🏫',
-    '消防站': '🚒',
-    '派出所': '👮',
-    '应急避难所': '🛡️',
-    '加油站': '⛽',
-    '化工厂': '🏭',
-    '水库': '💧',
-    '交通枢纽': '🚉',
-    '桥梁': '🌉'
-  }
-  return mapping[type] || '📍'
+// 根据 POI 类型获取图标
+const getFacilityIcon = (type: string, name: string): string => {
+  const lowerName = name.toLowerCase()
+  const lowerType = type.toLowerCase()
+  
+  if (lowerName.includes('医院') || lowerType.includes('医院') || lowerType.includes('诊所')) return '🏥'
+  if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学') || lowerType.includes('学校')) return '🏫'
+  if (lowerName.includes('村委会') || lowerName.includes('村委')) return '🏛️'
+  if (lowerName.includes('政府') || lowerName.includes('镇') || lowerType.includes('政府')) return '🏢'
+  if (lowerName.includes('派出所') || lowerName.includes('公安')) return '👮'
+  if (lowerName.includes('加油站') || lowerType.includes('加油')) return '⛽'
+  if (lowerName.includes('超市') || lowerName.includes('商店') || lowerName.includes('便利店')) return '🏪'
+  if (lowerName.includes('饭店') || lowerName.includes('餐厅') || lowerName.includes('农家乐')) return '🍽️'
+  if (lowerName.includes('公交') || lowerName.includes('车站')) return '🚏'
+  if (lowerName.includes('银行') || lowerName.includes('信用社')) return '🏦'
+  
+  return '📍'
 }
 
 // 根据距离计算风险等级
@@ -168,79 +155,63 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
   return { risk: '低风险', riskClass: 'low' }
 }
 
-// 判断设施类型
-const getFacilityType = (name: string, type: string): string => {
-  const fullText = `${name} ${type}`
-  for (const ft of FACILITY_TYPES) {
-    const pattern = new RegExp(ft.keyword, 'i')
-    if (pattern.test(fullText)) {
-      return ft.type
-    }
-  }
-  return '其他'
-}
-
 // 调用高德地图 API 搜索周边设施
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 5000) => {
-  const results: Facility[] = []
-  
-  // 并发搜索多种类型的设施
-  const searchPromises = FACILITY_TYPES.map(async (facilityType) => {
-    try {
-      const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&keywords=${encodeURIComponent(facilityType.keyword)}&radius=${radius}&types=&offset=20&page=1&output=JSON`
+const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 2000) => {
+  try {
+    // 直接搜索周边所有 POI，不限制类型
+    const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=30&page=1&output=JSON`
+    
+    console.log('搜索周边设施:', url)
+    const response = await fetch(url)
+    const data = await response.json()
+    
+    console.log('API 返回数据:', data)
+    
+    if (data.status === '1' && data.pois && data.pois.length > 0) {
+      console.log(`找到 ${data.pois.length} 个周边设施`)
       
-      const response = await fetch(url)
-      const data = await response.json()
+      // 过滤并转换数据
+      const results: Facility[] = []
+      const seenNames = new Set()
       
-      if (data.status === '1' && data.pois && data.pois.length > 0) {
-        return data.pois.map((poi: any) => ({
-          id: poi.id,
-          name: poi.name,
-          type: facilityType.type,
-          icon: facilityType.icon,
-          address: poi.address || '',
-          distance: Math.round(poi.distance || 0),
-          lat: parseFloat(poi.location.split(',')[1]),
-          lng: parseFloat(poi.location.split(',')[0]),
-          detail: poi.address || `${facilityType.type}设施`
-        }))
+      for (const poi of data.pois) {
+        // 跳过名称重复的
+        if (seenNames.has(poi.name)) continue
+        seenNames.add(poi.name)
+        
+        const distance = Math.round(poi.distance || 0)
+        const { risk, riskClass } = calculateRiskByDistance(distance)
+        
+        // 只保留距离在 2km 内的设施
+        if (distance <= radius) {
+          results.push({
+            id: poi.id,
+            name: poi.name,
+            type: poi.type.split(';')[0] || '其他',
+            icon: getFacilityIcon(poi.type, poi.name),
+            detail: poi.address || `${poi.name}`,
+            distance: distance,
+            lat: parseFloat(poi.location.split(',')[1]),
+            lng: parseFloat(poi.location.split(',')[0]),
+            risk: risk,
+            riskClass: riskClass
+          })
+        }
       }
-      return []
-    } catch (error) {
-      console.error(`搜索${facilityType.type}失败:`, error)
+      
+      // 按距离排序
+      results.sort((a, b) => a.distance - b.distance)
+      
+      // 限制最多显示 15 条
+      return results.slice(0, 15)
+    } else {
+      console.log('API 返回无数据, status:', data.status, 'info:', data.info)
       return []
     }
-  })
-  
-  const allResults = await Promise.all(searchPromises)
-  
-  // 合并所有结果
-  for (const pois of allResults) {
-    results.push(...pois)
+  } catch (error) {
+    console.error('搜索设施失败:', error)
+    return []
   }
-  
-  // 去重（按名称和距离）
-  const uniqueMap = new Map()
-  for (const facility of results) {
-    const key = `${facility.name}_${Math.round(facility.distance / 100)}`
-    if (!uniqueMap.has(key)) {
-      uniqueMap.set(key, facility)
-    }
-  }
-  
-  let uniqueResults = Array.from(uniqueMap.values())
-  
-  // 计算风险等级
-  uniqueResults = uniqueResults.map(item => {
-    const { risk, riskClass } = calculateRiskByDistance(item.distance)
-    return { ...item, risk, riskClass }
-  })
-  
-  // 按距离排序
-  uniqueResults.sort((a, b) => a.distance - b.distance)
-  
-  // 限制最多返回 20 条
-  return uniqueResults.slice(0, 20)
 }
 
 // 加载周边设施
@@ -267,93 +238,16 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     } else {
       facilities.value = []
       emit('facilitiesUpdate', [])
-      console.log('周边2km内无关键设施')
+      apiError.value = '周边2km内暂无关键设施'
     }
   } catch (error) {
     console.error('加载设施失败:', error)
-    apiError.value = 'API调用失败，请检查网络'
+    apiError.value = '加载失败，请重试'
     facilities.value = []
     emit('facilitiesUpdate', [])
   } finally {
     loadingFacilities.value = false
   }
-}
-
-// 本地模拟数据（作为 API 失败时的降级方案）
-const loadMockFacilities = async (riskPoint: RiskPoint) => {
-  loadingFacilities.value = true
-  apiError.value = ''
-  
-  setTimeout(() => {
-    const mockData: Facility[] = [
-      {
-        id: 'mock_1',
-        icon: getFacilityIcon('医院'),
-        name: '汤山街道卫生院',
-        type: '医院',
-        detail: '汤山街道汤泉路88号',
-        risk: '',
-        riskClass: '',
-        distance: 450,
-        lat: riskPoint.lat + 0.003,
-        lng: riskPoint.lng - 0.002
-      },
-      {
-        id: 'mock_2',
-        icon: getFacilityIcon('学校'),
-        name: '汤山中心小学',
-        type: '学校',
-        detail: '汤山街道汤泉路99号',
-        risk: '',
-        riskClass: '',
-        distance: 680,
-        lat: riskPoint.lat - 0.004,
-        lng: riskPoint.lng + 0.001
-      },
-      {
-        id: 'mock_3',
-        icon: getFacilityIcon('派出所'),
-        name: '汤山派出所',
-        type: '派出所',
-        detail: '汤山街道汤泉路66号',
-        risk: '',
-        riskClass: '',
-        distance: 820,
-        lat: riskPoint.lat + 0.001,
-        lng: riskPoint.lng - 0.003
-      },
-      {
-        id: 'mock_4',
-        icon: getFacilityIcon('加油站'),
-        name: '中国石化汤山加油站',
-        type: '加油站',
-        detail: 'G312国道汤山段',
-        risk: '',
-        riskClass: '',
-        distance: 1250,
-        lat: riskPoint.lat + 0.005,
-        lng: riskPoint.lng + 0.004
-      }
-    ]
-    
-    const finalResult = mockData.map(item => {
-      const { risk, riskClass } = calculateRiskByDistance(item.distance)
-      return { ...item, risk, riskClass }
-    })
-    
-    finalResult.sort((a, b) => a.distance - b.distance)
-    
-    facilities.value = finalResult
-    emit('facilitiesUpdate', finalResult)
-    loadingFacilities.value = false
-    apiError.value = '使用模拟数据（API不可用）'
-  }, 300)
-}
-
-const parseThreatPopulation = (value: string) => {
-  const matched = value.match(/-?\d+(\.\d+)?/)
-  if (!matched) return 0
-  return Number(matched[0])
 }
 
 const loadRegion = async () => {
@@ -387,13 +281,9 @@ const loadRegion = async () => {
 
 // 监听选中的风险点变化
 watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
+  console.log('selectedRiskPoint 变化:', newRiskPoint)
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
-    // 先尝试真实 API
     await loadFacilities(newRiskPoint)
-    // 如果 API 失败且没有结果，可以使用模拟数据作为降级
-    // if (facilities.value.length === 0 && !loadingFacilities.value) {
-    //   await loadMockFacilities(newRiskPoint)
-    // }
   } else {
     facilities.value = []
     emit('facilitiesUpdate', [])
@@ -416,31 +306,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 原有样式保持不变，添加以下新样式 */
-.api-error-tip {
-  font-size: 11px;
-  color: #ffaa66;
-  margin-left: 8px;
-  font-weight: normal;
-}
-
-.facility-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(0, 40, 60, 0.4);
-  border-radius: 8px;
-  padding: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.facility-item:hover {
-  background: rgba(0, 100, 150, 0.4);
-  transform: translateX(4px);
-}
-
-/* 其他样式保持原样 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -569,12 +434,35 @@ onMounted(() => {
   font-weight: normal;
 }
 
+.api-error-tip {
+  font-size: 11px;
+  color: #ffaa66;
+  margin-left: 8px;
+  font-weight: normal;
+}
+
 .facility-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
   max-height: 320px;
   overflow-y: auto;
+}
+
+.facility-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 40, 60, 0.4);
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.facility-item:hover {
+  background: rgba(0, 100, 150, 0.4);
+  transform: translateX(4px);
 }
 
 .facility-icon {
