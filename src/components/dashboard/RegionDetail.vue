@@ -45,16 +45,14 @@
         关键设施
         <span v-if="selectedRiskPoint" class="facility-tip">（{{ selectedRiskPoint.name }} 周边5km）</span>
         <span v-if="apiError" class="api-error-tip">⚠️ {{ apiError }}</span>
-        <!-- 调试：显示设施数量 -->
-        <span class="debug-info">[设施数量: {{ facilities.length }}]</span>
       </h4>
       
-      <!-- 加载状态 -->
+      <!-- 加载中 -->
       <div v-if="loadingFacilities" class="loading-facility">
         <span>加载关键设施数据中...</span>
       </div>
       
-      <!-- 设施列表 - 只要 facilities.length > 0 就显示 -->
+      <!-- 有设施时显示设施列表 -->
       <div v-else-if="facilities.length > 0" class="facility-list">
         <div 
           v-for="facility in facilities" 
@@ -64,7 +62,10 @@
         >
           <span class="facility-icon">{{ facility.icon }}</span>
           <div class="facility-info">
-            <span class="facility-name">{{ facility.name }}</span>
+            <div class="facility-name-row">
+              <span class="facility-name">{{ facility.name }}</span>
+              <span class="facility-type" :class="facility.category">{{ facility.typeName }}</span>
+            </div>
             <span class="facility-detail">{{ facility.detail }}</span>
             <span class="facility-distance">距离: {{ facility.distance }}m</span>
           </div>
@@ -72,13 +73,9 @@
         </div>
       </div>
       
-      <!-- 空状态 -->
-      <div v-else-if="!loadingFacilities && selectedRiskPoint" class="empty-facility">
-        该风险点周边5km内暂无设施
-      </div>
-      
-      <div v-else-if="!loadingFacilities" class="empty-facility">
-        请点击地图上的风险点查看周边关键设施
+      <!-- 没有设施时显示提示 -->
+      <div v-else class="empty-facility">
+        该风险点周边5km内暂无关键设施
       </div>
     </div>
   </div>
@@ -98,6 +95,7 @@ interface Facility {
   id: string
   icon: string
   name: string
+  typeName: string
   detail: string
   risk: string
   riskClass: string
@@ -105,7 +103,7 @@ interface Facility {
   lat: number
   lng: number
   type: string
-  category: 'public' | 'life'  // 新增分类：公共设施 / 生活服务
+  category: 'public' | 'life'
 }
 
 interface RiskPoint {
@@ -138,7 +136,7 @@ const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 const apiError = ref('')
 
-// 公共设施关键词（优先级高）
+// 公共设施关键词
 const PUBLIC_KEYWORDS = [
   '医院', '卫生院', '诊所', '医疗',
   '学校', '小学', '中学', '幼儿园', '大学',
@@ -149,16 +147,6 @@ const PUBLIC_KEYWORDS = [
   '养老院', '居家养老',
   '便民服务中心', '服务中心',
   '社区', '居委会'
-]
-
-// 生活服务设施关键词（优先级低）
-const LIFE_KEYWORDS = [
-  '加油站', '超市', '商店', '便利店', '药店', '药房',
-  '银行', '信用社', 'ATM',
-  '公交站', '车站', '停车场',
-  '餐饮', '饭店', '餐厅', '小吃', '面馆', '火锅',
-  '奶茶', '咖啡', '蛋糕', '面包',
-  '理发', '美容', '美甲'
 ]
 
 // 根据 POI 类型获取图标
@@ -194,12 +182,55 @@ const getFacilityIcon = (type: string, name: string, category: string): string =
 // 判断设施类别
 const getFacilityCategory = (name: string, type: string): 'public' | 'life' => {
   const fullText = `${name} ${type}`
-  
   for (const kw of PUBLIC_KEYWORDS) {
     if (fullText.includes(kw)) return 'public'
   }
-  
   return 'life'
+}
+
+// 获取设施类型名称
+const getTypeName = (poi: any, category: string): string => {
+  if (category === 'public') {
+    const name = poi.name
+    const type = poi.type
+    if (name.includes('医院') || type.includes('医院')) return '医院'
+    if (name.includes('卫生院')) return '卫生院'
+    if (name.includes('学校') || name.includes('小学') || name.includes('中学')) return '学校'
+    if (name.includes('幼儿园')) return '幼儿园'
+    if (name.includes('村委会') || name.includes('村委')) return '村委会'
+    if (name.includes('政府') || name.includes('镇政府')) return '政府机构'
+    if (name.includes('派出所') || name.includes('公安')) return '派出所'
+    if (name.includes('消防')) return '消防站'
+    if (name.includes('邮局') || name.includes('邮政')) return '邮局'
+    if (name.includes('养老')) return '养老院'
+    if (name.includes('服务中心')) return '服务中心'
+    if (name.includes('社区')) return '社区服务中心'
+    return '公共设施'
+  }
+  
+  // 生活服务设施
+  const name = poi.name
+  const type = poi.type
+  if (name.includes('加油站') || type.includes('加油')) return '加油站'
+  if (name.includes('超市') || name.includes('商店') || name.includes('便利店')) return '超市/商店'
+  if (name.includes('药店') || name.includes('药房')) return '药店'
+  if (name.includes('银行') || type.includes('银行')) return '银行'
+  if (name.includes('公交') || name.includes('车站')) return '公交站'
+  if (name.includes('餐饮') || name.includes('饭店') || name.includes('餐厅')) return '餐饮'
+  if (name.includes('奶茶') || name.includes('咖啡')) return '饮品店'
+  if (name.includes('理发') || name.includes('美容')) return '美容美发'
+  if (type.includes('中餐厅')) return '中餐厅'
+  if (type.includes('咖啡厅')) return '咖啡厅'
+  if (type.includes('冷饮店')) return '饮品店'
+  return '生活服务'
+}
+
+// 获取设施详情描述
+const getFacilityDetail = (poi: any, category: string): string => {
+  if (category === 'public') {
+    return poi.address || '公共设施'
+  }
+  return poi.address || '生活服务'
 }
 
 // 根据距离计算风险等级
@@ -208,22 +239,6 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
   if (distance < 1000) return { risk: '高风险', riskClass: 'high' }
   if (distance < 2000) return { risk: '中风险', riskClass: 'medium' }
   return { risk: '低风险', riskClass: 'low' }
-}
-
-// 获取设施详情描述
-const getFacilityDetail = (poi: any, category: string): string => {
-  if (category === 'public') {
-    return poi.address || '公共设施'
-  }
-  // 生活服务设施显示类型
-  const typeMap: Record<string, string> = {
-    '餐饮': '餐饮服务',
-    '冷饮店': '饮品店',
-    '超市': '购物',
-    '银行': '金融服务'
-  }
-  const type = poi.type.split(';')[0] || ''
-  return typeMap[type] || type || '生活服务'
 }
 
 // 调用高德地图 API 搜索周边设施
@@ -257,6 +272,7 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
             id: poi.id,
             name: poi.name,
             type: poi.type.split(';')[0] || '其他',
+            typeName: getTypeName(poi, category),
             icon: getFacilityIcon(poi.type, poi.name, category),
             detail: getFacilityDetail(poi, category),
             distance: distance,
@@ -279,7 +295,7 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
       publicResults.sort((a, b) => a.distance - b.distance)
       lifeResults.sort((a, b) => a.distance - b.distance)
       
-      // 优先显示公共设施，最多10个；如果公共设施不足，用生活服务设施补充，最多总数15个
+      // 优先显示公共设施，最多10个；公共设施不足时用生活服务设施补充，最多总数15个
       const finalResults = [...publicResults]
       const remainingSlots = 15 - finalResults.length
       if (remainingSlots > 0 && lifeResults.length > 0) {
@@ -318,15 +334,12 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     
     if (results.length > 0) {
       facilities.value = [...results]
-      console.log('facilities.value 已更新, 长度:', facilities.value.length)
-      console.log('facilities.value 内容:', facilities.value)
       emit('facilitiesUpdate', results)
-      console.log(`✅ 显示 ${results.length} 个设施:`, results.map(f => `${f.name}(${f.distance}m)[${f.category === 'public' ? '公共' : '生活'}]`))
+      console.log(`✅ 显示 ${results.length} 个设施`)
     } else {
       facilities.value = []
       emit('facilitiesUpdate', [])
-      apiError.value = '周边5km内暂无设施'
-      console.log('⚠️ 周边5km内暂无设施')
+      apiError.value = ''
     }
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
@@ -371,10 +384,8 @@ const loadRegion = async () => {
 watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
   console.log('📍 selectedRiskPoint 变化:', newRiskPoint)
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
-    console.log('✅ 有坐标，开始加载设施...')
     await loadFacilities(newRiskPoint)
   } else {
-    console.log('⚠️ 无风险点或无坐标')
     facilities.value = []
     emit('facilitiesUpdate', [])
     apiError.value = ''
@@ -537,17 +548,17 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 320px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
 .facility-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: rgba(0, 40, 60, 0.4);
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: 10px;
+  padding: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -558,52 +569,72 @@ onMounted(() => {
 }
 
 .facility-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
-  border: 1px solid rgba(0, 180, 255, 0.25);
-  background: rgba(0, 76, 112, 0.22);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 180, 255, 0.3);
+  background: rgba(0, 76, 112, 0.3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
   flex-shrink: 0;
 }
 
-.debug-info {
-  font-size: 10px;
-  color: #ffaa66;
-  margin-left: 8px;
-  font-weight: normal;
-}
-  
 .facility-info {
   flex: 1;
+  min-width: 0;
+}
+
+.facility-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .facility-name {
-  display: block;
   font-size: 13px;
+  font-weight: 500;
   color: #e0f0ff;
+}
+
+.facility-type {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(0, 100, 150, 0.3);
+  color: #88ccff;
+}
+
+.facility-type.public {
+  background: rgba(0, 150, 255, 0.25);
+  color: #66ccff;
+}
+
+.facility-type.life {
+  background: rgba(100, 200, 100, 0.2);
+  color: #88ff88;
 }
 
 .facility-detail {
   display: block;
   font-size: 11px;
   color: #88a0b0;
+  margin-bottom: 2px;
 }
 
 .facility-distance {
   display: block;
   font-size: 10px;
   color: #66c0ff;
-  margin-top: 2px;
 }
 
 .facility-risk {
   font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: 4px 10px;
+  border-radius: 12px;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -632,7 +663,7 @@ onMounted(() => {
   color: #88a0b0;
   font-size: 12px;
   text-align: center;
-  padding: 20px;
+  padding: 30px 20px;
 }
 
 .facility-list::-webkit-scrollbar {
