@@ -41,46 +41,53 @@
     </div>
     
     <div class="facilities-section">
-      <h4>
-        关键设施
-        <span v-if="selectedRiskPoint" class="facility-tip">（{{ selectedRiskPoint.name }} 周边5km）</span>
-        <span v-if="apiError" class="api-error-tip">⚠️ {{ apiError }}</span>
-        <span v-if="!loadingFacilities && facilities.length === 0 && !apiError && selectedRiskPoint" class="api-error-tip">暂无设施数据</span>
-      </h4>
+      <h4>关键设施</h4>
       
-      <!-- 加载中 -->
-      <div v-if="loadingFacilities" class="loading-facility">
-        <span>正在搜索周边关键设施...</span>
+      <!-- 未选择风险点时显示提示 -->
+      <div v-if="!selectedRiskPoint" class="facility-placeholder">
+        <div class="placeholder-icon">📍</div>
+        <div class="placeholder-text">请点击地图上的风险点</div>
+        <div class="placeholder-sub">查看周边5km范围内的关键设施</div>
       </div>
       
-      <!-- 有设施时显示设施列表 -->
-      <div v-else-if="facilities.length > 0" class="facility-list">
-        <div 
-          v-for="facility in facilities" 
-          :key="facility.id" 
-          class="facility-item"
-          @click="onFacilityClick(facility)"
-        >
-          <span class="facility-icon">{{ facility.icon }}</span>
-          <div class="facility-info">
-            <div class="facility-name-row">
-              <span class="facility-name">{{ facility.name }}</span>
-              <span class="facility-type" :class="facility.category">{{ facility.typeName }}</span>
+      <!-- 已选择风险点，加载中 -->
+      <div v-else-if="loadingFacilities" class="loading-facility">
+        <div class="loading-spinner"></div>
+        <div>正在搜索 {{ selectedRiskPoint.name }} 周边关键设施...</div>
+      </div>
+      
+      <!-- 已选择风险点，有设施数据 -->
+      <div v-else-if="facilities.length > 0" class="facility-list-wrapper">
+        <div class="facility-header">
+          <span>{{ selectedRiskPoint.name }} 周边5km关键设施</span>
+          <span class="facility-count">共 {{ facilities.length }} 个</span>
+        </div>
+        <div class="facility-list">
+          <div 
+            v-for="facility in facilities" 
+            :key="facility.id" 
+            class="facility-item"
+            @click="onFacilityClick(facility)"
+          >
+            <span class="facility-icon">{{ facility.icon }}</span>
+            <div class="facility-info">
+              <div class="facility-name-row">
+                <span class="facility-name">{{ facility.name }}</span>
+                <span class="facility-type" :class="facility.category">{{ facility.typeName }}</span>
+              </div>
+              <span class="facility-detail">{{ facility.detail }}</span>
+              <span class="facility-distance">距离: {{ facility.distance }}m</span>
             </div>
-            <span class="facility-detail">{{ facility.detail }}</span>
-            <span class="facility-distance">距离: {{ facility.distance }}m</span>
+            <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
           </div>
-          <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
         </div>
       </div>
       
-      <!-- 没有设施时显示调试信息 -->
-      <div v-else-if="!loadingFacilities && selectedRiskPoint" class="empty-facility">
-        <div>该风险点周边5km内暂无关键设施</div>
-        <div class="debug-info" v-if="debugInfo">
-          <small>📍 坐标: {{ selectedRiskPoint.lng }}, {{ selectedRiskPoint.lat }}</small>
-          <small>🔍 {{ debugInfo }}</small>
-        </div>
+      <!-- 已选择风险点，无设施数据 -->
+      <div v-else class="empty-facility">
+        <div class="empty-icon">🏗️</div>
+        <div class="empty-text">该风险点周边5km内暂无关键设施</div>
+        <div class="empty-sub">请尝试选择其他风险点</div>
       </div>
     </div>
   </div>
@@ -139,8 +146,6 @@ const selectedRegion = ref({
 
 const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
-const apiError = ref('')
-const debugInfo = ref('')
 
 // 公共设施关键词
 const PUBLIC_KEYWORDS = [
@@ -240,18 +245,14 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
 const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 5000) => {
   return new Promise<Facility[]>((resolve, reject) => {
     try {
-      // 使用 JSONP 方式避免跨域问题
       const callbackName = `AMAP_CALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      // 创建 script 标签
       const script = document.createElement('script')
       const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON&callback=${callbackName}`
       
-      // 定义全局回调函数
       ;(window as any)[callbackName] = (data: any) => {
         console.log('📡 高德API返回数据:', data)
         
-        // 清理
         delete (window as any)[callbackName]
         document.body.removeChild(script)
         
@@ -294,11 +295,9 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
             }
           }
           
-          // 按距离排序
           publicResults.sort((a, b) => a.distance - b.distance)
           lifeResults.sort((a, b) => a.distance - b.distance)
           
-          // 优先显示公共设施，最多10个；公共设施不足时用生活服务设施补充，最多总数15个
           const finalResults = [...publicResults]
           const remainingSlots = 15 - finalResults.length
           if (remainingSlots > 0 && lifeResults.length > 0) {
@@ -306,28 +305,23 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
           }
           
           console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
-          debugInfo.value = `找到 ${data.pois.length} 个POI，筛选后显示 ${finalResults.length} 个设施`
           
           resolve(finalResults)
         } else {
           console.log('⚠️ API 返回无数据, status:', data.status, 'info:', data.info)
-          debugInfo.value = `API返回: ${data.info || '无数据'}`
           resolve([])
         }
       }
       
-      // 设置超时
       const timeout = setTimeout(() => {
         if ((window as any)[callbackName]) {
           console.error('❌ 高德API请求超时')
           delete (window as any)[callbackName]
           document.body.removeChild(script)
-          debugInfo.value = '请求超时'
           resolve([])
         }
       }, 10000)
       
-      // 添加错误处理
       script.onerror = (error) => {
         console.error('❌ 加载高德API失败:', error)
         clearTimeout(timeout)
@@ -335,7 +329,6 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
           delete (window as any)[callbackName]
         }
         document.body.removeChild(script)
-        debugInfo.value = '网络请求失败'
         resolve([])
       }
       
@@ -344,7 +337,6 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
       
     } catch (error) {
       console.error('❌ 搜索设施失败:', error)
-      debugInfo.value = `错误: ${error}`
       reject(error)
     }
   })
@@ -355,34 +347,27 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   if (!riskPoint.lat || !riskPoint.lng) {
     console.warn('⚠️ 风险点缺少坐标')
     facilities.value = []
-    apiError.value = '风险点坐标缺失'
-    emit('facilitiesUpdate', [])
     return
   }
   
   loadingFacilities.value = true
-  apiError.value = ''
-  debugInfo.value = ''
+  facilities.value = []
   
   try {
     console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
-    debugInfo.value = `正在搜索 ${riskPoint.name} 周边设施...`
     
     const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 5000)
     
+    facilities.value = results
+    emit('facilitiesUpdate', results)
+    
     if (results.length > 0) {
-      facilities.value = [...results]
-      emit('facilitiesUpdate', results)
       console.log(`✅ 显示 ${results.length} 个设施`)
-      console.log('📋 设施列表:', results)
     } else {
-      facilities.value = []
-      emit('facilitiesUpdate', [])
       console.log('⚠️ 未找到设施')
     }
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
-    apiError.value = '加载失败，请检查网络'
     facilities.value = []
     emit('facilitiesUpdate', [])
   } finally {
@@ -427,8 +412,6 @@ watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
   } else {
     facilities.value = []
     emit('facilitiesUpdate', [])
-    apiError.value = ''
-    debugInfo.value = ''
   }
 }, { immediate: true, deep: true })
 
@@ -571,24 +554,86 @@ onMounted(() => {
   color: #a0d0ff;
 }
 
-.facility-tip {
-  font-size: 11px;
-  color: #88a0b0;
-  font-weight: normal;
+/* 未选择风险点时的提示样式 */
+.facility-placeholder {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(0, 40, 60, 0.3);
+  border-radius: 12px;
+  border: 1px dashed rgba(0, 180, 255, 0.3);
 }
 
-.api-error-tip {
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.placeholder-text {
+  font-size: 14px;
+  color: #a0d0ff;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.placeholder-sub {
   font-size: 11px;
-  color: #ffaa66;
-  margin-left: 8px;
-  font-weight: normal;
+  color: #88a0b0;
+}
+
+/* 加载样式 */
+.loading-facility {
+  text-align: center;
+  padding: 40px 20px;
+  color: #88a0b0;
+  font-size: 12px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border: 2px solid rgba(0, 200, 255, 0.3);
+  border-top-color: #00f0ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 设施列表样式 */
+.facility-list-wrapper {
+  margin-top: 8px;
+}
+
+.facility-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(0, 80, 120, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #a0d0ff;
+}
+
+.facility-count {
+  background: rgba(0, 200, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #00f0ff;
 }
 
 .facility-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 320px;
+  max-height: 360px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -610,15 +655,15 @@ onMounted(() => {
 }
 
 .facility-icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   border: 1px solid rgba(0, 180, 255, 0.3);
   background: rgba(0, 76, 112, 0.3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 
@@ -703,20 +748,29 @@ onMounted(() => {
   color: #88ff88;
 }
 
-.empty-facility, .loading-facility {
-  color: #88a0b0;
-  font-size: 12px;
+/* 空状态样式 */
+.empty-facility {
   text-align: center;
-  padding: 30px 20px;
+  padding: 40px 20px;
+  background: rgba(0, 40, 60, 0.3);
+  border-radius: 12px;
 }
 
-.debug-info {
-  margin-top: 8px;
-  font-size: 10px;
-  color: #66a0c0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 13px;
+  color: #88a0b0;
+  margin-bottom: 6px;
+}
+
+.empty-sub {
+  font-size: 11px;
+  color: #6688a0;
 }
 
 .facility-list::-webkit-scrollbar {
