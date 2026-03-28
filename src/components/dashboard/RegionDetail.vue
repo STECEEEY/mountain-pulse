@@ -44,8 +44,9 @@
       <h4>关键设施</h4>
       
       <!-- 调试信息：显示当前状态 -->
-      <div class="debug-bar" style="font-size: 10px; color: #666; margin-bottom: 8px; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+      <div class="debug-bar" style="font-size: 10px; color: #0f0; margin-bottom: 8px; padding: 4px; background: rgba(0,0,0,0.5); border-radius: 4px; font-family: monospace;">
         调试: 选中={{ !!selectedRiskPoint }} | 加载中={{ loadingFacilities }} | 设施数={{ facilities.length }}
+        <div v-if="selectedRiskPoint" style="font-size: 9px;">当前风险点: {{ selectedRiskPoint.name }} ({{ selectedRiskPoint.lat }}, {{ selectedRiskPoint.lng }})</div>
       </div>
       
       <!-- 未选择风险点时显示提示 -->
@@ -310,7 +311,7 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
           }
           
           console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
-          console.log('📋 设施列表详情:', finalResults.slice(0, 3)) // 只显示前3个避免刷屏
+          console.log('📋 设施列表详情:', finalResults.slice(0, 3))
           
           resolve(finalResults)
         } else {
@@ -366,15 +367,12 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     
     console.log('🎯 获取到的设施数量:', results.length)
     
-    // 直接赋值
     facilities.value = results
     
     console.log('✅ facilities.value 已更新，长度:', facilities.value.length)
-    console.log('✅ facilities.value 前3个:', facilities.value.slice(0, 3))
     
     emit('facilitiesUpdate', facilities.value)
     
-    // 强制触发更新
     await nextTick()
     
   } catch (error) {
@@ -418,8 +416,10 @@ const loadRegion = async () => {
 
 // 监听选中的风险点变化
 watch(() => props.selectedRiskPoint, async (newRiskPoint, oldRiskPoint) => {
-  console.log('📍 selectedRiskPoint 变化:', newRiskPoint?.name)
-  console.log('📍 oldRiskPoint:', oldRiskPoint?.name)
+  console.log('📍 selectedRiskPoint 变化:')
+  console.log('   new:', newRiskPoint)
+  console.log('   old:', oldRiskPoint)
+  console.log('   has lat/lng:', newRiskPoint?.lat, newRiskPoint?.lng)
   
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
     await loadFacilities(newRiskPoint)
@@ -428,6 +428,11 @@ watch(() => props.selectedRiskPoint, async (newRiskPoint, oldRiskPoint) => {
     emit('facilitiesUpdate', [])
   }
 }, { immediate: true, deep: true })
+
+// 额外监听 props 变化
+watch(() => props, (newProps) => {
+  console.log('🔄 props 整体变化:', newProps.selectedRiskPoint)
+}, { deep: true })
 
 const onFacilityClick = (facility: Facility) => {
   console.log('点击设施:', facility.name)
@@ -441,11 +446,13 @@ const onFacilityClick = (facility: Facility) => {
 
 onMounted(() => {
   console.log('关键设施组件已挂载')
+  console.log('初始 selectedRiskPoint:', props.selectedRiskPoint)
   loadRegion()
 })
 </script>
 
 <style scoped>
+/* 样式保持不变，和之前一样 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -568,14 +575,14 @@ onMounted(() => {
   color: #a0d0ff;
 }
 
-/* 调试栏 */
 .debug-bar {
   font-family: monospace;
   background: rgba(0, 0, 0, 0.5) !important;
   color: #0f0 !important;
+  border-radius: 4px;
+  font-size: 10px;
 }
 
-/* 未选择风险点时的提示样式 */
 .facility-placeholder {
   text-align: center;
   padding: 40px 20px;
@@ -602,7 +609,6 @@ onMounted(() => {
   color: #88a0b0;
 }
 
-/* 加载样式 */
 .loading-facility {
   text-align: center;
   padding: 40px 20px;
@@ -625,7 +631,6 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* 设施列表样式 */
 .facility-list-wrapper {
   margin-top: 8px;
 }
@@ -769,7 +774,6 @@ onMounted(() => {
   color: #88ff88;
 }
 
-/* 空状态样式 */
 .empty-facility {
   text-align: center;
   padding: 40px 20px;
