@@ -43,7 +43,7 @@
     <div class="facilities-section">
       <h4>
         关键设施
-        <span v-if="selectedRiskPoint" class="facility-tip">（{{ selectedRiskPoint.name }} 周边2km）</span>
+        <span v-if="selectedRiskPoint" class="facility-tip">（{{ selectedRiskPoint.name }} 周边5km）</span>
         <span v-if="apiError" class="api-error-tip">⚠️ {{ apiError }}</span>
       </h4>
       <div v-if="loadingFacilities" class="loading-facility">
@@ -246,7 +246,7 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   try {
     console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
     
-    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 2000)
+    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 5000)
     
     if (results.length > 0) {
       facilities.value = results
