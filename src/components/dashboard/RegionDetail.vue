@@ -96,6 +96,7 @@ interface Facility {
   lat: number
   lng: number
   type: string
+  category: 'public' | 'life'  // 新增分类：公共设施 / 生活服务
 }
 
 interface RiskPoint {
@@ -128,39 +129,68 @@ const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 const apiError = ref('')
 
-// 关键设施类型关键词（医院、学校、政府、应急设施等）
-const IMPORTANT_KEYWORDS = [
+// 公共设施关键词（优先级高）
+const PUBLIC_KEYWORDS = [
   '医院', '卫生院', '诊所', '医疗',
   '学校', '小学', '中学', '幼儿园', '大学',
   '村委会', '村委', '镇政府', '街道办事处', '政府', '党群服务中心',
   '派出所', '公安局', '警务站',
   '消防', '消防站', '应急', '避难所',
-  '加油站',
-  '超市', '商店',
-  '公交站', '车站', '交通枢纽',
   '邮局', '邮政',
   '养老院', '居家养老',
   '便民服务中心', '服务中心',
   '社区', '居委会'
 ]
 
+// 生活服务设施关键词（优先级低）
+const LIFE_KEYWORDS = [
+  '加油站', '超市', '商店', '便利店', '药店', '药房',
+  '银行', '信用社', 'ATM',
+  '公交站', '车站', '停车场',
+  '餐饮', '饭店', '餐厅', '小吃', '面馆', '火锅',
+  '奶茶', '咖啡', '蛋糕', '面包',
+  '理发', '美容', '美甲'
+]
+
 // 根据 POI 类型获取图标
-const getFacilityIcon = (type: string, name: string): string => {
+const getFacilityIcon = (type: string, name: string, category: string): string => {
   const lowerName = name.toLowerCase()
   const lowerType = type.toLowerCase()
   
-  if (lowerName.includes('医院') || lowerType.includes('医院') || lowerType.includes('诊所')) return '🏥'
-  if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学') || lowerType.includes('学校')) return '🏫'
+  // 公共设施图标
+  if (lowerName.includes('医院') || lowerType.includes('医院')) return '🏥'
+  if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '🏫'
   if (lowerName.includes('村委会') || lowerName.includes('村委')) return '🏛️'
-  if (lowerName.includes('政府') || lowerName.includes('镇') || lowerType.includes('政府')) return '🏢'
+  if (lowerName.includes('政府') || lowerName.includes('镇')) return '🏢'
   if (lowerName.includes('派出所') || lowerName.includes('公安')) return '👮'
   if (lowerName.includes('消防') || lowerName.includes('应急')) return '🚒'
-  if (lowerName.includes('加油站') || lowerType.includes('加油')) return '⛽'
+  if (lowerName.includes('邮局') || lowerName.includes('邮政')) return '📮'
+  if (lowerName.includes('养老') || lowerName.includes('居家')) return '👴'
+  if (lowerName.includes('服务中心')) return '🏪'
+  if (lowerName.includes('社区') || lowerName.includes('居委会')) return '🏘️'
+  
+  // 生活服务设施图标
+  if (lowerName.includes('加油站')) return '⛽'
   if (lowerName.includes('超市') || lowerName.includes('商店') || lowerName.includes('便利店')) return '🏪'
-  if (lowerName.includes('公交') || lowerName.includes('车站')) return '🚏'
+  if (lowerName.includes('药店') || lowerName.includes('药房')) return '💊'
   if (lowerName.includes('银行') || lowerName.includes('信用社')) return '🏦'
+  if (lowerName.includes('公交') || lowerName.includes('车站')) return '🚏'
+  if (lowerName.includes('餐饮') || lowerName.includes('饭店') || lowerName.includes('餐厅') || lowerName.includes('小吃')) return '🍽️'
+  if (lowerName.includes('奶茶') || lowerName.includes('咖啡')) return '☕'
+  if (lowerName.includes('理发') || lowerName.includes('美容') || lowerName.includes('美甲')) return '💇'
   
   return '📍'
+}
+
+// 判断设施类别
+const getFacilityCategory = (name: string, type: string): 'public' | 'life' => {
+  const fullText = `${name} ${type}`
+  
+  for (const kw of PUBLIC_KEYWORDS) {
+    if (fullText.includes(kw)) return 'public'
+  }
+  
+  return 'life'
 }
 
 // 根据距离计算风险等级
@@ -171,8 +201,24 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
   return { risk: '低风险', riskClass: 'low' }
 }
 
+// 获取设施详情描述
+const getFacilityDetail = (poi: any, category: string): string => {
+  if (category === 'public') {
+    return poi.address || '公共设施'
+  }
+  // 生活服务设施显示类型
+  const typeMap: Record<string, string> = {
+    '餐饮': '餐饮服务',
+    '冷饮店': '饮品店',
+    '超市': '购物',
+    '银行': '金融服务'
+  }
+  const type = poi.type.split(';')[0] || ''
+  return typeMap[type] || type || '生活服务'
+}
+
 // 调用高德地图 API 搜索周边设施
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 2000) => {
+const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 5000) => {
   try {
     const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON`
     
@@ -185,46 +231,55 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
     if (data.status === '1' && data.pois && data.pois.length > 0) {
       console.log(`✅ 找到 ${data.pois.length} 个 POI`)
       
-      const results: Facility[] = []
+      const publicResults: Facility[] = []
+      const lifeResults: Facility[] = []
       const seenNames = new Set()
       
       for (const poi of data.pois) {
-        // 检查是否是关键设施
-        const isImportant = IMPORTANT_KEYWORDS.some(kw => 
-          poi.name.includes(kw) || poi.type.includes(kw)
-        )
-        
-        // 只保留关键设施
-        if (!isImportant) continue
-        
         if (seenNames.has(poi.name)) continue
         seenNames.add(poi.name)
         
+        const category = getFacilityCategory(poi.name, poi.type)
         const distance = Math.round(poi.distance || 0)
         const { risk, riskClass } = calculateRiskByDistance(distance)
         
         if (distance <= radius) {
-          results.push({
+          const facility: Facility = {
             id: poi.id,
             name: poi.name,
             type: poi.type.split(';')[0] || '其他',
-            icon: getFacilityIcon(poi.type, poi.name),
-            detail: poi.address || `${poi.name}`,
+            icon: getFacilityIcon(poi.type, poi.name, category),
+            detail: getFacilityDetail(poi, category),
             distance: distance,
             lat: parseFloat(poi.location.split(',')[1]),
             lng: parseFloat(poi.location.split(',')[0]),
             risk: risk,
-            riskClass: riskClass
-          })
+            riskClass: riskClass,
+            category: category
+          }
+          
+          if (category === 'public') {
+            publicResults.push(facility)
+          } else {
+            lifeResults.push(facility)
+          }
         }
       }
       
-      console.log(`📋 过滤后关键设施: ${results.length} 个`)
-      
       // 按距离排序
-      results.sort((a, b) => a.distance - b.distance)
+      publicResults.sort((a, b) => a.distance - b.distance)
+      lifeResults.sort((a, b) => a.distance - b.distance)
       
-      return results.slice(0, 15)
+      // 优先显示公共设施，最多10个；如果公共设施不足，用生活服务设施补充，最多总数15个
+      const finalResults = [...publicResults]
+      const remainingSlots = 15 - finalResults.length
+      if (remainingSlots > 0 && lifeResults.length > 0) {
+        finalResults.push(...lifeResults.slice(0, remainingSlots))
+      }
+      
+      console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
+      
+      return finalResults
     } else {
       console.log('⚠️ API 返回无数据, status:', data.status, 'info:', data.info)
       return []
@@ -255,12 +310,12 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     if (results.length > 0) {
       facilities.value = results
       emit('facilitiesUpdate', results)
-      console.log(`✅ 显示 ${results.length} 个关键设施:`, results.map(f => `${f.name}(${f.distance}m)`))
+      console.log(`✅ 显示 ${results.length} 个设施:`, results.map(f => `${f.name}(${f.distance}m)[${f.category === 'public' ? '公共' : '生活'}]`))
     } else {
       facilities.value = []
       emit('facilitiesUpdate', [])
-      apiError.value = '周边2km内暂无关键设施'
-      console.log('⚠️ 周边2km内暂无关键设施')
+      apiError.value = '周边5km内暂无设施'
+      console.log('⚠️ 周边5km内暂无设施')
     }
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
