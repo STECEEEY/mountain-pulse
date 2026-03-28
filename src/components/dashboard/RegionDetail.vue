@@ -43,13 +43,14 @@
     <div class="facilities-section">
       <h4>
         关键设施
-        <span v-if="selectedRiskPoint" class="facility-tip">（{{ selectedRiskPoint.name }} 周边10km）</span>
+        <span v-if="selectedRiskPoint" class="facility-tip">（{{ selectedRiskPoint.name }} 周边5km）</span>
         <span v-if="apiError" class="api-error-tip">⚠️ {{ apiError }}</span>
+        <span v-if="!loadingFacilities && facilities.length === 0 && !apiError && selectedRiskPoint" class="api-error-tip">暂无设施数据</span>
       </h4>
       
       <!-- 加载中 -->
       <div v-if="loadingFacilities" class="loading-facility">
-        <span>加载关键设施数据中...</span>
+        <span>正在搜索周边关键设施...</span>
       </div>
       
       <!-- 有设施时显示设施列表 -->
@@ -73,9 +74,13 @@
         </div>
       </div>
       
-      <!-- 没有设施时显示提示 -->
-      <div v-else class="empty-facility">
-        该风险点周边10km内暂无关键设施
+      <!-- 没有设施时显示调试信息 -->
+      <div v-else-if="!loadingFacilities && selectedRiskPoint" class="empty-facility">
+        <div>该风险点周边5km内暂无关键设施</div>
+        <div class="debug-info" v-if="debugInfo">
+          <small>📍 坐标: {{ selectedRiskPoint.lng }}, {{ selectedRiskPoint.lat }}</small>
+          <small>🔍 {{ debugInfo }}</small>
+        </div>
       </div>
     </div>
   </div>
@@ -135,6 +140,7 @@ const selectedRegion = ref({
 const facilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 const apiError = ref('')
+const debugInfo = ref('')
 
 // 公共设施关键词
 const PUBLIC_KEYWORDS = [
@@ -154,7 +160,6 @@ const getFacilityIcon = (type: string, name: string, category: string): string =
   const lowerName = name.toLowerCase()
   const lowerType = type.toLowerCase()
   
-  // 公共设施图标
   if (lowerName.includes('医院') || lowerType.includes('医院')) return '🏥'
   if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '🏫'
   if (lowerName.includes('村委会') || lowerName.includes('村委')) return '🏛️'
@@ -165,16 +170,12 @@ const getFacilityIcon = (type: string, name: string, category: string): string =
   if (lowerName.includes('养老') || lowerName.includes('居家')) return '👴'
   if (lowerName.includes('服务中心')) return '🏪'
   if (lowerName.includes('社区') || lowerName.includes('居委会')) return '🏘️'
-  
-  // 生活服务设施图标
   if (lowerName.includes('加油站')) return '⛽'
   if (lowerName.includes('超市') || lowerName.includes('商店') || lowerName.includes('便利店')) return '🏪'
   if (lowerName.includes('药店') || lowerName.includes('药房')) return '💊'
   if (lowerName.includes('银行') || lowerName.includes('信用社')) return '🏦'
   if (lowerName.includes('公交') || lowerName.includes('车站')) return '🚏'
-  if (lowerName.includes('餐饮') || lowerName.includes('饭店') || lowerName.includes('餐厅') || lowerName.includes('小吃')) return '🍽️'
-  if (lowerName.includes('奶茶') || lowerName.includes('咖啡')) return '☕'
-  if (lowerName.includes('理发') || lowerName.includes('美容') || lowerName.includes('美甲')) return '💇'
+  if (lowerName.includes('餐饮') || lowerName.includes('饭店') || lowerName.includes('餐厅')) return '🍽️'
   
   return '📍'
 }
@@ -208,7 +209,6 @@ const getTypeName = (poi: any, category: string): string => {
     return '公共设施'
   }
   
-  // 生活服务设施
   const name = poi.name
   const type = poi.type
   if (name.includes('加油站') || type.includes('加油')) return '加油站'
@@ -216,6 +216,7 @@ const getTypeName = (poi: any, category: string): string => {
   if (name.includes('药店') || name.includes('药房')) return '药店'
   if (name.includes('银行') || type.includes('银行')) return '银行'
   if (name.includes('公交') || name.includes('车站')) return '公交站'
+  if (name.includes('餐饮') || name.includes('饭店') || name.includes('餐厅')) return '餐饮'
   return '生活服务'
 }
 
@@ -235,78 +236,118 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
   return { risk: '低风险', riskClass: 'low' }
 }
 
-// 调用高德地图 API 搜索周边设施
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 10000) => {
-  try {
-    const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON`
-    
-    console.log('🔍 搜索周边设施:', url)
-    const response = await fetch(url)
-    const data = await response.json()
-    
-    console.log('📡 API 返回数据:', data)
-    
-    if (data.status === '1' && data.pois && data.pois.length > 0) {
-      console.log(`✅ 找到 ${data.pois.length} 个 POI`)
+// 使用 JSONP 方式调用高德地图 API
+const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 5000) => {
+  return new Promise<Facility[]>((resolve, reject) => {
+    try {
+      // 使用 JSONP 方式避免跨域问题
+      const callbackName = `AMAP_CALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      const publicResults: Facility[] = []
-      const lifeResults: Facility[] = []
-      const seenNames = new Set()
+      // 创建 script 标签
+      const script = document.createElement('script')
+      const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON&callback=${callbackName}`
       
-      for (const poi of data.pois) {
-        if (seenNames.has(poi.name)) continue
-        seenNames.add(poi.name)
+      // 定义全局回调函数
+      ;(window as any)[callbackName] = (data: any) => {
+        console.log('📡 高德API返回数据:', data)
         
-        const category = getFacilityCategory(poi.name, poi.type)
-        const distance = Math.round(poi.distance || 0)
-        const { risk, riskClass } = calculateRiskByDistance(distance)
+        // 清理
+        delete (window as any)[callbackName]
+        document.body.removeChild(script)
         
-        if (distance <= radius) {
-          const facility: Facility = {
-            id: poi.id,
-            name: poi.name,
-            type: poi.type.split(';')[0] || '其他',
-            typeName: getTypeName(poi, category),
-            icon: getFacilityIcon(poi.type, poi.name, category),
-            detail: getFacilityDetail(poi, category),
-            distance: distance,
-            lat: parseFloat(poi.location.split(',')[1]),
-            lng: parseFloat(poi.location.split(',')[0]),
-            risk: risk,
-            riskClass: riskClass,
-            category: category
+        if (data.status === '1' && data.pois && data.pois.length > 0) {
+          console.log(`✅ 找到 ${data.pois.length} 个 POI`)
+          
+          const publicResults: Facility[] = []
+          const lifeResults: Facility[] = []
+          const seenNames = new Set()
+          
+          for (const poi of data.pois) {
+            if (seenNames.has(poi.name)) continue
+            seenNames.add(poi.name)
+            
+            const category = getFacilityCategory(poi.name, poi.type)
+            const distance = Math.round(poi.distance || 0)
+            const { risk, riskClass } = calculateRiskByDistance(distance)
+            
+            if (distance <= radius) {
+              const facility: Facility = {
+                id: poi.id,
+                name: poi.name,
+                type: poi.type.split(';')[0] || '其他',
+                typeName: getTypeName(poi, category),
+                icon: getFacilityIcon(poi.type, poi.name, category),
+                detail: getFacilityDetail(poi, category),
+                distance: distance,
+                lat: parseFloat(poi.location.split(',')[1]),
+                lng: parseFloat(poi.location.split(',')[0]),
+                risk: risk,
+                riskClass: riskClass,
+                category: category
+              }
+              
+              if (category === 'public') {
+                publicResults.push(facility)
+              } else {
+                lifeResults.push(facility)
+              }
+            }
           }
           
-          if (category === 'public') {
-            publicResults.push(facility)
-          } else {
-            lifeResults.push(facility)
+          // 按距离排序
+          publicResults.sort((a, b) => a.distance - b.distance)
+          lifeResults.sort((a, b) => a.distance - b.distance)
+          
+          // 优先显示公共设施，最多10个；公共设施不足时用生活服务设施补充，最多总数15个
+          const finalResults = [...publicResults]
+          const remainingSlots = 15 - finalResults.length
+          if (remainingSlots > 0 && lifeResults.length > 0) {
+            finalResults.push(...lifeResults.slice(0, remainingSlots))
           }
+          
+          console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
+          debugInfo.value = `找到 ${data.pois.length} 个POI，筛选后显示 ${finalResults.length} 个设施`
+          
+          resolve(finalResults)
+        } else {
+          console.log('⚠️ API 返回无数据, status:', data.status, 'info:', data.info)
+          debugInfo.value = `API返回: ${data.info || '无数据'}`
+          resolve([])
         }
       }
       
-      // 按距离排序
-      publicResults.sort((a, b) => a.distance - b.distance)
-      lifeResults.sort((a, b) => a.distance - b.distance)
+      // 设置超时
+      const timeout = setTimeout(() => {
+        if ((window as any)[callbackName]) {
+          console.error('❌ 高德API请求超时')
+          delete (window as any)[callbackName]
+          document.body.removeChild(script)
+          debugInfo.value = '请求超时'
+          resolve([])
+        }
+      }, 10000)
       
-      // 优先显示公共设施，最多10个；公共设施不足时用生活服务设施补充，最多总数15个
-      const finalResults = [...publicResults]
-      const remainingSlots = 15 - finalResults.length
-      if (remainingSlots > 0 && lifeResults.length > 0) {
-        finalResults.push(...lifeResults.slice(0, remainingSlots))
+      // 添加错误处理
+      script.onerror = (error) => {
+        console.error('❌ 加载高德API失败:', error)
+        clearTimeout(timeout)
+        if ((window as any)[callbackName]) {
+          delete (window as any)[callbackName]
+        }
+        document.body.removeChild(script)
+        debugInfo.value = '网络请求失败'
+        resolve([])
       }
       
-      console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
+      script.src = url
+      document.body.appendChild(script)
       
-      return finalResults
-    } else {
-      console.log('⚠️ API 返回无数据, status:', data.status, 'info:', data.info)
-      return []
+    } catch (error) {
+      console.error('❌ 搜索设施失败:', error)
+      debugInfo.value = `错误: ${error}`
+      reject(error)
     }
-  } catch (error) {
-    console.error('❌ 搜索设施失败:', error)
-    return []
-  }
+  })
 }
 
 // 加载周边设施
@@ -314,30 +355,34 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   if (!riskPoint.lat || !riskPoint.lng) {
     console.warn('⚠️ 风险点缺少坐标')
     facilities.value = []
+    apiError.value = '风险点坐标缺失'
     emit('facilitiesUpdate', [])
     return
   }
   
   loadingFacilities.value = true
   apiError.value = ''
+  debugInfo.value = ''
   
   try {
     console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
+    debugInfo.value = `正在搜索 ${riskPoint.name} 周边设施...`
     
-    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 10000)
+    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 5000)
     
     if (results.length > 0) {
       facilities.value = [...results]
       emit('facilitiesUpdate', results)
       console.log(`✅ 显示 ${results.length} 个设施`)
+      console.log('📋 设施列表:', results)
     } else {
       facilities.value = []
       emit('facilitiesUpdate', [])
-      apiError.value = ''
+      console.log('⚠️ 未找到设施')
     }
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
-    apiError.value = '加载失败，请重试'
+    apiError.value = '加载失败，请检查网络'
     facilities.value = []
     emit('facilitiesUpdate', [])
   } finally {
@@ -383,6 +428,7 @@ watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
     facilities.value = []
     emit('facilitiesUpdate', [])
     apiError.value = ''
+    debugInfo.value = ''
   }
 }, { immediate: true, deep: true })
 
@@ -662,6 +708,15 @@ onMounted(() => {
   font-size: 12px;
   text-align: center;
   padding: 30px 20px;
+}
+
+.debug-info {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #66a0c0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .facility-list::-webkit-scrollbar {
