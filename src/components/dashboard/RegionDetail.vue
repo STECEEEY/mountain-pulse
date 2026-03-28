@@ -29,14 +29,14 @@
       </div>
     </div>
     
-    <div v-if="selectedRiskPoint" class="selected-risk">
+    <div v-if="displayRiskPoint" class="selected-risk">
       <div class="risk-title">
         <span class="risk-icon">⚠️</span>
-        <span>当前风险点：{{ selectedRiskPoint.name }}</span>
+        <span>当前风险点：{{ displayRiskPoint.name }}</span>
       </div>
       <div class="risk-detail">
-        <span>威胁人口：{{ selectedRiskPoint.threat }}</span>
-        <span>风险等级：{{ selectedRiskPoint.level }}</span>
+        <span>威胁人口：{{ displayRiskPoint.threat }}</span>
+        <span>风险等级：{{ displayRiskPoint.level }}</span>
       </div>
     </div>
     
@@ -45,12 +45,12 @@
       
       <!-- 调试信息：显示当前状态 -->
       <div class="debug-bar" style="font-size: 10px; color: #0f0; margin-bottom: 8px; padding: 4px; background: rgba(0,0,0,0.5); border-radius: 4px; font-family: monospace;">
-        调试: 选中={{ !!selectedRiskPoint }} | 加载中={{ loadingFacilities }} | 设施数={{ facilities.length }}
-        <div v-if="selectedRiskPoint" style="font-size: 9px;">当前风险点: {{ selectedRiskPoint.name }} ({{ selectedRiskPoint.lat }}, {{ selectedRiskPoint.lng }})</div>
+        调试: 选中={{ !!displayRiskPoint }} | 加载中={{ loadingFacilities }} | 设施数={{ facilities.length }}
+        <div v-if="displayRiskPoint" style="font-size: 9px;">当前风险点: {{ displayRiskPoint.name }} ({{ displayRiskPoint.lat }}, {{ displayRiskPoint.lng }})</div>
       </div>
       
       <!-- 未选择风险点时显示提示 -->
-      <div v-if="!selectedRiskPoint" class="facility-placeholder">
+      <div v-if="!displayRiskPoint" class="facility-placeholder">
         <div class="placeholder-icon">📍</div>
         <div class="placeholder-text">请点击地图上的风险点</div>
         <div class="placeholder-sub">查看周边5km范围内的关键设施</div>
@@ -59,19 +59,19 @@
       <!-- 已选择风险点，加载中 -->
       <div v-else-if="loadingFacilities" class="loading-facility">
         <div class="loading-spinner"></div>
-        <div>正在搜索 {{ selectedRiskPoint.name }} 周边关键设施...</div>
+        <div>正在搜索 {{ displayRiskPoint.name }} 周边关键设施...</div>
       </div>
       
       <!-- 已选择风险点，有设施数据 -->
       <div v-else-if="facilities.length > 0" class="facility-list-wrapper">
         <div class="facility-header">
-          <span>{{ selectedRiskPoint.name }} 周边5km关键设施</span>
+          <span>{{ displayRiskPoint.name }} 周边5km关键设施</span>
           <span class="facility-count">共 {{ facilities.length }} 个</span>
         </div>
         <div class="facility-list">
           <div 
             v-for="(facility, index) in facilities" 
-            :key="facility.id || index" 
+            :key="`${facility.id}-${index}`" 
             class="facility-item"
             @click="onFacilityClick(facility)"
           >
@@ -100,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, nextTick } from 'vue'
+import { onMounted, ref, watch, nextTick, computed } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
@@ -141,6 +141,9 @@ const emit = defineEmits<{
   (e: 'facilitiesUpdate', facilities: Facility[]): void
   (e: 'facilityClick', facility: { name: string; lat: number; lng: number; type: string }): void
 }>()
+
+// 使用 computed 来确保响应式
+const displayRiskPoint = computed(() => props.selectedRiskPoint)
 
 const selectedRegion = ref({
   name: '',
@@ -367,12 +370,15 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     
     console.log('🎯 获取到的设施数量:', results.length)
     
-    facilities.value = results
+    // 强制创建一个新数组触发更新
+    facilities.value = [...results]
     
     console.log('✅ facilities.value 已更新，长度:', facilities.value.length)
+    console.log('✅ facilities.value 前3个:', facilities.value.slice(0, 3))
     
     emit('facilitiesUpdate', facilities.value)
     
+    // 强制更新视图
     await nextTick()
     
   } catch (error) {
@@ -382,6 +388,8 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   } finally {
     loadingFacilities.value = false
     console.log('🏁 加载完成，loadingFacilities:', loadingFacilities.value)
+    // 再次强制更新
+    await nextTick()
   }
 }
 
@@ -428,11 +436,6 @@ watch(() => props.selectedRiskPoint, async (newRiskPoint, oldRiskPoint) => {
     emit('facilitiesUpdate', [])
   }
 }, { immediate: true, deep: true })
-
-// 额外监听 props 变化
-watch(() => props, (newProps) => {
-  console.log('🔄 props 整体变化:', newProps.selectedRiskPoint)
-}, { deep: true })
 
 const onFacilityClick = (facility: Facility) => {
   console.log('点击设施:', facility.name)
