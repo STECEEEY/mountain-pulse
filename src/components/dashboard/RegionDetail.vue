@@ -43,6 +43,11 @@
     <div class="facilities-section">
       <h4>关键设施</h4>
       
+      <!-- 调试信息：显示当前状态 -->
+      <div class="debug-bar" style="font-size: 10px; color: #666; margin-bottom: 8px; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+        调试: 选中={{ !!selectedRiskPoint }} | 加载中={{ loadingFacilities }} | 设施数={{ facilities.length }}
+      </div>
+      
       <!-- 未选择风险点时显示提示 -->
       <div v-if="!selectedRiskPoint" class="facility-placeholder">
         <div class="placeholder-icon">📍</div>
@@ -57,15 +62,15 @@
       </div>
       
       <!-- 已选择风险点，有设施数据 -->
-      <div v-else-if="facilities && facilities.length > 0" class="facility-list-wrapper">
+      <div v-else-if="facilities.length > 0" class="facility-list-wrapper">
         <div class="facility-header">
           <span>{{ selectedRiskPoint.name }} 周边5km关键设施</span>
           <span class="facility-count">共 {{ facilities.length }} 个</span>
         </div>
         <div class="facility-list">
           <div 
-            v-for="facility in facilities" 
-            :key="facility.id" 
+            v-for="(facility, index) in facilities" 
+            :key="facility.id || index" 
             class="facility-item"
             @click="onFacilityClick(facility)"
           >
@@ -305,7 +310,7 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
           }
           
           console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
-          console.log('📋 设施列表详情:', finalResults)
+          console.log('📋 设施列表详情:', finalResults.slice(0, 3)) // 只显示前3个避免刷屏
           
           resolve(finalResults)
         } else {
@@ -352,7 +357,7 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   }
   
   loadingFacilities.value = true
-  facilities.value = [] // 清空旧数据
+  facilities.value = []
   
   try {
     console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
@@ -361,14 +366,16 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     
     console.log('🎯 获取到的设施数量:', results.length)
     
-    // 强制更新数据
-    facilities.value = [...results]
+    // 直接赋值
+    facilities.value = results
     
-    // 使用 nextTick 确保 DOM 更新
-    await nextTick()
+    console.log('✅ facilities.value 已更新，长度:', facilities.value.length)
+    console.log('✅ facilities.value 前3个:', facilities.value.slice(0, 3))
     
-    console.log('✅ facilities.value 已更新:', facilities.value.length)
     emit('facilitiesUpdate', facilities.value)
+    
+    // 强制触发更新
+    await nextTick()
     
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
@@ -411,8 +418,8 @@ const loadRegion = async () => {
 
 // 监听选中的风险点变化
 watch(() => props.selectedRiskPoint, async (newRiskPoint, oldRiskPoint) => {
-  console.log('📍 selectedRiskPoint 变化:', newRiskPoint)
-  console.log('📍 oldRiskPoint:', oldRiskPoint)
+  console.log('📍 selectedRiskPoint 变化:', newRiskPoint?.name)
+  console.log('📍 oldRiskPoint:', oldRiskPoint?.name)
   
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
     await loadFacilities(newRiskPoint)
@@ -559,6 +566,13 @@ onMounted(() => {
   margin: 0 0 12px 0;
   font-size: 13px;
   color: #a0d0ff;
+}
+
+/* 调试栏 */
+.debug-bar {
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: #0f0 !important;
 }
 
 /* 未选择风险点时的提示样式 */
