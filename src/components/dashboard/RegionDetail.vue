@@ -253,7 +253,7 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
 }
 
 // 调用高德地图 API 搜索周边设施（10km）
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 10000) => {
+const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 50000) => {
   try {
     const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON`
     
