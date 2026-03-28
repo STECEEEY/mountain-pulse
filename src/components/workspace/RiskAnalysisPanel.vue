@@ -29,28 +29,114 @@
     <div v-else class="empty-state">风险统计数据加载中...</div>
 
     <div class="section-title">风险因子解释</div>
-    <div class="explain-tip">形变速率是主要风险驱动因子</div>
+    <div class="explain-tip">
+      <span class="tip-icon">⚠️</span>
+      形变速率是主要风险驱动因子
+    </div>
 
-    <div class="chart-wrap">
-      <div ref="chartRef" class="chart"></div>
+    <!-- 改为垂直因子列表，完全展示文字和数值 -->
+    <div class="factors-list">
+      <div 
+        v-for="item in orderedFeatures" 
+        :key="item.key"
+        class="factor-card"
+        :class="{ 'primary-driver': item.key === topFeatureKey }"
+      >
+        <div class="factor-header">
+          <div class="factor-name">
+            {{ item.label }}
+            <span v-if="item.key === topFeatureKey" class="driver-badge">主要驱动</span>
+          </div>
+          <div class="factor-weight">
+            权重 <strong>{{ (item.value * 100).toFixed(1) }}%</strong>
+          </div>
+        </div>
+
+        <div class="factor-body">
+          <!-- 风险刻度条 -->
+          <div class="scale-container">
+            <div class="scale-labels">
+              <span>低影响</span>
+              <span>中影响</span>
+              <span>高影响</span>
+            </div>
+            <div class="scale-bar-bg">
+              <div 
+                class="scale-fill" 
+                :style="{ width: (item.value / maxWeight) * 100 + '%' }"
+              ></div>
+            </div>
+            <div class="risk-values">
+              <span>0.5</span>
+              <span>1.0</span>
+              <span>1.5</span>
+              <span>2.0</span>
+              <span v-if="item.value >= 0.2">2.5</span>
+              <span v-if="item.value >= 0.25">3.0</span>
+            </div>
+          </div>
+
+          <!-- 风险等级数值标签 -->
+          <div class="value-indicator">
+            <div class="value-item">
+              <div class="value-number">{{ getRiskValue(item.key, 0) }}</div>
+              <div class="value-label">基准</div>
+            </div>
+            <div class="value-item">
+              <div class="value-number">{{ getRiskValue(item.key, 1) }}</div>
+              <div class="value-label">中等</div>
+            </div>
+            <div class="value-item">
+              <div class="value-number">{{ getRiskValue(item.key, 2) }}</div>
+              <div class="value-label">较高</div>
+            </div>
+            <div class="value-item">
+              <div class="value-number">{{ getRiskValue(item.key, 3) }}</div>
+              <div class="value-label">高影响</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 因子简短说明 -->
+        <div class="factor-desc">
+          {{ getFeatureDescription(item.key) }}
+        </div>
+      </div>
     </div>
 
     <div v-if="topFeatureDesc" class="top-feature">
-      关键因子说明：{{ topFeatureDesc }}
+      🔍 关键因子说明：{{ topFeatureDesc }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import * as echarts from 'echarts'
 import { riskService } from '@/services/riskService'
 import type { FeatureImportance, RiskStatistics } from '@/types/risk'
 
 const stats = ref<RiskStatistics | null>(null)
 const importance = ref<FeatureImportance | null>(null)
-const chartRef = ref<HTMLElement>()
-let chart: echarts.ECharts | null = null
+
+// 定义每个因子的风险数值映射（根据原始图片中的数值）
+const riskValueMap: Record<string, number[]> = {
+  '坡向': [0.5, 1.0, 1.5, 2.0],
+  '曲率': [0.5, 1.0, 1.5, 2.5],
+  '坡度': [0.5, 1.0, 1.5, 2.5],
+  '高程': [0.5, 1.0, 1.5, 3.0],
+  '原始形变速率': [0.5, 1.0, 1.5, 2.5],
+  '形变速率绝对值': [0.5, 1.0, 1.5, 2.0],
+}
+
+// 因子说明文案
+const featureDescMap: Record<string, string> = {
+  '坡向': '坡向影响日照、水分和植被分布，不同朝向的坡体稳定性存在差异',
+  '曲率': '地形凹凸程度影响地表径流和应力集中，凸坡易发生崩塌，凹坡易积水',
+  '坡度': '坡度越陡，下滑力越大，坡体失稳风险显著增加',
+  '高程': '滑坡通常发生在一定高程范围内，高程影响岩土体性质和地下水条件',
+  '原始形变速率': '地表原始位移速率，反映坡体当前活动性',
+  '形变速率绝对值': '动态形变速率绝对值，体现形变剧烈程度的变化趋势',
+}
 
 const orderedFeatures = computed(() => {
   if (!importance.value) return []
@@ -63,71 +149,38 @@ const orderedFeatures = computed(() => {
     }))
 })
 
+// 获取权重最大值用于刻度比例
+const maxWeight = computed(() => {
+  if (!orderedFeatures.value.length) return 1
+  return Math.max(...orderedFeatures.value.map(f => f.value), 0.25)
+})
+
+const topFeatureKey = computed(() => {
+  if (!importance.value) return ''
+  return importance.value.top_feature || ''
+})
+
 const topFeatureDesc = computed(() => {
   if (!importance.value) return ''
   return importance.value.description[importance.value.top_feature] || ''
 })
 
-const initChart = () => {
-  if (!chartRef.value) return
-  if (!chart) {
-    chart = echarts.init(chartRef.value)
+// 获取因子的风险数值
+const getRiskValue = (featureKey: string, level: number): string => {
+  const displayName = importance.value?.description[featureKey] || featureKey
+  const values = riskValueMap[displayName]
+  if (values && values[level]) {
+    return values[level].toFixed(1)
   }
+  // 默认值
+  const defaultValues = [0.5, 1.0, 1.5, 2.0]
+  return defaultValues[level]?.toFixed(1) || '—'
+}
 
-  const labels = orderedFeatures.value.map((item) => item.label)
-  const values = orderedFeatures.value.map((item) => item.value)
-
-  chart.setOption({
-    grid: {
-      left: 140,
-      right: 20,
-      top: 10,
-      bottom: 10,
-      containLabel: false,
-    },
-    xAxis: {
-      type: 'value',
-      min: 0,
-      max: 0.35,
-      axisLine: { lineStyle: { color: '#2b4a6a' } },
-      axisLabel: { color: '#88a0b0' },
-      splitLine: { lineStyle: { color: 'rgba(0, 120, 180, 0.18)' } },
-    },
-    yAxis: {
-      type: 'category',
-      data: labels,
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: { color: '#d2ebff', fontSize: 12, width: 120, overflow: 'truncate' },
-    },
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      formatter: (params: unknown) => {
-        const list = Array.isArray(params) ? params : [params]
-        const item = (list[0] || {}) as { dataIndex?: number; value?: number }
-        const idx = typeof item.dataIndex === 'number' ? item.dataIndex : 0
-        const value = typeof item.value === 'number' ? item.value : Number(item.value || 0)
-        const raw = orderedFeatures.value[idx]
-        return `${raw?.key || ''}<br/>重要性：${value.toFixed(2)}`
-      },
-    },
-    series: [
-      {
-        type: 'bar',
-        data: values,
-        barWidth: 14,
-        itemStyle: {
-          borderRadius: [0, 8, 8, 0],
-          color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
-            { offset: 0, color: '#00f0ff' },
-            { offset: 1, color: '#0066ff' },
-          ]),
-        },
-      },
-    ],
-    backgroundColor: 'transparent',
-  })
+// 获取因子说明
+const getFeatureDescription = (featureKey: string): string => {
+  const displayName = importance.value?.description[featureKey] || featureKey
+  return featureDescMap[displayName] || '该因子对滑坡风险有显著影响'
 }
 
 const loadData = async () => {
@@ -138,23 +191,17 @@ const loadData = async () => {
     ])
     stats.value = statsRes
     importance.value = importanceRes
-    initChart()
   } catch (error) {
     console.error('Risk analysis panel load failed:', error)
   }
 }
 
-const handleResize = () => chart?.resize()
-
 onMounted(() => {
   loadData()
-  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  chart?.dispose()
-  chart = null
+  // 清理资源
 })
 </script>
 
@@ -231,29 +278,216 @@ onUnmounted(() => {
   padding: 10px 12px;
   border-radius: 6px;
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.chart-wrap {
-  height: 260px;
+.tip-icon {
+  font-size: 14px;
+}
+
+/* 垂直因子列表样式 */
+.factors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* 自定义滚动条 */
+.factors-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.factors-list::-webkit-scrollbar-track {
+  background: rgba(0, 200, 255, 0.1);
+  border-radius: 4px;
+}
+
+.factors-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 255, 0.4);
+  border-radius: 4px;
+}
+
+/* 单个因子卡片 */
+.factor-card {
+  background: rgba(8, 27, 44, 0.75);
   border: 1px solid rgba(0, 200, 255, 0.2);
-  border-radius: 10px;
-  background: rgba(8, 23, 37, 0.7);
-  padding: 8px;
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
 }
 
-.chart {
-  width: 100%;
+.factor-card:hover {
+  border-color: rgba(0, 200, 255, 0.5);
+  background: rgba(10, 35, 55, 0.85);
+}
+
+.factor-card.primary-driver {
+  border-left: 4px solid #ff7b2f;
+  background: rgba(255, 123, 47, 0.08);
+}
+
+/* 因子头部 */
+.factor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.factor-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e8f5ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.driver-badge {
+  background: rgba(255, 123, 47, 0.2);
+  color: #ffb47b;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.factor-weight {
+  font-size: 12px;
+  color: #9ec0d8;
+}
+
+.factor-weight strong {
+  color: #ffb47b;
+  font-size: 14px;
+}
+
+/* 因子主体 */
+.factor-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+/* 刻度尺容器 */
+.scale-container {
+  flex: 2;
+  min-width: 160px;
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 10px;
+  color: #88a0b0;
+}
+
+.scale-bar-bg {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  height: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.scale-fill {
   height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #3b8c5a, #e0a23b, #e05a2a);
+  transition: width 0.3s ease;
+}
+
+.risk-values {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #6c8ea0;
+  padding: 0 2px;
+}
+
+.risk-values span {
+  font-family: monospace;
+}
+
+/* 右侧数值指示器 */
+.value-indicator {
+  display: flex;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 6px 12px;
+  flex-wrap: wrap;
+}
+
+.value-item {
+  text-align: center;
+  min-width: 48px;
+}
+
+.value-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffb47b;
+  font-family: monospace;
+}
+
+.value-label {
+  font-size: 9px;
+  color: #88a0b0;
+  margin-top: 2px;
+}
+
+/* 因子说明 */
+.factor-desc {
+  font-size: 11px;
+  color: #9ec0d8;
+  line-height: 1.4;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 200, 255, 0.15);
+  margin-top: 4px;
 }
 
 .top-feature {
-  color: #9ec0d8;
+  color: #ffb47b;
   font-size: 12px;
   line-height: 1.5;
+  background: rgba(255, 123, 47, 0.1);
+  padding: 10px 12px;
+  border-radius: 8px;
 }
 
 .empty-state {
   color: #88a0b0;
   font-size: 12px;
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+  .factor-body {
+    flex-direction: column;
+  }
+  
+  .value-indicator {
+    justify-content: space-between;
+  }
+  
+  .factor-name {
+    font-size: 13px;
+  }
+  
+  .risk-values span {
+    font-size: 9px;
+  }
 }
 </style>
