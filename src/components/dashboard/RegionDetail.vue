@@ -44,37 +44,39 @@
       <div class="facilities-header">
         <h4>关键设施</h4>
         <button 
-          v-if="currentRiskPoint" 
           class="refresh-btn" 
           @click="refreshFacilities"
           :disabled="loadingFacilities"
         >
-          {{ loadingFacilities ? '刷新中...' : '🔄 刷新' }}
+          {{ loadingFacilities ? '⏳ 搜索中...' : '🔄 刷新设施' }}
         </button>
       </div>
       
       <!-- 调试信息 -->
       <div class="debug-bar">
-        🔍 调试信息:
-        <div>选中风险点: {{ currentRiskPoint ? currentRiskPoint.name : '无' }}</div>
-        <div>加载状态: {{ loadingFacilities ? '加载中' : '已完成' }}</div>
-        <div>设施数量: {{ facilities.length }}</div>
+        📊 状态信息:
+        <div>✓ 选中风险点: {{ currentRiskPoint ? currentRiskPoint.name : '未选中' }}</div>
+        <div>✓ 加载状态: {{ loadingFacilities ? '搜索中' : '空闲' }}</div>
+        <div>✓ 设施数量: {{ facilities.length }} 个</div>
+        <div v-if="currentRiskPoint && facilities.length === 0 && !loadingFacilities" style="color: #ffaa00;">
+          ⚠️ 暂无设施数据，请点击刷新按钮
+        </div>
       </div>
       
       <!-- 未选择风险点时显示提示 -->
       <div v-if="!currentRiskPoint" class="facility-placeholder">
         <div class="placeholder-icon">📍</div>
         <div class="placeholder-text">请点击地图上的风险点</div>
-        <div class="placeholder-sub">查看周边5km范围内的关键设施</div>
+        <div class="placeholder-sub">然后点击刷新按钮查看周边关键设施</div>
       </div>
       
-      <!-- 已选择风险点，加载中 -->
+      <!-- 加载中 -->
       <div v-else-if="loadingFacilities" class="loading-facility">
         <div class="loading-spinner"></div>
-        <div>正在搜索 {{ currentRiskPoint.name }} 周边关键设施...</div>
+        <div>正在搜索 {{ currentRiskPoint.name }} 周边5km内的关键设施...</div>
       </div>
       
-      <!-- 已选择风险点，有设施数据 -->
+      <!-- 有设施数据 -->
       <div v-else-if="facilities.length > 0" class="facility-list-wrapper">
         <div class="facility-header">
           <span>{{ currentRiskPoint.name }} 周边5km关键设施</span>
@@ -101,12 +103,12 @@
         </div>
       </div>
       
-      <!-- 已选择风险点，无设施数据 -->
+      <!-- 无设施数据 -->
       <div v-else class="empty-facility">
         <div class="empty-icon">🏗️</div>
-        <div class="empty-text">该风险点周边5km内暂无关键设施</div>
-        <div class="empty-sub">请尝试点击刷新按钮或选择其他风险点</div>
-        <button class="retry-btn" @click="refreshFacilities">重新搜索</button>
+        <div class="empty-text">暂无关键设施数据</div>
+        <div class="empty-sub">点击上方刷新按钮搜索周边5km内的关键设施</div>
+        <button class="retry-btn" @click="refreshFacilities">立即搜索</button>
       </div>
     </div>
   </div>
@@ -379,7 +381,7 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     
     console.log('🎯 获取到的设施数量:', results.length)
     
-    facilities.value = results
+    facilities.value = [...results]
     
     console.log('✅ facilities.value 已更新，长度:', facilities.value.length)
     
@@ -402,6 +404,8 @@ const refreshFacilities = async () => {
   if (currentRiskPoint.value) {
     console.log('🔄 手动刷新设施数据')
     await loadFacilities(currentRiskPoint.value)
+  } else {
+    console.log('⚠️ 没有选中的风险点，无法刷新')
   }
 }
 
@@ -443,6 +447,7 @@ watch(() => props.selectedRiskPoint, (newPoint) => {
   if (newPoint && newPoint.lat && newPoint.lng) {
     currentRiskPoint.value = newPoint
     console.log('✅ currentRiskPoint 已设置:', currentRiskPoint.value?.name)
+    // 自动加载数据
     loadFacilities(newPoint)
   } else {
     currentRiskPoint.value = null
@@ -468,6 +473,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -619,7 +625,6 @@ onMounted(() => {
 }
 
 .debug-bar {
-  font-family: monospace;
   background: rgba(0, 0, 0, 0.6);
   color: #0f0;
   padding: 8px 12px;
