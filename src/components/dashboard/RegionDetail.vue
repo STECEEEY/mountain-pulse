@@ -66,9 +66,24 @@
       </div>
     </div>
     
+    <!-- 最近设施信息 -->
+    <div v-if="nearestFacilities.length > 0" class="nearest-section">
+      <h4>🏥 最近关键设施</h4>
+      <div class="nearest-list">
+        <div v-for="facility in nearestFacilities" :key="facility.type" class="nearest-item">
+          <span class="nearest-icon">{{ facility.icon }}</span>
+          <div class="nearest-info">
+            <div class="nearest-name">{{ facility.name }}</div>
+            <div class="nearest-distance">距离: {{ (facility.distance / 1000).toFixed(2) }}km</div>
+          </div>
+          <span class="nearest-risk" :class="facility.riskClass">{{ facility.risk }}</span>
+        </div>
+      </div>
+    </div>
+    
     <div class="facilities-section">
       <h4>
-        关键设施（10km范围内）
+        关键设施列表（10km范围内）
         <span v-if="currentRiskPoint" class="facility-tip">（{{ currentRiskPoint.name }} 周边）</span>
         <span v-if="apiError" class="api-error-tip">⚠️ {{ apiError }}</span>
       </h4>
@@ -93,7 +108,7 @@
               <span class="facility-type" :class="facility.category">{{ facility.typeName }}</span>
             </div>
             <span class="facility-detail">{{ facility.detail }}</span>
-            <span class="facility-distance">距离: {{ (facility.distance / 1000).toFixed(1) }}km</span>
+            <span class="facility-distance">距离: {{ (facility.distance / 1000).toFixed(2) }}km</span>
           </div>
           <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
         </div>
@@ -133,7 +148,7 @@ interface Facility {
   lat: number
   lng: number
   type: string
-  category: 'public' | 'transport'
+  category: string
 }
 
 interface RiskPoint {
@@ -146,7 +161,7 @@ interface RiskPoint {
 }
 
 const emit = defineEmits<{
-  (e: 'facilityClick', facility: { name: string; lat: number; lng: number; type: string }): void
+  (e: 'facilityClick', facility: { name: string; lat: number; lng: number; type: string; category: string }): void
   (e: 'facilitiesUpdate', facilities: Facility[]): void
 }>()
 
@@ -163,47 +178,76 @@ const searchKeyword = ref('')
 const searchResults = ref<RiskPoint[]>([])
 const currentRiskPoint = ref<RiskPoint | null>(null)
 const facilities = ref<Facility[]>([])
+const nearestFacilities = ref<Facility[]>([])
 const loadingFacilities = ref(false)
 const apiError = ref('')
 
-// 关键设施类型（只保留公共设施和交通设施）
+// 扩大的关键设施类型
 const IMPORTANT_TYPES = [
   // 医疗机构
-  '医院', '卫生院', '诊所', '社区卫生服务中心', '急救中心',
+  '医院', '卫生院', '诊所', '社区卫生服务中心', '急救中心', '妇幼保健院', '中医院', '专科医院',
   // 教育机构
-  '学校', '小学', '中学', '幼儿园', '大学', '学院',
+  '学校', '小学', '中学', '幼儿园', '大学', '学院', '职业学校', '特殊教育',
   // 政府机构
-  '政府', '镇政府', '街道办事处', '村委会', '派出所', '公安局',
+  '政府', '镇政府', '街道办事处', '村委会', '居委会', '派出所', '公安局', '政务服务中心',
   // 应急设施
-  '消防', '消防站', '应急', '避难所',
+  '消防', '消防站', '应急', '避难所', '应急救援', '防汛', '救灾',
   // 交通设施
-  '地铁站', '公交站', '火车站', '汽车站',
-  // 药店
-  '药店', '药房',
-  // 其他重要设施
-  '邮局', '银行', '加油站'
+  '地铁站', '公交站', '火车站', '汽车站', '高铁站', '客运站', '交通枢纽',
+  // 医疗相关
+  '药店', '药房', '卫生室', '医务室',
+  // 公共设施
+  '邮局', '银行', '加油站', '充电站', '公园', '广场', '体育馆', '图书馆',
+  // 养老设施
+  '养老院', '敬老院', '福利院', '日间照料中心',
+  // 社区设施
+  '社区服务中心', '便民服务中心', '党群服务中心'
 ]
 
 // 获取设施图标
-const getFacilityIcon = (name: string, type: string): string => {
+const getFacilityIcon = (name: string, type: string, category: string): string => {
   const lowerName = name.toLowerCase()
+  const lowerType = type.toLowerCase()
   
-  if (lowerName.includes('医院')) return '🏥'
+  // 医院类
+  if (lowerName.includes('医院') || lowerType.includes('医院')) return '🏥'
   if (lowerName.includes('卫生院')) return '🏥'
-  if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学') || lowerName.includes('大学')) return '🏫'
-  if (lowerName.includes('幼儿园')) return '🎓'
-  if (lowerName.includes('政府') || lowerName.includes('村委会') || lowerName.includes('街道')) return '🏢'
+  if (lowerName.includes('诊所')) return '💉'
+  if (lowerName.includes('药店') || lowerName.includes('药房')) return '💊'
+  
+  // 学校类
+  if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '🏫'
+  if (lowerName.includes('大学') || lowerName.includes('学院')) return '🎓'
+  if (lowerName.includes('幼儿园')) return '🧸'
+  
+  // 政府类
+  if (lowerName.includes('政府') || lowerName.includes('村委会')) return '🏢'
   if (lowerName.includes('派出所') || lowerName.includes('公安局')) return '👮'
+  
+  // 应急类
   if (lowerName.includes('消防')) return '🚒'
   if (lowerName.includes('应急') || lowerName.includes('避难')) return '🆘'
+  
+  // 交通类
   if (lowerName.includes('地铁')) return '🚇'
   if (lowerName.includes('公交')) return '🚌'
   if (lowerName.includes('火车站')) return '🚂'
   if (lowerName.includes('汽车站')) return '🚌'
-  if (lowerName.includes('药店') || lowerName.includes('药房')) return '💊'
+  
+  // 公共设施
   if (lowerName.includes('邮局')) return '📮'
   if (lowerName.includes('银行')) return '🏦'
   if (lowerName.includes('加油站')) return '⛽'
+  if (lowerName.includes('充电站')) return '🔋'
+  if (lowerName.includes('公园')) return '🌳'
+  if (lowerName.includes('广场')) return '🏞️'
+  
+  // 养老设施
+  if (lowerName.includes('养老') || lowerName.includes('敬老')) return '👴'
+  if (lowerName.includes('福利院')) return '🏠'
+  
+  // 社区设施
+  if (lowerName.includes('社区') || lowerName.includes('便民')) return '🏘️'
   
   return '📍'
 }
@@ -214,23 +258,25 @@ const getTypeName = (name: string, type: string): string => {
   
   if (lowerName.includes('医院')) return '医院'
   if (lowerName.includes('卫生院')) return '卫生院'
+  if (lowerName.includes('诊所')) return '诊所'
+  if (lowerName.includes('药店')) return '药店'
   if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '学校'
-  if (lowerName.includes('大学') || lowerName.includes('学院')) return '大学'
+  if (lowerName.includes('大学')) return '大学'
   if (lowerName.includes('幼儿园')) return '幼儿园'
-  if (lowerName.includes('政府') || lowerName.includes('村委会')) return '政府机构'
+  if (lowerName.includes('政府')) return '政府机构'
   if (lowerName.includes('派出所')) return '派出所'
   if (lowerName.includes('消防')) return '消防站'
-  if (lowerName.includes('应急') || lowerName.includes('避难')) return '应急设施'
-  if (lowerName.includes('地铁站')) return '地铁站'
-  if (lowerName.includes('公交站')) return '公交站'
+  if (lowerName.includes('应急')) return '应急设施'
+  if (lowerName.includes('地铁')) return '地铁站'
+  if (lowerName.includes('公交')) return '公交站'
   if (lowerName.includes('火车站')) return '火车站'
-  if (lowerName.includes('汽车站')) return '汽车站'
-  if (lowerName.includes('药店')) return '药店'
   if (lowerName.includes('邮局')) return '邮局'
   if (lowerName.includes('银行')) return '银行'
   if (lowerName.includes('加油站')) return '加油站'
+  if (lowerName.includes('养老')) return '养老院'
+  if (lowerName.includes('社区')) return '社区服务中心'
   
-  return '重要设施'
+  return '关键设施'
 }
 
 // 判断是否为重要设施
@@ -244,6 +290,21 @@ const isImportantFacility = (name: string, type: string): boolean => {
   return false
 }
 
+// 获取设施类别
+const getFacilityCategory = (name: string, type: string): string => {
+  const fullText = `${name} ${type}`.toLowerCase()
+  
+  if (fullText.includes('医院') || fullText.includes('卫生院') || fullText.includes('诊所') || fullText.includes('药店')) return 'medical'
+  if (fullText.includes('学校') || fullText.includes('大学') || fullText.includes('幼儿园')) return 'education'
+  if (fullText.includes('消防') || fullText.includes('应急')) return 'emergency'
+  if (fullText.includes('政府') || fullText.includes('派出所')) return 'government'
+  if (fullText.includes('地铁') || fullText.includes('公交') || fullText.includes('火车')) return 'transport'
+  if (fullText.includes('养老')) return 'elderly'
+  if (fullText.includes('社区')) return 'community'
+  
+  return 'public'
+}
+
 // 根据距离计算风险等级
 const calculateRiskByDistance = (distance: number): { risk: string; riskClass: string } => {
   if (distance < 1000) return { risk: '极高风险', riskClass: 'critical' }
@@ -253,7 +314,7 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
 }
 
 // 调用高德地图 API 搜索周边设施（10km）
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 50000) => {
+const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 10000) => {
   try {
     const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON`
     
@@ -278,20 +339,21 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
         
         const distance = Math.round(poi.distance || 0)
         const { risk, riskClass } = calculateRiskByDistance(distance)
+        const category = getFacilityCategory(poi.name, poi.type)
         
         const facility: Facility = {
           id: poi.id,
           name: poi.name,
           type: poi.type.split(';')[0] || '其他',
           typeName: getTypeName(poi.name, poi.type),
-          icon: getFacilityIcon(poi.name, poi.type),
-          detail: poi.address || '重要设施',
+          icon: getFacilityIcon(poi.name, poi.type, category),
+          detail: poi.address || '关键设施',
           distance: distance,
           lat: parseFloat(poi.location.split(',')[1]),
           lng: parseFloat(poi.location.split(',')[0]),
           risk: risk,
           riskClass: riskClass,
-          category: poi.type.includes('交通') ? 'transport' : 'public'
+          category: category
         }
         
         importantResults.push(facility)
@@ -300,8 +362,8 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
       // 按距离排序
       importantResults.sort((a, b) => a.distance - b.distance)
       
-      // 最多显示20个
-      const finalResults = importantResults.slice(0, 20)
+      // 最多显示50个
+      const finalResults = importantResults.slice(0, 50)
       
       console.log(`📋 重要设施: ${importantResults.length} 个, 最终显示: ${finalResults.length} 个`)
       
@@ -314,10 +376,30 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
   }
 }
 
+// 获取最近的医院、学校、消防站
+const getNearestFacilities = (allFacilities: Facility[]) => {
+  const nearest: Facility[] = []
+  
+  // 找最近的医院
+  const hospital = allFacilities.find(f => f.category === 'medical')
+  if (hospital) nearest.push({ ...hospital, typeName: '🏥 最近医院' })
+  
+  // 找最近的学校
+  const school = allFacilities.find(f => f.category === 'education')
+  if (school) nearest.push({ ...school, typeName: '🏫 最近学校' })
+  
+  // 找最近的消防站
+  const fire = allFacilities.find(f => f.category === 'emergency')
+  if (fire) nearest.push({ ...fire, typeName: '🚒 最近消防站' })
+  
+  return nearest
+}
+
 // 加载周边设施
 const loadFacilities = async (riskPoint: RiskPoint) => {
   if (!riskPoint.lat || !riskPoint.lng) {
     facilities.value = []
+    nearestFacilities.value = []
     return
   }
   
@@ -327,19 +409,22 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   try {
     console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
     
-    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 10000) // 10km
+    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 10000)
     
     if (results.length > 0) {
       facilities.value = [...results]
+      nearestFacilities.value = getNearestFacilities(results)
       emit('facilitiesUpdate', results)
       console.log(`✅ 显示 ${results.length} 个重要设施`)
     } else {
       facilities.value = []
+      nearestFacilities.value = []
       emit('facilitiesUpdate', [])
     }
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
     facilities.value = []
+    nearestFacilities.value = []
     emit('facilitiesUpdate', [])
   } finally {
     loadingFacilities.value = false
@@ -366,12 +451,13 @@ const selectRiskPoint = (point: RiskPoint) => {
   searchResults.value = []
   loadFacilities(point)
   
-  // 触发地图定位
+  // 触发地图定位和显示设施
   emit('facilityClick', {
     name: point.name,
     lat: point.lat,
     lng: point.lng,
-    type: '📍'
+    type: '📍',
+    category: 'risk-point'
   })
 }
 
@@ -433,7 +519,8 @@ const onFacilityClick = (facility: Facility) => {
     name: facility.name,
     lat: facility.lat,
     lng: facility.lng,
-    type: facility.icon
+    type: facility.icon,
+    category: facility.category
   })
 }
 
@@ -649,6 +736,64 @@ onMounted(async () => {
   color: #a0c0d0;
 }
 
+/* 最近设施样式 */
+.nearest-section {
+  background: rgba(0, 80, 100, 0.3);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(0, 200, 255, 0.2);
+}
+
+.nearest-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  color: #ffaa66;
+}
+
+.nearest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nearest-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 40, 60, 0.5);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.nearest-icon {
+  font-size: 20px;
+  width: 32px;
+  text-align: center;
+}
+
+.nearest-info {
+  flex: 1;
+}
+
+.nearest-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e0f0ff;
+}
+
+.nearest-distance {
+  font-size: 10px;
+  color: #88a0b0;
+}
+
+.nearest-risk {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
 .facilities-section {
   border-top: 1px solid rgba(0, 150, 255, 0.1);
   padding-top: 16px;
@@ -737,13 +882,23 @@ onMounted(async () => {
   color: #88ccff;
 }
 
-.facility-type.public {
-  background: rgba(0, 150, 255, 0.25);
-  color: #66ccff;
+.facility-type.medical {
+  background: rgba(255, 100, 100, 0.3);
+  color: #ff8888;
+}
+
+.facility-type.education {
+  background: rgba(100, 200, 255, 0.3);
+  color: #88ccff;
+}
+
+.facility-type.emergency {
+  background: rgba(255, 100, 50, 0.3);
+  color: #ffaa66;
 }
 
 .facility-type.transport {
-  background: rgba(100, 200, 100, 0.2);
+  background: rgba(100, 200, 100, 0.3);
   color: #88ff88;
 }
 
