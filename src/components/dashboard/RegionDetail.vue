@@ -57,7 +57,7 @@
       </div>
       
       <!-- 已选择风险点，有设施数据 -->
-      <div v-else-if="facilities.length > 0" class="facility-list-wrapper">
+      <div v-else-if="facilities && facilities.length > 0" class="facility-list-wrapper">
         <div class="facility-header">
           <span>{{ selectedRiskPoint.name }} 周边5km关键设施</span>
           <span class="facility-count">共 {{ facilities.length }} 个</span>
@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, nextTick } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
@@ -305,6 +305,7 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
           }
           
           console.log(`📋 公共设施: ${publicResults.length} 个, 生活服务: ${lifeResults.length} 个, 最终显示: ${finalResults.length} 个`)
+          console.log('📋 设施列表详情:', finalResults)
           
           resolve(finalResults)
         } else {
@@ -351,27 +352,31 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   }
   
   loadingFacilities.value = true
-  facilities.value = []
+  facilities.value = [] // 清空旧数据
   
   try {
     console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
     
     const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 5000)
     
-    facilities.value = results
-    emit('facilitiesUpdate', results)
+    console.log('🎯 获取到的设施数量:', results.length)
     
-    if (results.length > 0) {
-      console.log(`✅ 显示 ${results.length} 个设施`)
-    } else {
-      console.log('⚠️ 未找到设施')
-    }
+    // 强制更新数据
+    facilities.value = [...results]
+    
+    // 使用 nextTick 确保 DOM 更新
+    await nextTick()
+    
+    console.log('✅ facilities.value 已更新:', facilities.value.length)
+    emit('facilitiesUpdate', facilities.value)
+    
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
     facilities.value = []
     emit('facilitiesUpdate', [])
   } finally {
     loadingFacilities.value = false
+    console.log('🏁 加载完成，loadingFacilities:', loadingFacilities.value)
   }
 }
 
@@ -405,8 +410,10 @@ const loadRegion = async () => {
 }
 
 // 监听选中的风险点变化
-watch(() => props.selectedRiskPoint, async (newRiskPoint) => {
+watch(() => props.selectedRiskPoint, async (newRiskPoint, oldRiskPoint) => {
   console.log('📍 selectedRiskPoint 变化:', newRiskPoint)
+  console.log('📍 oldRiskPoint:', oldRiskPoint)
+  
   if (newRiskPoint && newRiskPoint.lat && newRiskPoint.lng) {
     await loadFacilities(newRiskPoint)
   } else {
