@@ -45,10 +45,16 @@
         关键设施
         <span v-if="selectedRiskPoint" class="facility-tip">（{{ selectedRiskPoint.name }} 周边5km）</span>
         <span v-if="apiError" class="api-error-tip">⚠️ {{ apiError }}</span>
+        <!-- 调试：显示设施数量 -->
+        <span class="debug-info">[设施数量: {{ facilities.length }}]</span>
       </h4>
+      
+      <!-- 加载状态 -->
       <div v-if="loadingFacilities" class="loading-facility">
         <span>加载关键设施数据中...</span>
       </div>
+      
+      <!-- 设施列表 - 只要 facilities.length > 0 就显示 -->
       <div v-else-if="facilities.length > 0" class="facility-list">
         <div 
           v-for="facility in facilities" 
@@ -65,9 +71,12 @@
           <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
         </div>
       </div>
+      
+      <!-- 空状态 -->
       <div v-else-if="!loadingFacilities && selectedRiskPoint" class="empty-facility">
-        该风险点周边2km内暂无关键设施
+        该风险点周边5km内暂无设施
       </div>
+      
       <div v-else-if="!loadingFacilities" class="empty-facility">
         请点击地图上的风险点查看周边关键设施
       </div>
@@ -308,7 +317,9 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
     const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 5000)
     
     if (results.length > 0) {
-      facilities.value = results
+      facilities.value = [...results]
+      console.log('facilities.value 已更新, 长度:', facilities.value.length)
+      console.log('facilities.value 内容:', facilities.value)
       emit('facilitiesUpdate', results)
       console.log(`✅ 显示 ${results.length} 个设施:`, results.map(f => `${f.name}(${f.distance}m)[${f.category === 'public' ? '公共' : '生活'}]`))
     } else {
@@ -559,6 +570,13 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.debug-info {
+  font-size: 10px;
+  color: #ffaa66;
+  margin-left: 8px;
+  font-weight: normal;
+}
+  
 .facility-info {
   flex: 1;
 }
