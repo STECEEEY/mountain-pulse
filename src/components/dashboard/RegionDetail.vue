@@ -181,7 +181,7 @@ const getFacilityType = (name: string, type: string): string => {
 }
 
 // 调用高德地图 API 搜索周边设施
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 2000) => {
+const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 5000) => {
   const results: Facility[] = []
   
   // 并发搜索多种类型的设施
