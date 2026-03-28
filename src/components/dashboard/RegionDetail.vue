@@ -133,8 +133,9 @@ import { riskService } from '@/services/riskService'
 import { normalizeRiskLevel } from '@/utils/riskLevel'
 import type { CanonicalRiskLevel } from '@/utils/riskLevel'
 
-// 高德地图配置
-const AMAP_KEY = 'd8af8724a9dd15ca3f117b7d0adaab8a'
+// 高德地图配置 - 使用两个不同的KEY
+const AMAP_KEY_SIDEBAR = 'd8af8724a9dd15ca3f117b7d0adaab8a'  // 用于侧边栏显示
+const AMAP_KEY_MAP = '4d95a8667039c3e5bb3ddb03ce1c71b8'      // 用于地图显示
 
 interface Facility {
   id: string
@@ -184,76 +185,44 @@ const apiError = ref('')
 
 // 扩大的关键设施类型
 const IMPORTANT_TYPES = [
-  // 医疗机构
-  '医院', '卫生院', '诊所', '社区卫生服务中心', '急救中心', '妇幼保健院', '中医院', '专科医院',
-  // 教育机构
-  '学校', '小学', '中学', '幼儿园', '大学', '学院', '职业学校', '特殊教育',
-  // 政府机构
-  '政府', '镇政府', '街道办事处', '村委会', '居委会', '派出所', '公安局', '政务服务中心',
-  // 应急设施
-  '消防', '消防站', '应急', '避难所', '应急救援', '防汛', '救灾',
-  // 交通设施
-  '地铁站', '公交站', '火车站', '汽车站', '高铁站', '客运站', '交通枢纽',
-  // 医疗相关
-  '药店', '药房', '卫生室', '医务室',
-  // 公共设施
-  '邮局', '银行', '加油站', '充电站', '公园', '广场', '体育馆', '图书馆',
-  // 养老设施
-  '养老院', '敬老院', '福利院', '日间照料中心',
-  // 社区设施
-  '社区服务中心', '便民服务中心', '党群服务中心'
+  '医院', '卫生院', '诊所', '社区卫生服务中心', '急救中心', '妇幼保健院', '中医院',
+  '学校', '小学', '中学', '幼儿园', '大学', '学院',
+  '政府', '镇政府', '街道办事处', '村委会', '派出所', '公安局',
+  '消防', '消防站', '应急', '避难所',
+  '地铁站', '公交站', '火车站', '汽车站',
+  '药店', '药房', '邮局', '银行', '加油站', '充电站',
+  '养老院', '敬老院', '福利院',
+  '社区服务中心', '便民服务中心'
 ]
 
 // 获取设施图标
-const getFacilityIcon = (name: string, type: string, category: string): string => {
+const getFacilityIcon = (name: string, type: string): string => {
   const lowerName = name.toLowerCase()
-  const lowerType = type.toLowerCase()
   
-  // 医院类
-  if (lowerName.includes('医院') || lowerType.includes('医院')) return '🏥'
-  if (lowerName.includes('卫生院')) return '🏥'
+  if (lowerName.includes('医院') || lowerName.includes('卫生院')) return '🏥'
   if (lowerName.includes('诊所')) return '💉'
-  if (lowerName.includes('药店') || lowerName.includes('药房')) return '💊'
-  
-  // 学校类
+  if (lowerName.includes('药店')) return '💊'
   if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '🏫'
-  if (lowerName.includes('大学') || lowerName.includes('学院')) return '🎓'
+  if (lowerName.includes('大学')) return '🎓'
   if (lowerName.includes('幼儿园')) return '🧸'
-  
-  // 政府类
   if (lowerName.includes('政府') || lowerName.includes('村委会')) return '🏢'
-  if (lowerName.includes('派出所') || lowerName.includes('公安局')) return '👮'
-  
-  // 应急类
+  if (lowerName.includes('派出所')) return '👮'
   if (lowerName.includes('消防')) return '🚒'
-  if (lowerName.includes('应急') || lowerName.includes('避难')) return '🆘'
-  
-  // 交通类
+  if (lowerName.includes('应急')) return '🆘'
   if (lowerName.includes('地铁')) return '🚇'
   if (lowerName.includes('公交')) return '🚌'
   if (lowerName.includes('火车站')) return '🚂'
-  if (lowerName.includes('汽车站')) return '🚌'
-  
-  // 公共设施
   if (lowerName.includes('邮局')) return '📮'
   if (lowerName.includes('银行')) return '🏦'
   if (lowerName.includes('加油站')) return '⛽'
-  if (lowerName.includes('充电站')) return '🔋'
-  if (lowerName.includes('公园')) return '🌳'
-  if (lowerName.includes('广场')) return '🏞️'
-  
-  // 养老设施
-  if (lowerName.includes('养老') || lowerName.includes('敬老')) return '👴'
-  if (lowerName.includes('福利院')) return '🏠'
-  
-  // 社区设施
-  if (lowerName.includes('社区') || lowerName.includes('便民')) return '🏘️'
+  if (lowerName.includes('养老')) return '👴'
+  if (lowerName.includes('社区')) return '🏘️'
   
   return '📍'
 }
 
 // 获取设施类型名称
-const getTypeName = (name: string, type: string): string => {
+const getTypeName = (name: string): string => {
   const lowerName = name.toLowerCase()
   
   if (lowerName.includes('医院')) return '医院'
@@ -266,7 +235,6 @@ const getTypeName = (name: string, type: string): string => {
   if (lowerName.includes('政府')) return '政府机构'
   if (lowerName.includes('派出所')) return '派出所'
   if (lowerName.includes('消防')) return '消防站'
-  if (lowerName.includes('应急')) return '应急设施'
   if (lowerName.includes('地铁')) return '地铁站'
   if (lowerName.includes('公交')) return '公交站'
   if (lowerName.includes('火车站')) return '火车站'
@@ -277,6 +245,21 @@ const getTypeName = (name: string, type: string): string => {
   if (lowerName.includes('社区')) return '社区服务中心'
   
   return '关键设施'
+}
+
+// 获取设施类别
+const getFacilityCategory = (name: string): string => {
+  const lowerName = name.toLowerCase()
+  
+  if (lowerName.includes('医院') || lowerName.includes('卫生院') || lowerName.includes('诊所') || lowerName.includes('药店')) return 'medical'
+  if (lowerName.includes('学校') || lowerName.includes('大学') || lowerName.includes('幼儿园')) return 'education'
+  if (lowerName.includes('消防') || lowerName.includes('应急')) return 'emergency'
+  if (lowerName.includes('政府') || lowerName.includes('派出所')) return 'government'
+  if (lowerName.includes('地铁') || lowerName.includes('公交') || lowerName.includes('火车')) return 'transport'
+  if (lowerName.includes('养老')) return 'elderly'
+  if (lowerName.includes('社区')) return 'community'
+  
+  return 'public'
 }
 
 // 判断是否为重要设施
@@ -290,21 +273,6 @@ const isImportantFacility = (name: string, type: string): boolean => {
   return false
 }
 
-// 获取设施类别
-const getFacilityCategory = (name: string, type: string): string => {
-  const fullText = `${name} ${type}`.toLowerCase()
-  
-  if (fullText.includes('医院') || fullText.includes('卫生院') || fullText.includes('诊所') || fullText.includes('药店')) return 'medical'
-  if (fullText.includes('学校') || fullText.includes('大学') || fullText.includes('幼儿园')) return 'education'
-  if (fullText.includes('消防') || fullText.includes('应急')) return 'emergency'
-  if (fullText.includes('政府') || fullText.includes('派出所')) return 'government'
-  if (fullText.includes('地铁') || fullText.includes('公交') || fullText.includes('火车')) return 'transport'
-  if (fullText.includes('养老')) return 'elderly'
-  if (fullText.includes('社区')) return 'community'
-  
-  return 'public'
-}
-
 // 根据距离计算风险等级
 const calculateRiskByDistance = (distance: number): { risk: string; riskClass: string } => {
   if (distance < 1000) return { risk: '极高风险', riskClass: 'critical' }
@@ -313,17 +281,45 @@ const calculateRiskByDistance = (distance: number): { risk: string; riskClass: s
   return { risk: '低风险', riskClass: 'low' }
 }
 
-// 调用高德地图 API 搜索周边设施（10km）
-const searchNearbyFacilities = async (lng: number, lat: number, radius: number = 10000) => {
-  try {
-    const url = `https://restapi.amap.com/v3/place/around?key=${AMAP_KEY}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON`
+// API调用函数 - 使用指定的KEY
+const callAMapAPI = (lng: number, lat: number, radius: number, apiKey: string): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const callbackName = `AMAP_CALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
-    console.log('🔍 搜索周边设施:', url)
-    const response = await fetch(url)
-    const data = await response.json()
+    const script = document.createElement('script')
+    const url = `https://restapi.amap.com/v3/place/around?key=${apiKey}&location=${lng},${lat}&radius=${radius}&offset=50&page=1&output=JSON&callback=${callbackName}`
+    
+    ;(window as any)[callbackName] = (data: any) => {
+      delete (window as any)[callbackName]
+      document.body.removeChild(script)
+      resolve(data)
+    }
+    
+    const timeout = setTimeout(() => {
+      if ((window as any)[callbackName]) {
+        delete (window as any)[callbackName]
+        document.body.removeChild(script)
+        reject(new Error('API请求超时'))
+      }
+    }, 10000)
+    
+    script.onerror = () => {
+      clearTimeout(timeout)
+      reject(new Error('API请求失败'))
+    }
+    
+    script.src = url
+    document.body.appendChild(script)
+  })
+}
+
+// 搜索周边设施 - 侧边栏用（使用第一个KEY）
+const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: number = 10000) => {
+  try {
+    const data = await callAMapAPI(lng, lat, radius, AMAP_KEY_SIDEBAR)
     
     if (data.status === '1' && data.pois && data.pois.length > 0) {
-      console.log(`✅ 找到 ${data.pois.length} 个 POI`)
+      console.log(`✅ [侧边栏] 找到 ${data.pois.length} 个 POI`)
       
       const importantResults: Facility[] = []
       const seenNames = new Set()
@@ -332,46 +328,91 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
         if (seenNames.has(poi.name)) continue
         seenNames.add(poi.name)
         
-        // 只保留重要设施
-        if (!isImportantFacility(poi.name, poi.type)) {
-          continue
-        }
+        if (!isImportantFacility(poi.name, poi.type)) continue
         
         const distance = Math.round(poi.distance || 0)
         const { risk, riskClass } = calculateRiskByDistance(distance)
-        const category = getFacilityCategory(poi.name, poi.type)
         
         const facility: Facility = {
           id: poi.id,
           name: poi.name,
           type: poi.type.split(';')[0] || '其他',
-          typeName: getTypeName(poi.name, poi.type),
-          icon: getFacilityIcon(poi.name, poi.type, category),
+          typeName: getTypeName(poi.name),
+          icon: getFacilityIcon(poi.name, poi.type),
           detail: poi.address || '关键设施',
           distance: distance,
           lat: parseFloat(poi.location.split(',')[1]),
           lng: parseFloat(poi.location.split(',')[0]),
           risk: risk,
           riskClass: riskClass,
-          category: category
+          category: getFacilityCategory(poi.name)
         }
         
         importantResults.push(facility)
       }
       
-      // 按距离排序
       importantResults.sort((a, b) => a.distance - b.distance)
-      
-      // 最多显示50个
       const finalResults = importantResults.slice(0, 50)
       
-      console.log(`📋 重要设施: ${importantResults.length} 个, 最终显示: ${finalResults.length} 个`)
+      console.log(`📋 [侧边栏] 重要设施: ${importantResults.length} 个, 最终显示: ${finalResults.length} 个`)
       
       return finalResults
     }
     return []
   } catch (error) {
-    console.error('❌ 搜索设施失败:', error)
+    console.error('❌ [侧边栏] 搜索设施失败:', error)
+    return []
+  }
+}
+
+// 搜索周边设施 - 地图用（使用第二个KEY）
+const searchFacilitiesForMap = async (lng: number, lat: number, radius: number = 10000) => {
+  try {
+    const data = await callAMapAPI(lng, lat, radius, AMAP_KEY_MAP)
+    
+    if (data.status === '1' && data.pois && data.pois.length > 0) {
+      console.log(`✅ [地图] 找到 ${data.pois.length} 个 POI`)
+      
+      const importantResults: Facility[] = []
+      const seenNames = new Set()
+      
+      for (const poi of data.pois) {
+        if (seenNames.has(poi.name)) continue
+        seenNames.add(poi.name)
+        
+        if (!isImportantFacility(poi.name, poi.type)) continue
+        
+        const distance = Math.round(poi.distance || 0)
+        const { risk, riskClass } = calculateRiskByDistance(distance)
+        
+        const facility: Facility = {
+          id: poi.id,
+          name: poi.name,
+          type: poi.type.split(';')[0] || '其他',
+          typeName: getTypeName(poi.name),
+          icon: getFacilityIcon(poi.name, poi.type),
+          detail: poi.address || '关键设施',
+          distance: distance,
+          lat: parseFloat(poi.location.split(',')[1]),
+          lng: parseFloat(poi.location.split(',')[0]),
+          risk: risk,
+          riskClass: riskClass,
+          category: getFacilityCategory(poi.name)
+        }
+        
+        importantResults.push(facility)
+      }
+      
+      importantResults.sort((a, b) => a.distance - b.distance)
+      const finalResults = importantResults.slice(0, 50)
+      
+      console.log(`📋 [地图] 重要设施: ${importantResults.length} 个, 最终显示: ${finalResults.length} 个`)
+      
+      return finalResults
+    }
+    return []
+  } catch (error) {
+    console.error('❌ [地图] 搜索设施失败:', error)
     return []
   }
 }
@@ -380,22 +421,19 @@ const searchNearbyFacilities = async (lng: number, lat: number, radius: number =
 const getNearestFacilities = (allFacilities: Facility[]) => {
   const nearest: Facility[] = []
   
-  // 找最近的医院
   const hospital = allFacilities.find(f => f.category === 'medical')
   if (hospital) nearest.push({ ...hospital, typeName: '🏥 最近医院' })
   
-  // 找最近的学校
   const school = allFacilities.find(f => f.category === 'education')
   if (school) nearest.push({ ...school, typeName: '🏫 最近学校' })
   
-  // 找最近的消防站
   const fire = allFacilities.find(f => f.category === 'emergency')
   if (fire) nearest.push({ ...fire, typeName: '🚒 最近消防站' })
   
   return nearest
 }
 
-// 加载周边设施
+// 加载周边设施 - 同时调用两个API
 const loadFacilities = async (riskPoint: RiskPoint) => {
   if (!riskPoint.lat || !riskPoint.lng) {
     facilities.value = []
@@ -407,20 +445,32 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   apiError.value = ''
   
   try {
-    console.log(`🔍 搜索周边设施: ${riskPoint.name} (经度: ${riskPoint.lng}, 纬度: ${riskPoint.lat})`)
+    console.log(`🔍 开始搜索: ${riskPoint.name}`)
     
-    const results = await searchNearbyFacilities(riskPoint.lng, riskPoint.lat, 10000)
+    // 同时调用两个API
+    const [sidebarResults, mapResults] = await Promise.all([
+      searchFacilitiesForSidebar(riskPoint.lng, riskPoint.lat, 10000),
+      searchFacilitiesForMap(riskPoint.lng, riskPoint.lat, 10000)
+    ])
     
-    if (results.length > 0) {
-      facilities.value = [...results]
-      nearestFacilities.value = getNearestFacilities(results)
-      emit('facilitiesUpdate', results)
-      console.log(`✅ 显示 ${results.length} 个重要设施`)
+    // 侧边栏使用sidebarResults
+    if (sidebarResults.length > 0) {
+      facilities.value = [...sidebarResults]
+      nearestFacilities.value = getNearestFacilities(sidebarResults)
+      console.log(`✅ [侧边栏] 显示 ${sidebarResults.length} 个设施`)
     } else {
       facilities.value = []
       nearestFacilities.value = []
+    }
+    
+    // 地图使用mapResults，发送给父组件
+    if (mapResults.length > 0) {
+      emit('facilitiesUpdate', mapResults)
+      console.log(`✅ [地图] 发送 ${mapResults.length} 个设施给地图显示`)
+    } else {
       emit('facilitiesUpdate', [])
     }
+    
   } catch (error) {
     console.error('❌ 加载设施失败:', error)
     facilities.value = []
@@ -451,7 +501,7 @@ const selectRiskPoint = (point: RiskPoint) => {
   searchResults.value = []
   loadFacilities(point)
   
-  // 触发地图定位和显示设施
+  // 触发地图定位
   emit('facilityClick', {
     name: point.name,
     lat: point.lat,
@@ -530,6 +580,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -557,7 +608,6 @@ onMounted(async () => {
   color: #00f0ff;
 }
 
-/* 搜索框样式 */
 .risk-search {
   display: flex;
   gap: 8px;
@@ -597,7 +647,6 @@ onMounted(async () => {
   background: rgba(0, 200, 255, 0.4);
 }
 
-/* 搜索结果样式 */
 .search-results {
   background: rgba(0, 30, 50, 0.9);
   border: 1px solid rgba(0, 200, 255, 0.3);
@@ -736,7 +785,6 @@ onMounted(async () => {
   color: #a0c0d0;
 }
 
-/* 最近设施样式 */
 .nearest-section {
   background: rgba(0, 80, 100, 0.3);
   border-radius: 10px;
@@ -791,7 +839,6 @@ onMounted(async () => {
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 12px;
-  white-space: nowrap;
 }
 
 .facilities-section {
