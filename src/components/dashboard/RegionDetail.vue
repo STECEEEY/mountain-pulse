@@ -66,24 +66,28 @@
       </div>
     </div>
     
-    <!-- 最近设施信息 -->
+    <!-- 最近设施信息 - 优化显示 -->
     <div v-if="nearestFacilities.length > 0" class="nearest-section">
-      <h4>🏥 最近关键设施</h4>
+      <h4>🚨 应急关键设施（最近距离）</h4>
       <div class="nearest-list">
         <div v-for="facility in nearestFacilities" :key="facility.type" class="nearest-item">
           <span class="nearest-icon">{{ facility.icon }}</span>
           <div class="nearest-info">
             <div class="nearest-name">{{ facility.name }}</div>
-            <div class="nearest-distance">距离: {{ (facility.distance / 1000).toFixed(2) }}km</div>
+            <div class="nearest-address">{{ facility.detail }}</div>
+            <div class="nearest-distance">📏 直线距离: {{ (facility.distance / 1000).toFixed(2) }} km</div>
           </div>
-          <span class="nearest-risk" :class="facility.riskClass">{{ facility.risk }}</span>
+          <div class="nearest-risk-wrapper">
+            <span class="nearest-risk" :class="facility.riskClass">{{ facility.risk }}</span>
+            <div class="nearest-time">🚗 预估车程: {{ getEstimatedTime(facility.distance) }}</div>
+          </div>
         </div>
       </div>
     </div>
     
     <div class="facilities-section">
       <h4>
-        关键设施列表（10km范围内）
+        关键设施列表（20km范围内）
         <span v-if="currentRiskPoint" class="facility-tip">（{{ currentRiskPoint.name }} 周边）</span>
         <span v-if="apiError" class="api-error-tip">⚠️ {{ apiError }}</span>
       </h4>
@@ -108,15 +112,18 @@
               <span class="facility-type" :class="facility.category">{{ facility.typeName }}</span>
             </div>
             <span class="facility-detail">{{ facility.detail }}</span>
-            <span class="facility-distance">距离: {{ (facility.distance / 1000).toFixed(2) }}km</span>
+            <span class="facility-distance">📏 距离: {{ (facility.distance / 1000).toFixed(2) }} km</span>
           </div>
-          <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
+          <div class="facility-risk-info">
+            <span class="facility-risk" :class="facility.riskClass">{{ facility.risk }}</span>
+            <span class="facility-time">🚗 {{ getEstimatedTime(facility.distance) }}</span>
+          </div>
         </div>
       </div>
       
       <!-- 没有设施时显示提示 -->
       <div v-else-if="!loadingFacilities && currentRiskPoint" class="empty-facility">
-        该风险点周边10km内暂无关键设施
+        该风险点周边20km内暂无关键设施
       </div>
       
       <div v-else class="empty-facility">
@@ -189,14 +196,24 @@ const apiError = ref('')
 
 // 扩大的关键设施类型
 const IMPORTANT_TYPES = [
-  '医院', '卫生院', '诊所', '社区卫生服务中心', '急救中心', '妇幼保健院', '中医院',
-  '学校', '小学', '中学', '幼儿园', '大学', '学院',
-  '政府', '镇政府', '街道办事处', '村委会', '派出所', '公安局',
-  '消防', '消防站', '应急', '避难所',
-  '地铁站', '公交站', '火车站', '汽车站',
-  '药店', '药房', '邮局', '银行', '加油站', '充电站',
-  '养老院', '敬老院', '福利院',
-  '社区服务中心', '便民服务中心'
+  // 医疗机构
+  '医院', '卫生院', '诊所', '社区卫生服务中心', '急救中心', '妇幼保健院', '中医院', '专科医院',
+  // 教育机构
+  '学校', '小学', '中学', '幼儿园', '大学', '学院', '职业学校',
+  // 政府机构
+  '政府', '镇政府', '街道办事处', '村委会', '派出所', '公安局', '政务服务中心',
+  // 应急设施
+  '消防', '消防站', '应急', '避难所', '应急救援', '防汛', '救灾',
+  // 交通设施
+  '地铁站', '公交站', '火车站', '汽车站', '高铁站', '客运站',
+  // 医疗相关
+  '药店', '药房', '卫生室', '医务室',
+  // 公共设施
+  '邮局', '银行', '加油站', '充电站',
+  // 养老设施
+  '养老院', '敬老院', '福利院', '日间照料中心',
+  // 社区设施
+  '社区服务中心', '便民服务中心', '党群服务中心'
 ]
 
 // 获取设施图标
@@ -229,26 +246,27 @@ const getFacilityIcon = (name: string, type: string): string => {
 const getTypeName = (name: string): string => {
   const lowerName = name.toLowerCase()
   
-  if (lowerName.includes('医院')) return '医院'
-  if (lowerName.includes('卫生院')) return '卫生院'
-  if (lowerName.includes('诊所')) return '诊所'
-  if (lowerName.includes('药店')) return '药店'
-  if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '学校'
-  if (lowerName.includes('大学')) return '大学'
-  if (lowerName.includes('幼儿园')) return '幼儿园'
-  if (lowerName.includes('政府')) return '政府机构'
-  if (lowerName.includes('派出所')) return '派出所'
-  if (lowerName.includes('消防')) return '消防站'
-  if (lowerName.includes('地铁')) return '地铁站'
-  if (lowerName.includes('公交')) return '公交站'
-  if (lowerName.includes('火车站')) return '火车站'
-  if (lowerName.includes('邮局')) return '邮局'
-  if (lowerName.includes('银行')) return '银行'
-  if (lowerName.includes('加油站')) return '加油站'
-  if (lowerName.includes('养老')) return '养老院'
-  if (lowerName.includes('社区')) return '社区服务中心'
+  if (lowerName.includes('医院')) return '🏥 医院'
+  if (lowerName.includes('卫生院')) return '🏥 卫生院'
+  if (lowerName.includes('诊所')) return '💉 诊所'
+  if (lowerName.includes('药店')) return '💊 药店'
+  if (lowerName.includes('学校') || lowerName.includes('小学') || lowerName.includes('中学')) return '🏫 学校'
+  if (lowerName.includes('大学')) return '🎓 大学'
+  if (lowerName.includes('幼儿园')) return '🧸 幼儿园'
+  if (lowerName.includes('政府')) return '🏢 政府机构'
+  if (lowerName.includes('派出所')) return '👮 派出所'
+  if (lowerName.includes('消防')) return '🚒 消防站'
+  if (lowerName.includes('应急')) return '🆘 应急设施'
+  if (lowerName.includes('地铁')) return '🚇 地铁站'
+  if (lowerName.includes('公交')) return '🚌 公交站'
+  if (lowerName.includes('火车站')) return '🚂 火车站'
+  if (lowerName.includes('邮局')) return '📮 邮局'
+  if (lowerName.includes('银行')) return '🏦 银行'
+  if (lowerName.includes('加油站')) return '⛽ 加油站'
+  if (lowerName.includes('养老')) return '👴 养老院'
+  if (lowerName.includes('社区')) return '🏘️ 社区中心'
   
-  return '关键设施'
+  return '📍 关键设施'
 }
 
 // 获取设施类别
@@ -279,10 +297,19 @@ const isImportantFacility = (name: string, type: string): boolean => {
 
 // 根据距离计算风险等级
 const calculateRiskByDistance = (distance: number): { risk: string; riskClass: string } => {
-  if (distance < 1000) return { risk: '极高风险', riskClass: 'critical' }
-  if (distance < 2000) return { risk: '高风险', riskClass: 'high' }
-  if (distance < 5000) return { risk: '中风险', riskClass: 'medium' }
-  return { risk: '低风险', riskClass: 'low' }
+  if (distance < 1000) return { risk: '⚠️ 极高风险', riskClass: 'critical' }
+  if (distance < 2000) return { risk: '🔴 高风险', riskClass: 'high' }
+  if (distance < 5000) return { risk: '🟡 中风险', riskClass: 'medium' }
+  if (distance < 10000) return { risk: '🟢 低风险', riskClass: 'low' }
+  return { risk: '⚪ 较低风险', riskClass: 'info' }
+}
+
+// 估算车程时间（假设平均车速40km/h）
+const getEstimatedTime = (distance: number): string => {
+  const minutes = Math.round(distance / 1000 / 40 * 60)
+  if (minutes < 1) return '1分钟以内'
+  if (minutes < 60) return `${minutes}分钟`
+  return `${Math.floor(minutes / 60)}小时${minutes % 60}分钟`
 }
 
 // JSONP调用函数
@@ -317,8 +344,8 @@ const callAMapAPI = (lng: number, lat: number, radius: number, apiKey: string): 
   })
 }
 
-// 搜索周边设施 - 侧边栏用
-const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: number = 10000) => {
+// 搜索周边设施 - 侧边栏用（20km）
+const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: number = 20000) => {
   try {
     const data = await callAMapAPI(lng, lat, radius, AMAP_KEY_SIDEBAR)
     
@@ -369,8 +396,8 @@ const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: numb
   }
 }
 
-// 搜索周边设施 - 地图用（返回完整数据供地图显示）
-const searchFacilitiesForMap = async (lng: number, lat: number, radius: number = 10000) => {
+// 搜索周边设施 - 地图用（20km）
+const searchFacilitiesForMap = async (lng: number, lat: number, radius: number = 20000) => {
   try {
     const data = await callAMapAPI(lng, lat, radius, AMAP_KEY_MAP)
     
@@ -425,14 +452,17 @@ const searchFacilitiesForMap = async (lng: number, lat: number, radius: number =
 const getNearestFacilities = (allFacilities: Facility[]) => {
   const nearest: Facility[] = []
   
+  // 找最近的医院
   const hospital = allFacilities.find(f => f.category === 'medical')
   if (hospital) nearest.push({ ...hospital, typeName: '🏥 最近医院' })
   
-  const school = allFacilities.find(f => f.category === 'education')
-  if (school) nearest.push({ ...school, typeName: '🏫 最近学校' })
-  
+  // 找最近的消防站
   const fire = allFacilities.find(f => f.category === 'emergency')
   if (fire) nearest.push({ ...fire, typeName: '🚒 最近消防站' })
+  
+  // 找最近的派出所
+  const police = allFacilities.find(f => f.category === 'government')
+  if (police) nearest.push({ ...police, typeName: '👮 最近派出所' })
   
   return nearest
 }
@@ -449,12 +479,12 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   apiError.value = ''
   
   try {
-    console.log(`🔍 开始搜索: ${riskPoint.name}`)
+    console.log(`🔍 开始搜索: ${riskPoint.name} (20km范围)`)
     
-    // 同时调用两个API
+    // 同时调用两个API，半径改为20km
     const [sidebarResults, mapResults] = await Promise.all([
-      searchFacilitiesForSidebar(riskPoint.lng, riskPoint.lat, 10000),
-      searchFacilitiesForMap(riskPoint.lng, riskPoint.lat, 10000)
+      searchFacilitiesForSidebar(riskPoint.lng, riskPoint.lat, 20000),
+      searchFacilitiesForMap(riskPoint.lng, riskPoint.lat, 20000)
     ])
     
     // 侧边栏显示使用sidebarResults
@@ -595,7 +625,45 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 样式保持不变，使用之前完整的样式 */
+/* 添加新的样式 */
+.facility-risk-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.facility-time {
+  font-size: 10px;
+  color: #88a0b0;
+  white-space: nowrap;
+}
+
+.nearest-time {
+  font-size: 10px;
+  color: #88ff88;
+  margin-top: 2px;
+}
+
+.nearest-address {
+  font-size: 10px;
+  color: #88a0b0;
+  margin-top: 2px;
+}
+
+.nearest-risk-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.facility-risk.info {
+  background: rgba(100, 100, 100, 0.3);
+  color: #aaaaaa;
+}
+
+/* 其他样式保持和之前一样 */
 .detail-card {
   background: rgba(10, 20, 30, 0.8);
   border: 1px solid rgba(0, 200, 255, 0.2);
@@ -801,37 +869,43 @@ onMounted(async () => {
 }
 
 .nearest-section {
-  background: rgba(0, 80, 100, 0.3);
-  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0, 80, 100, 0.4) 0%, rgba(0, 50, 70, 0.4) 100%);
+  border-radius: 12px;
   padding: 12px;
   margin-bottom: 16px;
-  border: 1px solid rgba(0, 200, 255, 0.2);
+  border: 1px solid rgba(0, 200, 255, 0.3);
 }
 
 .nearest-section h4 {
   margin: 0 0 10px 0;
-  font-size: 12px;
+  font-size: 13px;
   color: #ffaa66;
 }
 
 .nearest-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .nearest-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(0, 40, 60, 0.5);
-  border-radius: 8px;
-  padding: 8px;
+  gap: 12px;
+  background: rgba(0, 40, 60, 0.6);
+  border-radius: 10px;
+  padding: 10px;
+  transition: all 0.2s;
+}
+
+.nearest-item:hover {
+  background: rgba(0, 80, 100, 0.6);
+  transform: translateX(4px);
 }
 
 .nearest-icon {
-  font-size: 20px;
-  width: 32px;
+  font-size: 28px;
+  width: 44px;
   text-align: center;
 }
 
@@ -840,20 +914,48 @@ onMounted(async () => {
 }
 
 .nearest-name {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: #e0f0ff;
 }
 
-.nearest-distance {
+.nearest-address {
   font-size: 10px;
   color: #88a0b0;
+  margin-top: 2px;
+}
+
+.nearest-distance {
+  font-size: 11px;
+  color: #66c0ff;
+  margin-top: 4px;
 }
 
 .nearest-risk {
   font-size: 11px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 12px;
+  white-space: nowrap;
+}
+
+.nearest-risk.critical {
+  background: rgba(255, 0, 0, 0.3);
+  color: #ff6666;
+}
+
+.nearest-risk.high {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff8888;
+}
+
+.nearest-risk.medium {
+  background: rgba(255, 204, 68, 0.2);
+  color: #ffcc88;
+}
+
+.nearest-risk.low {
+  background: rgba(100, 200, 100, 0.2);
+  color: #88ff88;
 }
 
 .facilities-section {
@@ -905,15 +1007,15 @@ onMounted(async () => {
 }
 
 .facility-icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   border: 1px solid rgba(0, 180, 255, 0.3);
   background: rgba(0, 76, 112, 0.3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 
@@ -969,10 +1071,13 @@ onMounted(async () => {
   font-size: 11px;
   color: #88a0b0;
   margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .facility-distance {
-  display: block;
+  display: inline-block;
   font-size: 10px;
   color: #66c0ff;
 }
@@ -982,7 +1087,6 @@ onMounted(async () => {
   padding: 4px 10px;
   border-radius: 12px;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .facility-risk.critical {
