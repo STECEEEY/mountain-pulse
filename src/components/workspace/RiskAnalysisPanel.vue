@@ -3,10 +3,17 @@
     <div class="section-title">风险统计概览</div>
 
     <!-- 监测点选择器 -->
-    <div v-if="pointsList.length > 0" class="point-selector">
+    <div class="point-selector">
       <label>监测点：</label>
-      <select v-model="selectedPointId" @change="onPointChange">
-        <option v-for="point in pointsList" :key="point.name" :value="point.name">
+      <input 
+        type="text" 
+        v-model="searchText" 
+        @input="onSearch"
+        placeholder="输入监测点名称搜索..."
+        class="search-input"
+      />
+      <select v-if="searchResults.length > 0" v-model="selectedPointId" @change="onPointChange" class="result-select">
+        <option v-for="point in searchResults" :key="point.name" :value="point.name">
           {{ point.name }} ({{ point.level }})
         </option>
       </select>
@@ -175,6 +182,8 @@ const pointsList = ref<RiskPoint[]>([])
 const selectedPointId = ref<string>('')
 const currentPoint = ref<RiskPoint | null>(null)
 const dynamicFactors = ref<DynamicRiskFactors | null>(null)
+const searchText = ref('')
+const searchResults = ref<RiskPoint[]>([])
 
 // 格式化因子值
 const formatFactorValue = (factor: any): string => {
@@ -239,8 +248,9 @@ const onPointChange = async () => {
   const point = pointsList.value.find(p => p.name === selectedPointId.value)
   if (point) {
     currentPoint.value = point
-    // 动态计算风险因子
     dynamicFactors.value = calculateDynamicRiskFactors(point)
+    searchText.value = point.name  // 选中后显示在搜索框
+    searchResults.value = []       // 清空搜索结果
   }
 }
 
@@ -262,6 +272,17 @@ const loadData = async () => {
   } catch (error) {
     console.error('Risk analysis panel load failed:', error)
   }
+}
+
+//搜索方法
+const onSearch = () => {
+  if (!searchText.value.trim()) {
+    searchResults.value = []
+    return
+  }
+  searchResults.value = pointsList.value.filter(point => 
+    point.name.toLowerCase().includes(searchText.value.toLowerCase())
+  )
 }
 
 onMounted(() => {
