@@ -121,8 +121,13 @@ export const calculateDynamicRiskFactors = (point: RiskPoint): DynamicRiskFactor
     factor.contribution = factor.weight / totalWeight
   })
 
-  // 找出主要风险因子
-  const topFactor = factors.reduce((max, f) => f.weight > max.weight ? f : max, factors[0])
+  // 找出主要风险因子 - 修复类型错误
+  let topFactor = factors[0]
+  for (let i = 1; i < factors.length; i++) {
+    if (factors[i].weight > topFactor.weight) {
+      topFactor = factors[i]
+    }
+  }
 
   return {
     pointId: point.name,
