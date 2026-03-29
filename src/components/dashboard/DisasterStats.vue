@@ -88,6 +88,23 @@ import { computed, onMounted, ref } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 
+// 定义 RiskPoint 类型（如果项目中已有，可以导入）
+interface RiskPoint {
+  name: string
+  type: string
+  level: string
+  risk_probability: number
+  threat: string
+  longitude: number
+  latitude: number
+  elevation: number
+  slope: number
+  projection_x: number
+  projection_y: number
+  actual_population?: number  // 可选字段
+  velocity: number
+}
+
 // 基础统计数据
 const stats = ref({
   danger: 0,
@@ -103,11 +120,11 @@ interface TypeStat {
   type: string
   count: number
   percent: number
-  color: string
+  color: string  // 确保 color 始终是 string，不是 undefined
 }
 const typeStats = ref<TypeStat[]>([])
 
-// 类型颜色映射
+// 类型颜色映射（确保所有类型都有默认颜色）
 const typeColors: Record<string, string> = {
   '滑坡': '#ff6b6b',
   '泥石流': '#ffb347',
@@ -117,6 +134,11 @@ const typeColors: Record<string, string> = {
   '地震': '#9b59b6',
   '台风': '#1abc9c',
   '其他': '#95a5a6'
+}
+
+// 获取类型颜色的辅助函数，确保始终返回字符串
+const getTypeColor = (type: string): string => {
+  return typeColors[type] || typeColors['其他']
 }
 
 // 风险占比
@@ -148,7 +170,7 @@ const parseThreatPopulation = (value: string) => {
 }
 
 // 统计灾害类型分布
-const calculateTypeStats = (points: any[]) => {
+const calculateTypeStats = (points: RiskPoint[]): TypeStat[] => {
   const typeCount: Record<string, number> = {}
   
   points.forEach(point => {
@@ -162,7 +184,7 @@ const calculateTypeStats = (points: any[]) => {
       type,
       count,
       percent: (count / total) * 100,
-      color: typeColors[type] || typeColors['其他']
+      color: getTypeColor(type)  // 使用辅助函数确保返回 string
     }))
     .sort((a, b) => b.count - a.count) // 按数量降序排列
     .slice(0, 5) // 最多显示5种类型，避免过多
@@ -176,19 +198,18 @@ const loadStats = async () => {
     const aggregate = { danger: 0, warning: 0, medium: 0, safe: 0 }
     let totalThreat = 0
 
-    response.points.forEach((point) => {
+    response.points.forEach((point: RiskPoint) => {
       const level = point.level.trim().toLowerCase()
       if (level.includes('极高风险') || level.includes('danger')) aggregate.danger += 1
       else if (level === '高风险' || level.includes('warning')) aggregate.warning += 1
       else if (level === '中风险' || level.includes('medium')) aggregate.medium += 1
       else aggregate.safe += 1
 
-      // 优先使用 actual_population，否则从 threat 解析
-      if (point.actual_population !== undefined && point.actual_population > 0) {
-        totalThreat += point.actual_population
-      } else {
-        totalThreat += parseThreatPopulation(point.threat)
-      }
+      // 优先使用 actual_population（如果存在且有效），否则从 threat 解析
+      const population = (point.actual_population !== undefined && point.actual_population > 0) 
+        ? point.actual_population 
+        : parseThreatPopulation(point.threat)
+      totalThreat += population
     })
 
     stats.value = aggregate
@@ -197,7 +218,8 @@ const loadStats = async () => {
     
     // 计算类型分布
     typeStats.value = calculateTypeStats(response.points)
-  } catch {
+  } catch (error) {
+    console.error('Failed to load risk stats:', error)
     stats.value = { danger: 0, warning: 0, medium: 0, safe: 0 }
     totalPoints.value = 0
     threatPopulation.value = -1
