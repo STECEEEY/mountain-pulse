@@ -789,6 +789,7 @@ watch(
   border: 1px solid rgba(0, 200, 255, 0.2);
   border-radius: 12px;
   padding: 16px;
+  margin-top: 20px;
 }
 
 .ai-header {
