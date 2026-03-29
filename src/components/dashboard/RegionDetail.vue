@@ -123,7 +123,7 @@
       
       <!-- 没有设施时显示提示 -->
       <div v-else-if="!loadingFacilities && currentRiskPoint" class="empty-facility">
-        该风险点周边20km内暂无关键设施
+        该风险点周边30km内暂无关键设施
       </div>
       
       <div v-else class="empty-facility">
@@ -344,8 +344,8 @@ const callAMapAPI = (lng: number, lat: number, radius: number, apiKey: string): 
   })
 }
 
-// 搜索周边设施 - 侧边栏用（20km）
-const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: number = 20000) => {
+// 搜索周边设施 - 侧边栏用（30km）
+const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: number = 30000) => {
   try {
     const data = await callAMapAPI(lng, lat, radius, AMAP_KEY_SIDEBAR)
     
@@ -396,8 +396,8 @@ const searchFacilitiesForSidebar = async (lng: number, lat: number, radius: numb
   }
 }
 
-// 搜索周边设施 - 地图用（20km）
-const searchFacilitiesForMap = async (lng: number, lat: number, radius: number = 20000) => {
+// 搜索周边设施 - 地图用（30km）
+const searchFacilitiesForMap = async (lng: number, lat: number, radius: number = 30000) => {
   try {
     const data = await callAMapAPI(lng, lat, radius, AMAP_KEY_MAP)
     
@@ -479,12 +479,12 @@ const loadFacilities = async (riskPoint: RiskPoint) => {
   apiError.value = ''
   
   try {
-    console.log(`🔍 开始搜索: ${riskPoint.name} (20km范围)`)
+    console.log(`🔍 开始搜索: ${riskPoint.name} (30km范围)`)
     
-    // 同时调用两个API，半径改为20km
+    // 同时调用两个API，半径改为30km
     const [sidebarResults, mapResults] = await Promise.all([
-      searchFacilitiesForSidebar(riskPoint.lng, riskPoint.lat, 20000),
-      searchFacilitiesForMap(riskPoint.lng, riskPoint.lat, 20000)
+      searchFacilitiesForSidebar(riskPoint.lng, riskPoint.lat, 30000),
+      searchFacilitiesForMap(riskPoint.lng, riskPoint.lat, 30000)
     ])
     
     // 侧边栏显示使用sidebarResults
