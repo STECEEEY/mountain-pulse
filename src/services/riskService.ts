@@ -1,3 +1,5 @@
+// services/riskService.ts - 确保已正确导入类型
+
 import type {
   DeformationResponse,
   FeatureImportance,
@@ -34,7 +36,6 @@ export const riskService = {
   
   // 形变数据 API（通过 Vercel 代理）
   async loadDeformationData(lat: number, lng: number) {
-    // 使用与 vercel.json 中 source 匹配的路径
     const url = `/api/deformation/query?lat=${lat}&lng=${lng}`
     console.log('形变请求URL:', url)
     
@@ -45,7 +46,6 @@ export const riskService = {
 
     const data = await response.json()
     
-    // 根据你的实际返回结构调整
     if (!data) {
       throw new Error('形变接口返回结构无效')
     }
