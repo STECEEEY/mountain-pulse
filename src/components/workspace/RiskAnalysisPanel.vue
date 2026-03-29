@@ -810,4 +810,29 @@ onMounted(() => {
     width: auto;
   }
 }
+
+  .search-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 200, 255, 0.3);
+  color: #e8f5ff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #00f0ff;
+}
+
+.result-select {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 200, 255, 0.3);
+  color: #e8f5ff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
 </style>
