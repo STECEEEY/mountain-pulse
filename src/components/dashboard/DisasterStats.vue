@@ -8,7 +8,7 @@
       </span>
     </div>
     
-    <!-- 新增：风险占比图表 -->
+    <!-- 风险占比条形图 -->
     <div class="risk-chart">
       <div class="risk-bar">
         <div 
@@ -35,7 +35,33 @@
         <span><i class="legend-dot safe"></i>低</span>
       </div>
     </div>
-    
+
+    <!-- 新增：灾害类型分布迷你图表 -->
+    <div class="type-chart" v-if="typeStats.length > 0">
+      <div class="type-header">
+        <span class="type-title">📊 灾害类型分布</span>
+        <span class="type-unit">数量</span>
+      </div>
+      <div class="type-bars">
+        <div 
+          v-for="item in typeStats" 
+          :key="item.type"
+          class="type-item"
+        >
+          <div class="type-label">
+            <span class="type-name">{{ item.type }}</span>
+            <span class="type-value">{{ item.count }}</span>
+          </div>
+          <div class="type-bar-bg">
+            <div 
+              class="type-bar-fill" 
+              :style="{ width: item.percent + '%', background: item.color }"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="chart-footer">
       <div class="threat-info">
         <span class="threat-icon">👥</span>
@@ -62,6 +88,7 @@ import { computed, onMounted, ref } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
 
+// 基础统计数据
 const stats = ref({
   danger: 0,
   warning: 0,
@@ -70,6 +97,27 @@ const stats = ref({
 })
 const threatPopulation = ref(-1)
 const totalPoints = ref(0)
+
+// 新增：灾害类型统计
+interface TypeStat {
+  type: string
+  count: number
+  percent: number
+  color: string
+}
+const typeStats = ref<TypeStat[]>([])
+
+// 类型颜色映射
+const typeColors: Record<string, string> = {
+  '滑坡': '#ff6b6b',
+  '泥石流': '#ffb347',
+  '崩塌': '#f9ca24',
+  '地面塌陷': '#6ab04c',
+  '洪水': '#3498db',
+  '地震': '#9b59b6',
+  '台风': '#1abc9c',
+  '其他': '#95a5a6'
+}
 
 // 风险占比
 const riskPercentages = computed(() => {
@@ -99,6 +147,29 @@ const parseThreatPopulation = (value: string) => {
   return Number(matched[0])
 }
 
+// 统计灾害类型分布
+const calculateTypeStats = (points: any[]) => {
+  const typeCount: Record<string, number> = {}
+  
+  points.forEach(point => {
+    const type = point.type || '其他'
+    typeCount[type] = (typeCount[type] || 0) + 1
+  })
+  
+  const total = points.length
+  const statsArray: TypeStat[] = Object.entries(typeCount)
+    .map(([type, count]) => ({
+      type,
+      count,
+      percent: (count / total) * 100,
+      color: typeColors[type] || typeColors['其他']
+    }))
+    .sort((a, b) => b.count - a.count) // 按数量降序排列
+    .slice(0, 5) // 最多显示5种类型，避免过多
+  
+  return statsArray
+}
+
 const loadStats = async () => {
   try {
     const response = await riskService.loadRiskPoints()
@@ -112,16 +183,25 @@ const loadStats = async () => {
       else if (level === '中风险' || level.includes('medium')) aggregate.medium += 1
       else aggregate.safe += 1
 
-      totalThreat += parseThreatPopulation(point.threat)
+      // 优先使用 actual_population，否则从 threat 解析
+      if (point.actual_population !== undefined && point.actual_population > 0) {
+        totalThreat += point.actual_population
+      } else {
+        totalThreat += parseThreatPopulation(point.threat)
+      }
     })
 
     stats.value = aggregate
     totalPoints.value = response.points.length
     threatPopulation.value = totalThreat
+    
+    // 计算类型分布
+    typeStats.value = calculateTypeStats(response.points)
   } catch {
     stats.value = { danger: 0, warning: 0, medium: 0, safe: 0 }
     totalPoints.value = 0
     threatPopulation.value = -1
+    typeStats.value = []
   }
 }
 
@@ -130,8 +210,9 @@ onMounted(() => {
 })
 </script>
 
-
 <style scoped>
+/* 保留原有样式，新增类型图表样式 */
+
 .chart-card {
   flex: 1;
   background: rgba(10, 20, 30, 0.8);
@@ -208,153 +289,9 @@ onMounted(() => {
   }
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  flex: 1;
-}
-
-.stat-box {
-  background: rgba(0, 30, 50, 0.6);
-  border-radius: 8px;
-  padding: 12px;
-  text-align: center;
-  border-left: 3px solid;
-  transition: all 0.3s;
-}
-
-.stat-box:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.stat-box.danger {
-  border-color: #ff4444;
-}
-
-.stat-box.danger.flash-alert {
-  animation: flashAlert 2s ease-in-out infinite;
-}
-
-@keyframes flashAlert {
-  0%, 100% {
-    background: rgba(0, 30, 50, 0.6);
-  }
-  50% {
-    background: rgba(255, 68, 68, 0.15);
-  }
-}
-
-.stat-box.warning {
-  border-color: #ff8844;
-}
-
-.stat-box.medium {
-  border-color: #ffcc44;
-}
-
-.stat-box.safe {
-  border-color: #44ff44;
-}
-
-.stat-number {
-  font-size: 28px;
-  font-weight: 700;
-  color: #e0f0ff;
-  line-height: 1;
-  margin-bottom: 4px;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-box.danger .stat-number {
-  color: #ff4444;
-  text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
-}
-
-.stat-box.warning .stat-number {
-  color: #ff8844;
-}
-
-.stat-box.medium .stat-number {
-  color: #ffcc44;
-}
-
-.stat-box.safe .stat-number {
-  color: #44ff44;
-}
-
-.stat-name {
-  font-size: 11px;
-  color: #88a0b0;
-}
-
-.chart-footer {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 150, 255, 0.1);
-  margin-top: auto;
-}
-
-.threat-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.threat-icon {
-  font-size: 10px;
-  border: 1px solid rgba(0, 180, 255, 0.25);
-  border-radius: 8px;
-  padding: 2px 6px;
-  color: #9ad4f2;
-}
-
-.threat-text {
-  font-size: 12px;
-  color: #88a0b0;
-}
-
-.threat-text strong {
-  color: #00f0ff;
-}
-
-/* 扫描线效果 */
-.scan-line {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(0, 240, 255, 0.05),
-    transparent
-  );
-  animation: scanMove 4s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes scanMove {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 100%;
-  }
-}
-
-.stat-desc {
-  font-size: 10px;
-  color: rgba(136, 160, 176, 0.8);
-  margin-top: 4px;
-}
-
 /* 风险占比条形图 */
 .risk-chart {
-  margin: 12px 0 8px;
+  margin: 0 0 12px 0;
 }
 
 .risk-bar {
@@ -405,6 +342,107 @@ onMounted(() => {
 .legend-dot.medium { background: #ffcc44; }
 .legend-dot.safe { background: #44ff44; }
 
+/* 新增：灾害类型分布图表样式 */
+.type-chart {
+  margin: 8px 0 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(0, 150, 255, 0.15);
+  border-bottom: 1px solid rgba(0, 150, 255, 0.15);
+}
+
+.type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 10px;
+  color: #9ad4f2;
+}
+
+.type-title {
+  font-weight: 500;
+}
+
+.type-unit {
+  font-size: 9px;
+  color: #88a0b0;
+}
+
+.type-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.type-item {
+  width: 100%;
+}
+
+.type-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.type-name {
+  color: #c0d8e8;
+}
+
+.type-value {
+  color: #00f0ff;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.type-bar-bg {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.type-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.chart-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 150, 255, 0.1);
+  margin-top: auto;
+}
+
+.threat-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.threat-icon {
+  font-size: 10px;
+  border: 1px solid rgba(0, 180, 255, 0.25);
+  border-radius: 8px;
+  padding: 2px 6px;
+  color: #9ad4f2;
+}
+
+.threat-text {
+  font-size: 12px;
+  color: #88a0b0;
+}
+
+.threat-text strong {
+  color: #00f0ff;
+}
+
 .alert-info {
   display: flex;
   align-items: center;
@@ -417,11 +455,29 @@ onMounted(() => {
   font-size: 10px;
 }
 
-.chart-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+/* 扫描线效果 */
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 240, 255, 0.05),
+    transparent
+  );
+  animation: scanMove 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanMove {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 </style>
