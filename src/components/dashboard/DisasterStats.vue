@@ -108,8 +108,8 @@ interface TypeStat {
 }
 const typeStats = ref<TypeStat[]>([])
 
-// 类型颜色映射
-const typeColors: Record<string, string> = {
+// 类型颜色映射 - 使用 as const 确保类型安全
+const typeColors = {
   '滑坡': '#ff6b6b',
   '泥石流': '#ffb347',
   '崩塌': '#f9ca24',
@@ -118,6 +118,11 @@ const typeColors: Record<string, string> = {
   '地震': '#9b59b6',
   '台风': '#1abc9c',
   '其他': '#95a5a6'
+} as const
+
+// 获取类型颜色的辅助函数，确保始终返回 string
+const getTypeColor = (type: string): string => {
+  return typeColors[type as keyof typeof typeColors] || typeColors['其他']
 }
 
 // 风险占比
@@ -163,7 +168,7 @@ const calculateTypeStats = (points: RiskPoint[]): TypeStat[] => {
       type,
       count,
       percent: (count / total) * 100,
-      color: typeColors[type] || typeColors['其他']
+      color: getTypeColor(type)  // 使用辅助函数确保返回 string
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5)
