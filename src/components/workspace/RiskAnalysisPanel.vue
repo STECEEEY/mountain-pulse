@@ -254,8 +254,8 @@ const loadData = async () => {
     stats.value = statsRes
     pointsList.value = pointsRes.points
     
-    // 默认选择第一个监测点
-    if (pointsList.value.length > 0) {
+    // 默认选择第一个监测点 - 修复类型错误
+    if (pointsList.value && pointsList.value.length > 0 && pointsList.value[0]) {
       selectedPointId.value = pointsList.value[0].name
       await onPointChange()
     }
