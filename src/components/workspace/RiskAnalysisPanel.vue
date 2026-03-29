@@ -431,7 +431,6 @@ onMounted(() => {
 .score-value {
   font-size: 24px;
   font-weight: 700;
-  font-family: monospace;
 }
 
 .score-value.risk-extreme {
