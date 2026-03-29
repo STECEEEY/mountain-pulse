@@ -87,23 +87,7 @@
 import { computed, onMounted, ref } from 'vue'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import { riskService } from '@/services/riskService'
-
-// 定义 RiskPoint 类型（如果项目中已有，可以导入）
-interface RiskPoint {
-  name: string
-  type: string
-  level: string
-  risk_probability: number
-  threat: string
-  longitude: number
-  latitude: number
-  elevation: number
-  slope: number
-  projection_x: number
-  projection_y: number
-  actual_population?: number  // 可选字段
-  velocity: number
-}
+import type { RiskPoint } from '@/types/risk'
 
 // 基础统计数据
 const stats = ref({
@@ -120,11 +104,11 @@ interface TypeStat {
   type: string
   count: number
   percent: number
-  color: string  // 确保 color 始终是 string，不是 undefined
+  color: string
 }
 const typeStats = ref<TypeStat[]>([])
 
-// 类型颜色映射（确保所有类型都有默认颜色）
+// 类型颜色映射
 const typeColors: Record<string, string> = {
   '滑坡': '#ff6b6b',
   '泥石流': '#ffb347',
@@ -134,11 +118,6 @@ const typeColors: Record<string, string> = {
   '地震': '#9b59b6',
   '台风': '#1abc9c',
   '其他': '#95a5a6'
-}
-
-// 获取类型颜色的辅助函数，确保始终返回字符串
-const getTypeColor = (type: string): string => {
-  return typeColors[type] || typeColors['其他']
 }
 
 // 风险占比
@@ -184,10 +163,10 @@ const calculateTypeStats = (points: RiskPoint[]): TypeStat[] => {
       type,
       count,
       percent: (count / total) * 100,
-      color: getTypeColor(type)  // 使用辅助函数确保返回 string
+      color: typeColors[type] || typeColors['其他']
     }))
-    .sort((a, b) => b.count - a.count) // 按数量降序排列
-    .slice(0, 5) // 最多显示5种类型，避免过多
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
   
   return statsArray
 }
@@ -200,16 +179,18 @@ const loadStats = async () => {
 
     response.points.forEach((point: RiskPoint) => {
       const level = point.level.trim().toLowerCase()
-      if (level.includes('极高风险') || level.includes('danger')) aggregate.danger += 1
-      else if (level === '高风险' || level.includes('warning')) aggregate.warning += 1
-      else if (level === '中风险' || level.includes('medium')) aggregate.medium += 1
-      else aggregate.safe += 1
+      if (level.includes('极高风险') || level.includes('danger')) {
+        aggregate.danger += 1
+      } else if (level === '高风险' || level.includes('warning')) {
+        aggregate.warning += 1
+      } else if (level === '中风险' || level.includes('medium')) {
+        aggregate.medium += 1
+      } else {
+        aggregate.safe += 1
+      }
 
-      // 优先使用 actual_population（如果存在且有效），否则从 threat 解析
-      const population = (point.actual_population !== undefined && point.actual_population > 0) 
-        ? point.actual_population 
-        : parseThreatPopulation(point.threat)
-      totalThreat += population
+      // 从 threat 字符串中解析人口数
+      totalThreat += parseThreatPopulation(point.threat)
     })
 
     stats.value = aggregate
