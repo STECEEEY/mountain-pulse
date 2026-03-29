@@ -121,18 +121,16 @@ export const calculateDynamicRiskFactors = (point: RiskPoint): DynamicRiskFactor
     factor.contribution = factor.weight / totalWeight
   })
 
-  // 找出主要风险因子 - 修复类型错误，确保 topFactor 不为 undefined
-  let topFactor: DynamicRiskFactor | null = null
-  for (let i = 0; i < factors.length; i++) {
-    if (topFactor === null || factors[i].weight > topFactor.weight) {
-      topFactor = factors[i]
-    }
-  }
+  // 找出主要风险因子 - 使用更安全的方法
+  let maxWeight = -1
+  let topFactorName = ''
   
-  // 确保 topFactor 存在（factors 数组至少有一个元素）
-  if (!topFactor) {
-    // 这不应该发生，因为 factors 数组总是有4个元素
-    throw new Error('Failed to determine top risk factor')
+  for (let i = 0; i < factors.length; i++) {
+    const factor = factors[i]
+    if (factor && factor.weight > maxWeight) {
+      maxWeight = factor.weight
+      topFactorName = factor.name
+    }
   }
 
   return {
@@ -140,7 +138,7 @@ export const calculateDynamicRiskFactors = (point: RiskPoint): DynamicRiskFactor
     pointName: point.name,
     factors,
     totalRiskScore,
-    topRiskFactor: topFactor.name,
+    topRiskFactor: topFactorName,
     riskLevel: getRiskLevelText(totalRiskScore)
   }
 }
