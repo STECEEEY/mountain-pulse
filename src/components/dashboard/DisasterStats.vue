@@ -8,7 +8,7 @@
       </span>
     </div>
     
-    <!-- 风险占比条形图 - 放大 -->
+    <!-- 风险占比条形图 -->
     <div class="risk-chart">
       <div class="risk-bar">
         <div 
@@ -36,7 +36,7 @@
       </div>
     </div>
 
-    <!-- 灾害类型分布 - 放大展示 -->
+    <!-- 灾害类型分布 -->
     <div class="type-chart" v-if="typeStats.length > 0">
       <div class="type-header">
         <span class="type-title">📊 灾害类型分布</span>
@@ -65,44 +65,28 @@
       </div>
     </div>
 
-    <!-- 关键指标卡片 - 放大显示 -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-card-icon">📍</div>
-        <div class="stat-card-content">
-          <div class="stat-card-label">风险点总数</div>
-          <div class="stat-card-value">
-            <AnimatedNumber :value="totalPoints" :decimals="0" />
-            <span>个</span>
-          </div>
+    <!-- 关键指标 - 紧凑版 -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-label">风险点总数</div>
+        <div class="stat-value">
+          <AnimatedNumber :value="totalPoints" :decimals="0" />
+          <span>个</span>
         </div>
       </div>
-      <div class="stat-card danger-card">
-        <div class="stat-card-icon">⚠️</div>
-        <div class="stat-card-content">
-          <div class="stat-card-label">极高风险点</div>
-          <div class="stat-card-value">
-            <AnimatedNumber :value="stats.danger" :decimals="0" />
-            <span>个</span>
-          </div>
+      <div class="stat-item">
+        <div class="stat-label danger-label">极高风险点</div>
+        <div class="stat-value danger-value">
+          <AnimatedNumber :value="stats.danger" :decimals="0" />
+          <span>个</span>
         </div>
       </div>
-      <div class="stat-card threat-card">
-        <div class="stat-card-icon">👥</div>
-        <div class="stat-card-content">
-          <div class="stat-card-label">威胁总人口</div>
-          <div class="stat-card-value">
-            <AnimatedNumber :value="threatPopulation / 10000" :decimals="1" />
-            <span>万人</span>
-          </div>
+      <div class="stat-item">
+        <div class="stat-label">威胁总人口</div>
+        <div class="stat-value threat-value">
+          <AnimatedNumber :value="threatPopulation / 10000" :decimals="1" />
+          <span>万人</span>
         </div>
-      </div>
-    </div>
-
-    <div class="chart-footer" v-if="hasAlert">
-      <div class="alert-info">
-        <span class="alert-icon">⚠️</span>
-        <span class="alert-text">⚠️ 建议优先处置极高风险点 ⚠️</span>
       </div>
     </div>
 
@@ -165,7 +149,7 @@ const riskPercentages = computed(() => {
 
 // 预警状态
 const alertStatus = computed(() => {
-  if (stats.value.danger > 0) return `⚠️ ${stats.value.danger}个极高风险点`
+  if (stats.value.danger > 0) return `${stats.value.danger}个极高风险点`
   if (stats.value.warning > 5) return `${stats.value.warning}个高风险点`
   if (stats.value.warning > 0) return '预警中'
   return '正常'
@@ -197,7 +181,7 @@ const calculateTypeStats = (points: RiskPoint[]): TypeStat[] => {
       color: getTypeColor(type)
     }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 6) // 显示更多类型
+    .slice(0, 5)
   
   return statsArray
 }
@@ -248,14 +232,13 @@ onMounted(() => {
   backdrop-filter: blur(4px);
   border: 1px solid rgba(0, 200, 255, 0.25);
   border-radius: 16px;
-  padding: 20px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  min-height: 380px;
 }
 
 .chart-card:hover {
@@ -266,31 +249,30 @@ onMounted(() => {
 
 .chart-card.alert-active {
   border-color: rgba(255, 68, 68, 0.6);
-  box-shadow: 0 0 25px rgba(255, 68, 68, 0.25);
-  background: rgba(20, 20, 35, 0.9);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.2);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .card-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: #ff8888;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .card-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  padding: 6px 14px;
+  gap: 6px;
+  font-size: 11px;
+  padding: 4px 10px;
   border-radius: 20px;
   background: rgba(255, 100, 100, 0.2);
   border: 1px solid rgba(255, 100, 100, 0.5);
@@ -299,8 +281,8 @@ onMounted(() => {
 }
 
 .pulse-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background: #ff4444;
   border-radius: 50%;
   animation: pulseDot 1.5s ease-in-out infinite;
@@ -315,19 +297,19 @@ onMounted(() => {
   50% {
     transform: scale(1.2);
     opacity: 0.8;
-    box-shadow: 0 0 0 4px rgba(255, 68, 68, 0);
+    box-shadow: 0 0 0 3px rgba(255, 68, 68, 0);
   }
 }
 
-/* 风险占比条形图 - 放大 */
+/* 风险占比条形图 */
 .risk-chart {
-  margin: 0 0 20px 0;
+  margin: 0 0 14px 0;
 }
 
 .risk-bar {
   display: flex;
-  height: 12px;
-  border-radius: 6px;
+  height: 8px;
+  border-radius: 4px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -352,20 +334,19 @@ onMounted(() => {
 
 .risk-legend {
   display: flex;
-  gap: 20px;
-  margin-top: 12px;
+  gap: 16px;
+  margin-top: 8px;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   color: #9ab0c0;
-  font-weight: 500;
 }
 
 .legend-dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  margin-right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 5px;
 }
 
 .legend-dot.danger { background: #ff4444; }
@@ -373,10 +354,10 @@ onMounted(() => {
 .legend-dot.medium { background: #ffcc44; }
 .legend-dot.safe { background: #44ff44; }
 
-/* 灾害类型分布 - 放大 */
+/* 灾害类型分布 */
 .type-chart {
-  margin: 16px 0 20px;
-  padding: 12px 0;
+  margin: 12px 0 14px;
+  padding: 10px 0;
   border-top: 1px solid rgba(0, 150, 255, 0.2);
   border-bottom: 1px solid rgba(0, 150, 255, 0.2);
 }
@@ -385,25 +366,24 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  font-size: 12px;
+  margin-bottom: 10px;
+  font-size: 11px;
   color: #aae0ff;
-  font-weight: 500;
 }
 
 .type-title {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .type-unit {
-  font-size: 10px;
+  font-size: 9px;
   color: #88a0b0;
 }
 
 .type-bars {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .type-item {
@@ -413,21 +393,21 @@ onMounted(() => {
 .type-label {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  margin-bottom: 4px;
+  font-size: 10px;
+  margin-bottom: 3px;
 }
 
 .type-name {
   color: #d0e8f8;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .type-icon {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
 }
 
@@ -435,111 +415,77 @@ onMounted(() => {
   color: #00f0ff;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .type-bar-bg {
   width: 100%;
-  height: 6px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .type-bar-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 2px;
   transition: width 0.5s ease;
 }
 
-/* 关键指标卡片网格 - 放大 */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin: 8px 0 12px;
-}
-
-.stat-card {
-  background: rgba(0, 30, 45, 0.6);
-  border-radius: 12px;
-  padding: 12px 8px;
+/* 紧凑版指标行 - 三个小卡片 */
+.stats-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.2s ease;
-  border: 1px solid rgba(0, 150, 255, 0.2);
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(0, 200, 255, 0.4);
-  background: rgba(0, 40, 60, 0.7);
-}
-
-.stat-card-icon {
-  font-size: 24px;
-  opacity: 0.9;
-}
-
-.stat-card-content {
+.stat-item {
   flex: 1;
+  text-align: center;
+  background: rgba(0, 30, 45, 0.4);
+  border-radius: 10px;
+  padding: 8px 6px;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 150, 255, 0.15);
 }
 
-.stat-card-label {
+.stat-item:hover {
+  background: rgba(0, 40, 60, 0.6);
+  border-color: rgba(0, 200, 255, 0.3);
+}
+
+.stat-label {
   font-size: 10px;
   color: #88a0b0;
-  margin-bottom: 4px;
-  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
 }
 
-.stat-card-value {
-  font-size: 20px;
+.stat-label.danger-label {
+  color: #ff8888;
+}
+
+.stat-value {
+  font-size: 18px;
   font-weight: 700;
   color: #e0f0ff;
-  line-height: 1.2;
+  line-height: 1;
 }
 
-.stat-card-value span {
-  font-size: 12px;
+.stat-value span {
+  font-size: 11px;
   font-weight: normal;
   color: #88a0b0;
   margin-left: 2px;
 }
 
-.danger-card .stat-card-value {
+.danger-value {
   color: #ff8888;
 }
 
-.threat-card .stat-card-value {
+.threat-value {
   color: #00f0ff;
-}
-
-.chart-footer {
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 150, 255, 0.2);
-}
-
-.alert-info {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: rgba(255, 68, 68, 0.15);
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.alert-icon {
-  font-size: 14px;
-}
-
-.alert-text {
-  font-size: 12px;
-  color: #ffaa88;
-  font-weight: 600;
-  letter-spacing: 1px;
 }
 
 /* 扫描线效果 */
@@ -552,7 +498,7 @@ onMounted(() => {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(0, 240, 255, 0.06),
+    rgba(0, 240, 255, 0.05),
     transparent
   );
   animation: scanMove 4s linear infinite;
@@ -571,30 +517,23 @@ onMounted(() => {
 /* 响应式调整 */
 @media (max-width: 768px) {
   .chart-card {
-    padding: 14px;
-    min-height: auto;
+    padding: 12px;
   }
   
   .card-title {
-    font-size: 14px;
+    font-size: 13px;
   }
   
-  .stats-grid {
-    gap: 8px;
-  }
-  
-  .stat-card-value {
+  .stat-value {
     font-size: 16px;
   }
   
-  .stat-card-icon {
-    font-size: 20px;
+  .stats-row {
+    gap: 8px;
   }
   
-  .risk-legend {
-    gap: 12px;
-    font-size: 9px;
-    flex-wrap: wrap;
+  .stat-item {
+    padding: 6px 4px;
   }
 }
 </style>
