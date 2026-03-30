@@ -1,14 +1,14 @@
 <template>
   <div class="chart-card" :class="{ 'alert-active': hasAlert }">
     <div class="card-header">
-      <h3 class="card-title">灾害统计</h3>
+      <h3 class="card-title">⚠️ 灾害统计</h3>
       <span class="card-badge warning">
         <span class="pulse-dot"></span>
         {{ alertStatus }}
       </span>
     </div>
     
-    <!-- 风险占比条形图 -->
+    <!-- 风险占比条形图 - 放大 -->
     <div class="risk-chart">
       <div class="risk-bar">
         <div 
@@ -29,18 +29,18 @@
         ></div>
       </div>
       <div class="risk-legend">
-        <span><i class="legend-dot danger"></i>极高</span>
-        <span><i class="legend-dot warning"></i>高</span>
-        <span><i class="legend-dot medium"></i>中</span>
-        <span><i class="legend-dot safe"></i>低</span>
+        <span><i class="legend-dot danger"></i>极高风险</span>
+        <span><i class="legend-dot warning"></i>高风险</span>
+        <span><i class="legend-dot medium"></i>中风险</span>
+        <span><i class="legend-dot safe"></i>低风险</span>
       </div>
     </div>
 
-    <!-- 新增：灾害类型分布迷你图表 -->
+    <!-- 灾害类型分布 - 放大展示 -->
     <div class="type-chart" v-if="typeStats.length > 0">
       <div class="type-header">
         <span class="type-title">📊 灾害类型分布</span>
-        <span class="type-unit">数量</span>
+        <span class="type-unit">数量 / 占比</span>
       </div>
       <div class="type-bars">
         <div 
@@ -49,8 +49,11 @@
           class="type-item"
         >
           <div class="type-label">
-            <span class="type-name">{{ item.type }}</span>
-            <span class="type-value">{{ item.count }}</span>
+            <span class="type-name">
+              <span class="type-icon" :style="{ background: item.color }"></span>
+              {{ item.type }}
+            </span>
+            <span class="type-value">{{ item.count }}个 ({{ item.percent.toFixed(1) }}%)</span>
           </div>
           <div class="type-bar-bg">
             <div 
@@ -62,20 +65,44 @@
       </div>
     </div>
 
-    <div class="chart-footer">
-      <div class="threat-info">
-        <span class="threat-icon">👥</span>
-        <span class="threat-text">
-          威胁人口:
-          <strong v-if="threatPopulation >= 0">
-            <AnimatedNumber :value="threatPopulation / 10000" :decimals="1" suffix="万" />
-          </strong>
-          <strong v-else>暂无数据</strong>
-        </span>
+    <!-- 关键指标卡片 - 放大显示 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-icon">📍</div>
+        <div class="stat-card-content">
+          <div class="stat-card-label">风险点总数</div>
+          <div class="stat-card-value">
+            <AnimatedNumber :value="totalPoints" :decimals="0" />
+            <span>个</span>
+          </div>
+        </div>
       </div>
-      <div class="alert-info" v-if="hasAlert">
+      <div class="stat-card danger-card">
+        <div class="stat-card-icon">⚠️</div>
+        <div class="stat-card-content">
+          <div class="stat-card-label">极高风险点</div>
+          <div class="stat-card-value">
+            <AnimatedNumber :value="stats.danger" :decimals="0" />
+            <span>个</span>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card threat-card">
+        <div class="stat-card-icon">👥</div>
+        <div class="stat-card-content">
+          <div class="stat-card-label">威胁总人口</div>
+          <div class="stat-card-value">
+            <AnimatedNumber :value="threatPopulation / 10000" :decimals="1" />
+            <span>万人</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-footer" v-if="hasAlert">
+      <div class="alert-info">
         <span class="alert-icon">⚠️</span>
-        <span class="alert-text">建议优先处置极高风险点</span>
+        <span class="alert-text">⚠️ 建议优先处置极高风险点 ⚠️</span>
       </div>
     </div>
 
@@ -99,7 +126,7 @@ const stats = ref({
 const threatPopulation = ref(-1)
 const totalPoints = ref(0)
 
-// 新增：灾害类型统计
+// 灾害类型统计
 interface TypeStat {
   type: string
   count: number
@@ -108,7 +135,7 @@ interface TypeStat {
 }
 const typeStats = ref<TypeStat[]>([])
 
-// 类型颜色映射 - 使用 as const 确保类型安全
+// 类型颜色映射
 const typeColors = {
   '滑坡': '#ff6b6b',
   '泥石流': '#ffb347',
@@ -120,7 +147,6 @@ const typeColors = {
   '其他': '#95a5a6'
 } as const
 
-// 获取类型颜色的辅助函数，确保始终返回 string
 const getTypeColor = (type: string): string => {
   return typeColors[type as keyof typeof typeColors] || typeColors['其他']
 }
@@ -139,7 +165,7 @@ const riskPercentages = computed(() => {
 
 // 预警状态
 const alertStatus = computed(() => {
-  if (stats.value.danger > 0) return `${stats.value.danger}个极高风险点`
+  if (stats.value.danger > 0) return `⚠️ ${stats.value.danger}个极高风险点`
   if (stats.value.warning > 5) return `${stats.value.warning}个高风险点`
   if (stats.value.warning > 0) return '预警中'
   return '正常'
@@ -168,10 +194,10 @@ const calculateTypeStats = (points: RiskPoint[]): TypeStat[] => {
       type,
       count,
       percent: (count / total) * 100,
-      color: getTypeColor(type)  // 使用辅助函数确保返回 string
+      color: getTypeColor(type)
     }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
+    .slice(0, 6) // 显示更多类型
   
   return statsArray
 }
@@ -194,7 +220,6 @@ const loadStats = async () => {
         aggregate.safe += 1
       }
 
-      // 从 threat 字符串中解析人口数
       totalThreat += parseThreatPopulation(point.threat)
     })
 
@@ -202,7 +227,6 @@ const loadStats = async () => {
     totalPoints.value = response.points.length
     threatPopulation.value = totalThreat
     
-    // 计算类型分布
     typeStats.value = calculateTypeStats(response.points)
   } catch (error) {
     console.error('Failed to load risk stats:', error)
@@ -219,66 +243,64 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 保留原有样式，新增类型图表样式 */
-
 .chart-card {
-  flex: 1;
-  background: rgba(10, 20, 30, 0.8);
-  border: 1px solid rgba(0, 200, 255, 0.2);
-  border-radius: 12px;
-  padding: 16px;
+  background: rgba(10, 20, 30, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 200, 255, 0.25);
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  min-height: 380px;
 }
 
 .chart-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 0 8px 30px rgba(0, 200, 255, 0.15);
+  border-color: rgba(0, 240, 255, 0.5);
+  box-shadow: 0 12px 40px rgba(0, 200, 255, 0.2);
 }
 
 .chart-card.alert-active {
-  border-color: rgba(255, 68, 68, 0.5);
-  box-shadow: 0 0 20px rgba(255, 68, 68, 0.2);
-}
-
-.chart-card.alert-active:hover {
-  box-shadow: 0 8px 30px rgba(255, 68, 68, 0.25);
+  border-color: rgba(255, 68, 68, 0.6);
+  box-shadow: 0 0 25px rgba(255, 68, 68, 0.25);
+  background: rgba(20, 20, 35, 0.9);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .card-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: #ff6666;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ff8888;
+  letter-spacing: 1px;
 }
 
 .card-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  padding: 4px 10px;
-  border-radius: 12px;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
   background: rgba(255, 100, 100, 0.2);
   border: 1px solid rgba(255, 100, 100, 0.5);
-  color: #ff6666;
+  color: #ff8888;
+  font-weight: 500;
 }
 
 .pulse-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   background: #ff4444;
   border-radius: 50%;
   animation: pulseDot 1.5s ease-in-out infinite;
@@ -297,15 +319,15 @@ onMounted(() => {
   }
 }
 
-/* 风险占比条形图 */
+/* 风险占比条形图 - 放大 */
 .risk-chart {
-  margin: 0 0 12px 0;
+  margin: 0 0 20px 0;
 }
 
 .risk-bar {
   display: flex;
-  height: 8px;
-  border-radius: 4px;
+  height: 12px;
+  border-radius: 6px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -330,19 +352,20 @@ onMounted(() => {
 
 .risk-legend {
   display: flex;
-  gap: 16px;
-  margin-top: 8px;
+  gap: 20px;
+  margin-top: 12px;
   justify-content: center;
-  font-size: 10px;
-  color: #88a0b0;
+  font-size: 11px;
+  color: #9ab0c0;
+  font-weight: 500;
 }
 
 .legend-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  margin-right: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
 }
 
 .legend-dot.danger { background: #ff4444; }
@@ -350,36 +373,37 @@ onMounted(() => {
 .legend-dot.medium { background: #ffcc44; }
 .legend-dot.safe { background: #44ff44; }
 
-/* 新增：灾害类型分布图表样式 */
+/* 灾害类型分布 - 放大 */
 .type-chart {
-  margin: 8px 0 12px;
-  padding: 8px 0;
-  border-top: 1px solid rgba(0, 150, 255, 0.15);
-  border-bottom: 1px solid rgba(0, 150, 255, 0.15);
+  margin: 16px 0 20px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(0, 150, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 150, 255, 0.2);
 }
 
 .type-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 10px;
-  color: #9ad4f2;
-}
-
-.type-title {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #aae0ff;
   font-weight: 500;
 }
 
+.type-title {
+  font-weight: 600;
+}
+
 .type-unit {
-  font-size: 9px;
+  font-size: 10px;
   color: #88a0b0;
 }
 
 .type-bars {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
 .type-item {
@@ -389,78 +413,133 @@ onMounted(() => {
 .type-label {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  margin-bottom: 2px;
+  font-size: 11px;
+  margin-bottom: 4px;
 }
 
 .type-name {
-  color: #c0d8e8;
+  color: #d0e8f8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.type-icon {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
 }
 
 .type-value {
   color: #00f0ff;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+  font-size: 11px;
 }
 
 .type-bar-bg {
   width: 100%;
-  height: 4px;
+  height: 6px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .type-bar-fill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: 3px;
   transition: width 0.5s ease;
 }
 
-.chart-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(0, 150, 255, 0.1);
-  margin-top: auto;
+/* 关键指标卡片网格 - 放大 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 8px 0 12px;
 }
 
-.threat-info {
+.stat-card {
+  background: rgba(0, 30, 45, 0.6);
+  border-radius: 12px;
+  padding: 12px 8px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 150, 255, 0.2);
 }
 
-.threat-icon {
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 200, 255, 0.4);
+  background: rgba(0, 40, 60, 0.7);
+}
+
+.stat-card-icon {
+  font-size: 24px;
+  opacity: 0.9;
+}
+
+.stat-card-content {
+  flex: 1;
+}
+
+.stat-card-label {
   font-size: 10px;
-  border: 1px solid rgba(0, 180, 255, 0.25);
-  border-radius: 8px;
-  padding: 2px 6px;
-  color: #9ad4f2;
-}
-
-.threat-text {
-  font-size: 12px;
   color: #88a0b0;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
 }
 
-.threat-text strong {
+.stat-card-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e0f0ff;
+  line-height: 1.2;
+}
+
+.stat-card-value span {
+  font-size: 12px;
+  font-weight: normal;
+  color: #88a0b0;
+  margin-left: 2px;
+}
+
+.danger-card .stat-card-value {
+  color: #ff8888;
+}
+
+.threat-card .stat-card-value {
   color: #00f0ff;
+}
+
+.chart-footer {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 150, 255, 0.2);
 }
 
 .alert-info {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: #ff8888;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 68, 68, 0.15);
+  border-radius: 8px;
+  padding: 10px;
 }
 
 .alert-icon {
-  font-size: 10px;
+  font-size: 14px;
+}
+
+.alert-text {
+  font-size: 12px;
+  color: #ffaa88;
+  font-weight: 600;
+  letter-spacing: 1px;
 }
 
 /* 扫描线效果 */
@@ -473,7 +552,7 @@ onMounted(() => {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(0, 240, 255, 0.05),
+    rgba(0, 240, 255, 0.06),
     transparent
   );
   animation: scanMove 4s linear infinite;
@@ -486,6 +565,36 @@ onMounted(() => {
   }
   100% {
     left: 100%;
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .chart-card {
+    padding: 14px;
+    min-height: auto;
+  }
+  
+  .card-title {
+    font-size: 14px;
+  }
+  
+  .stats-grid {
+    gap: 8px;
+  }
+  
+  .stat-card-value {
+    font-size: 16px;
+  }
+  
+  .stat-card-icon {
+    font-size: 20px;
+  }
+  
+  .risk-legend {
+    gap: 12px;
+    font-size: 9px;
+    flex-wrap: wrap;
   }
 }
 </style>
