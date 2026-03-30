@@ -1,7 +1,7 @@
 <template>
   <div class="chart-card">
     <div class="card-header">
-      <h3 class="card-title">人口暴露度</h3>
+      <h3 class="card-title">👥 人口暴露度</h3>
       <span class="card-badge">威胁人口统计</span>
     </div>
     
@@ -11,7 +11,7 @@
     </div>
     <template v-else>
       <div class="chart-container" ref="chartRef"></div>
-      <div class="chart-footer">
+      <div class="stats-row">
         <div class="stat-item">
           <span class="stat-label">威胁总人口</span>
           <span class="stat-value">
@@ -83,12 +83,12 @@ const riskPoints = ref<RiskPoint[]>([])
 
 // 风险等级顺序
 const levelOrder = ['极高风险', '高风险', '中风险', '低风险']
-// 调整颜色：极高风险改为黄色调
+// 颜色配置
 const levelColors: Record<string, string> = {
-  '极高风险': '#f5b042',  // 橙黄色
-  '高风险': '#ff7c43',     // 橙色
-  '中风险': '#ffc107',     // 金黄色
-  '低风险': '#52c41a'      // 绿色
+  '极高风险': '#f5b042',
+  '高风险': '#ff7c43',
+  '中风险': '#ffc107',
+  '低风险': '#52c41a'
 }
 
 // 加载 JSON 数据
@@ -133,7 +133,6 @@ const exposureStats = computed<ExposureStats>(() => {
   }
   
   riskPoints.value.forEach((point: RiskPoint) => {
-    // 解析 threat 字段中的数字（如 "298人" -> 298）
     let pop = 0
     if (point.threat) {
       if (typeof point.threat === 'string') {
@@ -196,10 +195,10 @@ const initChart = () => {
       textStyle: { color: '#e0f0ff', fontSize: 11 }
     },
     grid: {
-      left: '12%',
+      left: '10%',
       right: '5%',
-      top: '10%',
-      bottom: '10%',
+      top: '12%',
+      bottom: '8%',
       containLabel: true
     },
     xAxis: {
@@ -221,7 +220,7 @@ const initChart = () => {
       axisLine: { show: false },
       axisLabel: {
         color: '#88a0b0',
-        fontSize: 10,
+        fontSize: 9,
         formatter: (value: number) => {
           if (value >= 10000) return (value / 10000).toFixed(0) + '万'
           return value.toLocaleString()
@@ -233,14 +232,14 @@ const initChart = () => {
       {
         type: 'bar',
         data: chartData.value.populations,
-        barWidth: '50%',
+        barWidth: '55%',
         itemStyle: {
           borderRadius: [4, 4, 0, 0],
           color: (params: any) => {
             return chartData.value.colors[params.dataIndex]
           },
           shadowColor: 'rgba(0, 0, 0, 0.3)',
-          shadowBlur: 8
+          shadowBlur: 6
         },
         label: {
           show: true,
@@ -251,14 +250,14 @@ const initChart = () => {
             return val.toLocaleString()
           },
           color: '#00f0ff',
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: 'bold'
         }
       }
     ],
     backgroundColor: 'transparent',
     animation: true,
-    animationDuration: 1000,
+    animationDuration: 800,
     animationEasing: 'cubicOut'
   }
 
@@ -292,60 +291,60 @@ onUnmounted(() => {
 
 <style scoped>
 .chart-card {
-  background: rgba(10, 20, 30, 0.8);
+  background: rgba(10, 20, 30, 0.75);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(0, 200, 255, 0.2);
   border-radius: 12px;
-  padding: 16px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  min-height: 280px;
+  min-height: 260px;
 }
 
 .chart-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(0, 240, 255, 0.5);
-  box-shadow: 0 8px 30px rgba(0, 200, 255, 0.2);
+  transform: translateY(-3px);
+  border-color: rgba(0, 240, 255, 0.45);
+  box-shadow: 0 6px 20px rgba(0, 200, 255, 0.15);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .card-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #00f0ff;
+  color: #88c0ff;
   letter-spacing: 0.5px;
 }
 
 .card-badge {
-  font-size: 10px;
+  font-size: 9px;
   padding: 2px 8px;
-  background: rgba(0, 240, 255, 0.12);
-  border: 1px solid rgba(0, 240, 255, 0.35);
+  background: rgba(0, 200, 255, 0.12);
+  border: 1px solid rgba(0, 200, 255, 0.35);
   border-radius: 12px;
-  color: #00f0ff;
+  color: #88c0ff;
   font-weight: 500;
 }
 
 .chart-container {
   flex: 1;
-  min-height: 140px;
+  min-height: 150px;
   width: 100%;
 }
 
-.chart-footer {
+.stats-row {
   display: flex;
   justify-content: space-around;
-  padding-top: 12px;
-  margin-top: 8px;
+  padding-top: 10px;
+  margin-top: 4px;
   border-top: 1px solid rgba(0, 150, 255, 0.15);
   gap: 8px;
 }
@@ -357,20 +356,20 @@ onUnmounted(() => {
 
 .stat-label {
   display: block;
-  font-size: 10px;
+  font-size: 9px;
   color: #88a0b0;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   letter-spacing: 0.3px;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #e0f0ff;
 }
 
 .stat-value small {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: normal;
   color: #88a0b0;
   margin-left: 2px;
@@ -386,15 +385,15 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  min-height: 180px;
+  gap: 10px;
+  min-height: 160px;
   color: #88a0b0;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .loading-spinner {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 2px solid rgba(0, 240, 255, 0.2);
   border-top-color: #00f0ff;
   border-radius: 50%;
@@ -410,11 +409,12 @@ onUnmounted(() => {
 /* 响应式调整 */
 @media (max-width: 768px) {
   .chart-card {
-    padding: 12px;
+    padding: 10px;
+    min-height: 220px;
   }
   
   .stat-value {
-    font-size: 16px;
+    font-size: 14px;
   }
   
   .chart-container {
