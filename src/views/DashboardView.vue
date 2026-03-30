@@ -130,7 +130,7 @@ import DataTable from '@/components/dashboard/DataTable.vue'
 /* 灾害统计卡片样式 - 更大更突出 */
 .disaster-stats {
   flex-shrink: 0;
-  min-height: 420px;  /* 增加最小高度，让灾害统计更突出 */
+  min-height: 350px;  /* 增加最小高度，让灾害统计更突出 */
 }
 
 /* 人口暴露度卡片样式 */
