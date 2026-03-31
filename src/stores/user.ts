@@ -2,6 +2,42 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { httpClient } from '@/services/httpClient'
 
+// 定义响应类型
+interface LoginResponse {
+  token: string
+  user: {
+    id: number
+    username: string
+    email: string
+    full_name: string
+    role: string
+    role_level: number
+    phone?: string
+    organization?: string
+    area_code?: string
+  }
+}
+
+interface RegisterResponse {
+  user: any
+  token: string
+}
+
+interface UserInfoResponse {
+  id: number
+  username: string
+  email: string
+  full_name: string
+  role: string
+  role_level: number
+  phone?: string
+  organization?: string
+  area_code?: string
+  is_active: boolean
+  created_at: string
+  last_login: string
+}
+
 export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
   const userInfo = ref<any>(null)
@@ -13,8 +49,7 @@ export const useUserStore = defineStore('user', () => {
   // 登录
   const login = async (username: string, password: string) => {
     try {
-      // 因为 httpClient 拦截器已经返回了 data，所以 response 就是 { token, user }
-      const response = await httpClient.post('/auth/login', { username, password })
+      const response = await httpClient.post('/auth/login', { username, password }) as unknown as LoginResponse
       token.value = response.token
       userInfo.value = response.user
       localStorage.setItem('token', response.token)
@@ -37,7 +72,7 @@ export const useUserStore = defineStore('user', () => {
     area_code?: string
   }) => {
     try {
-      const response = await httpClient.post('/auth/register', userData)
+      const response = await httpClient.post('/auth/register', userData) as unknown as RegisterResponse
       return response
     } catch (error) {
       throw error
@@ -55,7 +90,7 @@ export const useUserStore = defineStore('user', () => {
   const fetchUserInfo = async () => {
     if (!token.value) return null
     try {
-      const response = await httpClient.get('/auth/me')
+      const response = await httpClient.get('/auth/me') as unknown as UserInfoResponse
       userInfo.value = response
       return response
     } catch (error) {
