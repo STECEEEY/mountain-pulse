@@ -13,6 +13,7 @@ export const useUserStore = defineStore('user', () => {
   // 登录
   const login = async (username: string, password: string) => {
     try {
+      // 因为 httpClient 拦截器已经返回了 data，所以 response 就是 { token, user }
       const response = await httpClient.post('/auth/login', { username, password })
       token.value = response.token
       userInfo.value = response.user
