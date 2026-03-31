@@ -1,11 +1,11 @@
 import axios from 'axios'
 
-// 改为 VITE_API_BASE_URL，用于后端API
+// 从环境变量读取API地址
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 export const httpClient = axios.create({
   baseURL,
-  timeout: 30000,  // 增加超时时间，地质灾害数据可能较大
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -25,7 +25,7 @@ httpClient.interceptors.request.use(
 
 // 响应拦截器
 httpClient.interceptors.response.use(
-  (response) => response.data,  // 直接返回 data，简化调用
+  (response) => response.data,
   (error) => {
     // 401 未认证，跳转登录页
     if (error.response?.status === 401) {
