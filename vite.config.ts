@@ -14,6 +14,13 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      // 地质灾害系统后端代理（端口3000）
+      '/disaster-api': {
+        target: 'http://47.102.147.118:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/disaster-api/, '/api')
+      },
+      // 原有服务代理（端口8000）
       '/api': {
         target: 'http://47.102.147.118:8000',
         changeOrigin: true,
@@ -37,7 +44,6 @@ export default defineConfig({
           });
         }
       },
-      // 添加阿里云代理
       '/aliyun': {
         target: 'https://dashscope.aliyuncs.com',
         changeOrigin: true,
@@ -47,7 +53,7 @@ export default defineConfig({
             console.log('代理请求:', req.method, req.url)
           })
         }
-      }  
-    }  
-  } 
-})  
+      }
+    }
+  }
+})
