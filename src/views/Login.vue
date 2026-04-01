@@ -319,6 +319,10 @@ const fillDemo = (username: string, password: string) => {
   transition: all 0.3s;
 }
 
+.login-form :deep(.el-form-item) {
+  margin-bottom: 24px;
+}
+  
 .login-form :deep(.el-input__wrapper:hover) {
   border-color: #4bb5d9;
   background: #ffffff;
@@ -384,6 +388,8 @@ const fillDemo = (username: string, password: string) => {
   border-color: #cbd8e0;
   color: #4a6a7a;
   background: transparent;
+  padding: 8px 16px;
+  min-width: 70px;
 }
 
 .demo-buttons :deep(.el-button:hover) {
