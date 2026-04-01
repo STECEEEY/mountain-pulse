@@ -217,7 +217,10 @@ const addDisasterSitesLayer = () => {
     paint: {
       'circle-radius': 6,
       'circle-color': '#9B59B6',  // 紫色
-      'circle-opacity': 0.85
+      'circle-opacity': 0.85,
+      'circle-stroke-color': '#ffd4d4',
+      'circle-stroke-width': 1.2,
+      'circle-stroke-opacity': 0.6,
     }
   })
 
