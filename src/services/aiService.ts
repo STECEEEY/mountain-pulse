@@ -54,103 +54,34 @@ class AIService {
    */
  async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
   console.log('🔧 AI服务调用开始')
-  console.log('环境:', import.meta.env.MODE)
+  console.log('用户角色:', request.userRole)
   
-  if (!this.apiKey || this.apiKey === 'YOUR_DASHSCOPE_API_KEY') {
-    console.warn('⚠️ 未配置阿里云 API Key，使用模拟数据模式')
-    return this.getMockDecisions(request)
-  }
-
-  console.log('✅ 使用真实阿里云 AI 服务')
+  // 直接调用你的后端 API
+  const backendUrl = 'http://47.102.147.118:3000'
   
   try {
-    // 判断环境
-    const isDev = import.meta.env.DEV
-    let apiUrl, requestData, requestHeaders
+    console.log('📡 调用后端 AI 决策接口...')
     
-    if (isDev) {
-      // 开发环境：使用 Vite 代理
-      apiUrl = '/aliyun/api/v1/services/aigc/text-generation/generation'
-      requestData = {
-        model: 'qwen-plus',
-        input: {
-          messages: [
-            {
-              role: 'system',
-              content: '你是一个地质灾害智能决策分析专家。只输出 JSON 数组格式。'
-            },
-            {
-              role: 'user',
-              content: this.buildPrompt(request)
-            }
-          ]
-        },
-        parameters: {
-          result_format: 'message',
-          temperature: 0.7
-        }
-      }
-      requestHeaders = {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    } else {
-      // 生产环境：使用 Vercel Serverless Function
-      apiUrl = '/api/aliyun'  // ← 这里是关键！改为 /api/aliyun
-      requestData = {
-        apiKey: this.apiKey,
-        payload: {
-          model: 'qwen-plus',
-          input: {
-            messages: [
-              {
-                role: 'system',
-                content: '你是一个地质灾害智能决策分析专家。只输出 JSON 数组格式。'
-              },
-              {
-                role: 'user',
-                content: this.buildPrompt(request)
-              }
-            ]
-          },
-          parameters: {
-            result_format: 'message',
-            temperature: 0.7
-          }
-        }
-      }
-      requestHeaders = {
-        'Content-Type': 'application/json'
-      }
-    }
-    
-    console.log('API URL:', apiUrl)
-    console.log('请求数据:', requestData)
-    
-    const response = await axios.post(apiUrl, requestData, {
-      headers: requestHeaders,
+    const response = await axios.post(`${backendUrl}/ai/decision`, {
+      pointName: request.pointName,
+      lng: request.lng,
+      lat: request.lat,
+      dutyNote: request.dutyNote,
+      scene: request.scene,
+      userRole: request.userRole,
+      userRoleLevel: request.userRoleLevel
+    }, {
       timeout: 30000
     })
     
-    console.log('✅ API 调用成功')
+    console.log('✅ 后端返回成功', response.data)
     
-    // 解析响应
-    let aiResponse
-    if (isDev) {
-      aiResponse = response.data.output.choices[0].message.content
-    } else {
-      aiResponse = response.data.output.choices[0].message.content
-    }
+    // 后端返回的数据格式已经符合前端要求，直接返回
+    return response.data.decisions
     
-    console.log('AI 响应:', aiResponse)
-    
-    return this.parseAIResponse(aiResponse, request)
   } catch (error: any) {
-    console.error('❌ AI 调用失败:', error.message)
-    if (error.response) {
-      console.error('状态码:', error.response.status)
-      console.error('错误数据:', error.response.data)
-    }
+    console.error('❌ 调用后端失败:', error.message)
+    // 降级使用模拟数据
     return this.getMockDecisions(request)
   }
 }
