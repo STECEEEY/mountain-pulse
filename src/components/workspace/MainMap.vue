@@ -24,11 +24,12 @@ import { riskService } from '@/services/riskService'
 import type { MapConfig, RiskPoint } from '@/types/risk'
 import { createMapboxRiskLevelColorExpression, getRiskLevelClass, getRiskLevelColor } from '@/utils/riskLevel'
 
-const emit = defineEmits(['select-point'])
+const emit = defineEmits(['select-point', 'select-disaster-site'])
 
 interface LayerState {
   riskMap: boolean
   disasterPoints: boolean
+  disasterSites?: boolean  // 新增受灾点图层状态
 }
 
 const props = withDefaults(
@@ -38,6 +39,11 @@ const props = withDefaults(
   }>(),
   {
     riskMapOpacity: 0.45,
+    layerState: () => ({
+      riskMap: true,
+      disasterPoints: true,
+      disasterSites: true  // 默认显示
+    })
   },
 )
 
@@ -47,10 +53,14 @@ const centerCoords = ref('119.0°E, 32.1°N')
 const mapHint = ref('')
 let map: mapboxgl.Map | null = null
 
+// 图层ID常量
 const RISK_MAP_SOURCE_ID = 'risk-map-source'
 const RISK_MAP_LAYER_ID = 'risk-map-layer'
 const DISASTER_POINTS_SOURCE_ID = 'disaster-points-source'
 const DISASTER_POINTS_LAYER_ID = 'disaster-points-layer'
+// 新增受灾点图层ID
+const DISASTER_SITES_SOURCE_ID = 'disaster-sites-source'
+const DISASTER_SITES_LAYER_ID = 'disaster-sites-layer'
 
 const fallbackMapConfig: MapConfig = {
   bounds: {
@@ -75,6 +85,7 @@ const fallbackMapConfig: MapConfig = {
 
 let mapConfig: MapConfig = fallbackMapConfig
 let monitoringPoints: RiskPoint[] = []
+let disasterSitesData: any = null  // 存储受灾点数据
 
 const withinBounds = (point: RiskPoint, bounds: MapConfig['bounds']) => {
   return (
@@ -85,6 +96,17 @@ const withinBounds = (point: RiskPoint, bounds: MapConfig['bounds']) => {
     && point.latitude >= bounds.south
     && point.latitude <= bounds.north
   )
+}
+
+// 根据险情等级获取风险等级和颜色
+const getRiskLevelFromHazardLevel = (hazardLevel: string): { level: string, color: string, priority: number } => {
+  const levelMap: Record<string, { level: string, color: string, priority: number }> = {
+    '小型': { level: '低风险', color: '#52c41a', priority: 1 },
+    '中型': { level: '中风险', color: '#faad14', priority: 2 },
+    '大型': { level: '高风险', color: '#ff4d4f', priority: 3 },
+    '特大型': { level: '极高风险', color: '#ff0000', priority: 4 }
+  }
+  return levelMap[hazardLevel] || { level: '中风险', color: '#faad14', priority: 2 }
 }
 
 // Mapbox Access Token
@@ -99,9 +121,13 @@ const normalizeCenter = (center: [number, number]): [number, number] => {
 }
 
 const loadStaticData = async () => {
-  const [configRes, pointsRes] = await Promise.allSettled([
+  const [configRes, pointsRes, disasterSitesRes] = await Promise.allSettled([
     riskService.loadMapConfig(),
     riskService.loadRiskPoints(),
+    fetch('/data/受灾点样本.geojson').then(res => res.json()).catch(err => {
+      console.error('加载受灾点数据失败:', err)
+      return null
+    })
   ])
 
   if (configRes.status === 'fulfilled') {
@@ -121,6 +147,20 @@ const loadStaticData = async () => {
     monitoringPoints = []
     mapHint.value = 'risk_points.json 加载失败或为空，当前暂无可展示监测点。'
   }
+
+  // 处理受灾点数据
+  if (disasterSitesRes.status === 'fulfilled' && disasterSitesRes.value) {
+    disasterSitesData = disasterSitesRes.value
+    const featureCount = disasterSitesData.features?.length || 0
+    console.log(`受灾点数据加载成功: ${featureCount} 个点`)
+    if (featureCount === 0) {
+      mapHint.value = '受灾点样本数据为空'
+    }
+  } else {
+    console.warn('受灾点数据加载失败')
+    disasterSitesData = null
+    mapHint.value = '受灾点样本数据加载失败'
+  }
 }
 
 const addRiskMapLayer = () => {
@@ -129,11 +169,10 @@ const addRiskMapLayer = () => {
   const { west, east, south, north } = mapConfig.bounds
   
   // 坐标调整参数
-  const scale = 1.35        // 缩放系数
-  const rightShift = 0.21  // 右移
-  const downShift = -0.07  // 下移
+  const scale = 1.35
+  const rightShift = 0.21
+  const downShift = -0.07
   
-  // 计算调整后的坐标
   const originalWidth = east - west
   const originalHeight = north - south
   
@@ -148,7 +187,6 @@ const addRiskMapLayer = () => {
   const newSouth = centerY - scaledHeight / 2 + downShift
   const newNorth = centerY + scaledHeight / 2 + downShift
 
-  // 如果 source 已存在，先移除再添加
   if (map.getSource(RISK_MAP_SOURCE_ID)) {
     map.removeSource(RISK_MAP_SOURCE_ID)
   }
@@ -164,7 +202,6 @@ const addRiskMapLayer = () => {
     ],
   })
 
-  // 如果图层已存在，不需要重复添加
   if (!map.getLayer(RISK_MAP_LAYER_ID)) {
     map.addLayer({
       id: RISK_MAP_LAYER_ID,
@@ -268,6 +305,146 @@ const addDisasterPointsLayer = () => {
   })
 }
 
+// 新增：添加受灾点图层 - 适配你的中文数据格式
+const addDisasterSitesLayer = () => {
+  if (!map || !disasterSitesData || !disasterSitesData.features || map.getLayer(DISASTER_SITES_LAYER_ID)) return
+
+  // 处理GeoJSON数据，映射中文字段
+  const processedFeatures = disasterSitesData.features.map((feature: any, index: number) => {
+    const props = feature.properties || {}
+    
+    // 提取关键字段
+    const hazardName = props.灾害体名称 || props.灾害体编_1 || `受灾点${index + 1}`
+    const hazardType = props.灾害体类型 || '未知'
+    const hazardLevel = props.险情等级 || props.灾害等级 || '小型'
+    const threatPopulation = props.威胁人口 || 0
+    const threatProperty = props.威胁财产 || 0
+    const monitoringAdvice = props.监测建议 || ''
+    const location = props.地理位置 || ''
+    
+    // 获取风险等级
+    const riskInfo = getRiskLevelFromHazardLevel(hazardLevel)
+    
+    return {
+      type: 'Feature',
+      properties: {
+        id: props.灾害体编号 || props.野外编号 || index + 1,
+        name: hazardName,
+        hazardType: hazardType,
+        hazardLevel: hazardLevel,
+        riskLevel: riskInfo.level,
+        riskColor: riskInfo.color,
+        threatPopulation: threatPopulation,
+        threatProperty: threatProperty,
+        monitoringAdvice: monitoringAdvice,
+        location: location,
+        longitude: props.经度,
+        latitude: props.纬度,
+        indoorNumber: props.室内编号,
+        fieldNumber: props.野外编号
+      },
+      geometry: feature.geometry
+    }
+  })
+
+  map.addSource(DISASTER_SITES_SOURCE_ID, {
+    type: 'geojson',
+    data: {
+      type: 'FeatureCollection',
+      features: processedFeatures
+    }
+  })
+
+  // 根据风险等级设置不同样式
+  map.addLayer({
+    id: DISASTER_SITES_LAYER_ID,
+    type: 'circle',
+    source: DISASTER_SITES_SOURCE_ID,
+    paint: {
+      'circle-radius': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        8, 8,    // 低缩放级别半径小
+        12, 12,  // 中等缩放级别
+        16, 16   // 高缩放级别半径大
+      ],
+      'circle-color': [
+        'match',
+        ['get', 'riskLevel'],
+        '极高风险', '#ff0000',
+        '高风险', '#ff4d4f',
+        '中风险', '#faad14',
+        '低风险', '#52c41a',
+        '#faad14'  // 默认颜色
+      ],
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2,
+      'circle-opacity': 0.85,
+      'circle-stroke-opacity': 0.9
+    }
+  })
+
+  // 添加点击事件显示详细信息
+  map.on('click', DISASTER_SITES_LAYER_ID, (e) => {
+    const feature = e.features?.[0]
+    if (!feature || !feature.properties) return
+
+    const props = feature.properties
+    
+    // 构建弹窗内容
+    const popupHTML = `
+      <div class="popup-content disaster-popup">
+        <strong style="color:#ff6600; font-size:14px;">🏚️ ${props.name}</strong><br/>
+        <hr style="margin:6px 0; border-color:#333;">
+        <table style="width:100%; font-size:12px; line-height:1.6;">
+          <tr><td style="padding:2px 0;">灾害类型：</td><td><strong>${props.hazardType}</strong></td></tr>
+          <tr><td style="padding:2px 0;">险情等级：</td><td><span style="color:${props.riskColor}; font-weight:bold;">${props.hazardLevel}</span></td></tr>
+          <tr><td style="padding:2px 0;">风险等级：</td><td><span style="color:${props.riskColor};">${props.riskLevel}</span></td></tr>
+          <tr><td style="padding:2px 0;">威胁人口：</td><td>${props.threatPopulation} 人</td></tr>
+          <tr><td style="padding:2px 0;">威胁财产：</td><td>${props.threatProperty} 万元</td></tr>
+          ${props.monitoringAdvice ? `<tr><td style="padding:2px 0;">监测建议：</td><td>${props.monitoringAdvice}</td></tr>` : ''}
+          ${props.location ? `<tr><td style="padding:2px 0;">地理位置：</td><td>${props.location}</td></tr>` : ''}
+          ${props.fieldNumber ? `<tr><td style="padding:2px 0;">野外编号：</td><td>${props.fieldNumber}</td></tr>` : ''}
+        </table>
+      </div>
+    `
+    
+    new mapboxgl.Popup({ offset: 25, className: 'dark-popup disaster-popup' })
+      .setLngLat(e.lngLat)
+      .setHTML(popupHTML)
+      .addTo(map!)
+    
+    // 发送选中事件给父组件
+    emit('select-disaster-site', {
+      id: props.id,
+      name: props.name,
+      lng: e.lngLat.lng,
+      lat: e.lngLat.lat,
+      hazardType: props.hazardType,
+      hazardLevel: props.hazardLevel,
+      riskLevel: props.riskLevel,
+      threatPopulation: props.threatPopulation,
+      threatProperty: props.threatProperty,
+      monitoringAdvice: props.monitoringAdvice,
+      location: props.location
+    })
+  })
+
+  map.on('mouseenter', DISASTER_SITES_LAYER_ID, () => {
+    if (map) map.getCanvas().style.cursor = 'pointer'
+  })
+
+  map.on('mouseleave', DISASTER_SITES_LAYER_ID, () => {
+    if (map) map.getCanvas().style.cursor = ''
+  })
+
+  // 设置初始可见性
+  map.setLayoutProperty(DISASTER_SITES_LAYER_ID, 'visibility', props.layerState.disasterSites ? 'visible' : 'none')
+  
+  console.log('受灾点图层已添加，共', processedFeatures.length, '个点')
+}
+
 const setLayerVisibility = (layerId: string, visible: boolean) => {
   if (!map || !map.getLayer(layerId)) return
   map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
@@ -277,6 +454,8 @@ const syncLayerVisibility = () => {
   if (!map) return
   setLayerVisibility(RISK_MAP_LAYER_ID, props.layerState.riskMap)
   setLayerVisibility(DISASTER_POINTS_LAYER_ID, props.layerState.disasterPoints)
+  setLayerVisibility(DISASTER_SITES_LAYER_ID, props.layerState.disasterSites || false)
+  
   if (map.getLayer(RISK_MAP_LAYER_ID)) {
     map.setPaintProperty(RISK_MAP_LAYER_ID, 'raster-opacity', props.riskMapOpacity)
   }
@@ -304,6 +483,7 @@ const initMap = () => {
     map?.setFog(null)
     addRiskMapLayer()
     addDisasterPointsLayer()
+    addDisasterSitesLayer()  // 添加受灾点图层
     syncLayerVisibility()
   })
 
@@ -340,6 +520,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 保持原有样式 */
 .main-map {
   width: 100%;
   height: 100%;
@@ -410,8 +591,22 @@ onUnmounted(() => {
   border-top-color: rgba(10, 20, 30, 0.95);
 }
 
+:global(.disaster-popup .mapboxgl-popup-content) {
+  border-left: 3px solid #ff6600;
+  min-width: 260px;
+}
+
 :global(.popup-content strong) {
   color: #00f0ff;
+}
+
+:global(.disaster-popup table) {
+  color: #e0f0ff;
+}
+
+:global(.disaster-popup table td:first-child) {
+  color: #88a0b0;
+  padding-right: 8px;
 }
 
 :deep(.mapboxgl-ctrl-group) {
