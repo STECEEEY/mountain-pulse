@@ -109,7 +109,7 @@ let highRiskGeoJSON: HighRiskGeoJSON = { type: 'FeatureCollection', features: []
 // Mapbox Access Token
 mapboxgl.accessToken = 'pk.eyJ1IjoidGttNGoiLCJhIjoiY21obXplem8yMDAxNzJscTB0c2o1OHBsYiJ9.u9M-kBhBorWBEb_EAh6I4Q'
 
-const emit = defineEmits(['select-point'])
+const emit = defineEmits(['select-point', 'select-disaster-site'])
 
 const normalizeCenter = (center: [number, number]): [number, number] => {
   const [first, second] = center
@@ -244,10 +244,6 @@ map.on('click', OVERVIEW_DISASTER_SITES_LAYER_ID, (e) => {
           <tr>
             <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">险情等级：</td>
             <td style="padding:6px 0; color:#e0f0ff;">${props.hazardLevel}</td>
-          </tr>
-          <tr>
-            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">风险等级：</td>
-            <td style="padding:6px 0; color:#e0f0ff;">${props.riskLevel || getRiskLevelFromHazardLevel(props.hazardLevel).level}</td>
           </tr>
           <tr>
             <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">威胁人口：</td>
