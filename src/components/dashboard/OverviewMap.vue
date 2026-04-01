@@ -131,10 +131,14 @@ const withinBounds = (point: RiskPoint, bounds: MapConfig['bounds']) => {
 }
 
 const loadStaticData = async () => {
-  const [configRes, pointsRes, highRiskRes] = await Promise.allSettled([
+  const [configRes, pointsRes, highRiskRes, disasterSitesRes] = await Promise.allSettled([
     riskService.loadMapConfig(),
     riskService.loadRiskPoints(),
     riskService.loadHighRiskGeoJSON(),
+    fetch('/data/受灾点样本.geojson').then(res => res.json()).catch(err => {
+      console.error('加载受灾点数据失败:', err)
+      return null
+    })
   ])
 
   if (configRes.status === 'fulfilled') {
