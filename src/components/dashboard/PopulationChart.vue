@@ -204,7 +204,7 @@ const initChart = () => {
     grid: {
       left: '10%',
       right: '5%',
-      top: '12%',
+      top: '20%',
       bottom: '8%',
       containLabel: true
     },
