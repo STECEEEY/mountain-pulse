@@ -31,7 +31,7 @@
         <span class="value">{{ summary.actionCount }}</span>
       </div>
       <div class="summary-card">
-        <span class="label">影响人口</span>
+        <span class="label">区域总影响人口</span>
         <span class="value">{{ totalAffectedPopulation }}</span>
       </div>
     </div>
