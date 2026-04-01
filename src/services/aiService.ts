@@ -7,6 +7,8 @@ export interface DecisionRequest {
   lat?: number
   dutyNote: string
   scene: string
+  userRole?: string      // 添加这行
+  userRoleLevel?: number // 添加这行
 }
 
 export interface DecisionItem {
