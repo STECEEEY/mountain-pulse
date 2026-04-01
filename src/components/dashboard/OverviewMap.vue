@@ -215,35 +215,86 @@ const addDisasterSitesLayer = () => {
     type: 'circle',
     source: OVERVIEW_DISASTER_SITES_SOURCE_ID,
     paint: {
-      'circle-radius': 5,
+      'circle-radius': 6,
       'circle-color': '#9B59B6',  // 紫色
-      'circle-stroke-color': '#FFFFFF',
-      'circle-stroke-width': 1.5,
       'circle-opacity': 0.85
     }
   })
 
   // 添加点击事件
-  map.on('click', OVERVIEW_DISASTER_SITES_LAYER_ID, (e) => {
-    const feature = e.features?.[0]
-    if (!feature || !feature.properties) return
+  // 添加点击事件显示详细信息
+map.on('click', OVERVIEW_DISASTER_SITES_LAYER_ID, (e) => {
+  const feature = e.features?.[0]
+  if (!feature || !feature.properties) return
 
-    const props = feature.properties
-    
-    new mapboxgl.Popup({ offset: 18, className: 'dark-popup disaster-popup' })
-      .setLngLat(e.lngLat)
-      .setHTML(`
-        <div class="popup-content">
-          <strong style="color:#9B59B6;">🏚️ ${props.name}</strong><br/>
-          <span>灾害类型：${props.hazardType}</span><br/>
-          <span>险情等级：${props.hazardLevel}</span><br/>
-          <span>威胁人口：${props.threatPopulation} 人</span><br/>
-          <span>威胁财产：${props.threatProperty} 万元</span><br/>
-          ${props.location ? `<span>地理位置：${props.location}</span>` : ''}
+  const props = feature.properties
+  
+  new mapboxgl.Popup({ offset: 18, className: 'dark-popup disaster-popup' })
+    .setLngLat(e.lngLat)
+    .setHTML(`
+      <div class="disaster-popup-content">
+        <div style="font-weight:bold; color:#9B59B6; margin-bottom:10px; font-size:14px; border-bottom:1px solid #333; padding-bottom:6px;">
+          🏚️ ${props.name}
         </div>
-      `)
-      .addTo(map!)
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">灾害类型：</td>
+            <td style="padding:6px 0; color:#e0f0ff;">${props.hazardType}</td>
+          </tr>
+          <tr>
+            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">险情等级：</td>
+            <td style="padding:6px 0; color:#e0f0ff;">${props.hazardLevel}</td>
+          </tr>
+          <tr>
+            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">风险等级：</td>
+            <td style="padding:6px 0; color:#e0f0ff;">${props.riskLevel || getRiskLevelFromHazardLevel(props.hazardLevel).level}</td>
+          </tr>
+          <tr>
+            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">威胁人口：</td>
+            <td style="padding:6px 0; color:#e0f0ff;">${props.threatPopulation} 人</td>
+          </tr>
+          <tr>
+            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">威胁财产：</td>
+            <td style="padding:6px 0; color:#e0f0ff;">${props.threatProperty} 万元</td>
+          </tr>
+          ${props.monitoringAdvice ? `
+          <tr>
+            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">监测建议：</td>
+            <td style="padding:6px 0; color:#e0f0ff;">${props.monitoringAdvice}</td>
+          </tr>
+          ` : ''}
+          ${props.location ? `
+          <tr>
+            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">地理位置：</td>
+            <td style="padding:6px 0; color:#e0f0ff;">${props.location}</td>
+          </tr>
+          ` : ''}
+          ${props.fieldNumber ? `
+          <tr>
+            <td style="width:70px; padding:6px 8px 6px 0; color:#88a0b0; white-space:nowrap;">野外编号：</td>
+            <td style="padding:6px 0; color:#e0f0ff;">${props.fieldNumber}</td>
+          </tr>
+          ` : ''}
+        </table>
+      </div>
+    `)
+    .addTo(map!)
+  
+  // 发送选中事件给父组件
+  emit('select-disaster-site', {
+    id: props.id,
+    name: props.name,
+    lng: e.lngLat.lng,
+    lat: e.lngLat.lat,
+    hazardType: props.hazardType,
+    hazardLevel: props.hazardLevel,
+    riskLevel: props.riskLevel,
+    threatPopulation: props.threatPopulation,
+    threatProperty: props.threatProperty,
+    monitoringAdvice: props.monitoringAdvice,
+    location: props.location
   })
+})
 
   map.on('mouseenter', OVERVIEW_DISASTER_SITES_LAYER_ID, () => {
     if (map) map.getCanvas().style.cursor = 'pointer'
