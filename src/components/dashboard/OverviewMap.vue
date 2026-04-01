@@ -551,11 +551,11 @@ const setLayerVisibility = (layerId: string, visible: boolean) => {
  
 const updateLayerVisibility = () => {
   if (!map) return
-  setLayerVisibility(RISK_MAP_LAYER_ID, props.layerState.riskMap)
-  setLayerVisibility(DISASTER_POINTS_LAYER_ID, props.layerState.disasterPoints)
-  setLayerVisibility(DISASTER_SITES_LAYER_ID, props.layerState.disasterSites || false)  // 确保这行存在
-  if (map.getLayer(RISK_MAP_LAYER_ID)) {
-    map.setPaintProperty(RISK_MAP_LAYER_ID, 'raster-opacity', props.riskMapOpacity)
+  setLayerVisibility(OVERVIEW_RISK_MAP_LAYER_ID, layers.riskMap)
+  setLayerVisibility(OVERVIEW_DISASTER_POINTS_LAYER_ID, layers.disasterPoints)
+  setLayerVisibility(OVERVIEW_DISASTER_SITES_LAYER_ID, layers.disasterSites)
+  if (map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) {
+    map.setPaintProperty(OVERVIEW_RISK_MAP_LAYER_ID, 'raster-opacity', riskMapOpacity.value)
   }
 }
 
@@ -579,8 +579,8 @@ const initMap = () => {
     addRiskMapLayer()
     addHighRiskAreaLayer()
     addDisasterPointsLayer()
-    updateLayerVisibility()
-    addDisasterSitesLayer()
+    addDisasterSitesLayer()  // 先添加图层
+    updateLayerVisibility()  // 再设置可见性
   })
 }
 
@@ -590,7 +590,7 @@ onMounted(async () => {
 })
 
 watch(
-  () => [layers.riskMap, layers.disasterPoints, riskMapOpacity.value],
+  () => [layers.riskMap, layers.disasterPoints, layers.disasterSites, riskMapOpacity.value],
   () => {
     updateLayerVisibility()
   },
