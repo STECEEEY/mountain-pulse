@@ -4,6 +4,7 @@
       <div class="title-wrap">
         <h3>智能决策分析台</h3>
         <el-tag size="small" type="warning">AI 实时分析</el-tag>
+        <el-tag size="small" type="info" class="role-tag">{{ currentRoleName }}</el-tag>
       </div>
       <div class="meta">
         <span class="model-tag">模型 {{ modelVersion }}</span>
@@ -76,35 +77,46 @@
             <h4>{{ item.title }}</h4>
             <p>{{ item.window }}</p>
           </div>
-          <div class="score">{{ item.confidence }}%</div>
+          <!-- 去掉置信度显示 -->
         </header>
 
         <section class="decision-body">
-          <p class="action">建议动作：{{ item.action }}</p>
-          <p class="target">执行对象：{{ item.target }}</p>
+          <!-- 根据角色显示不同的建议动作 -->
+          <p class="action">建议动作：{{ getRoleSpecificAction(item) }}</p>
+          <p class="target">执行对象：{{ getRoleSpecificTarget(item) }}</p>
 
-          <div class="explain-block">
-            <p class="explain-title">特征贡献</p>
-            <ul>
-              <li v-for="feature in item.explanation.featureContributions" :key="feature.featureName">
-                {{ feature.featureName }}
-                <span class="explain-value">{{ feature.currentValue }}</span>
-                <span class="explain-weight">贡献 {{ (feature.contribution * 100).toFixed(1) }}%</span>
-              </li>
-            </ul>
-          </div>
+          <!-- 折叠区域：特征贡献和阈值命中 -->
+          <div class="collapsible-section">
+            <div class="collapsible-header" @click="toggleCollapse(item.id)">
+              <span class="collapse-icon">{{ isCollapsed(item.id) ? '▶' : '▼' }}</span>
+              <span class="collapse-title">技术详情</span>
+              <span class="collapse-hint">(特征贡献、阈值命中)</span>
+            </div>
+            <div v-show="!isCollapsed(item.id)" class="collapsible-content">
+              <div class="explain-block">
+                <p class="explain-title">特征贡献</p>
+                <ul>
+                  <li v-for="feature in item.explanation.featureContributions" :key="feature.featureName">
+                    {{ feature.featureName }}
+                    <span class="explain-value">{{ feature.currentValue }}</span>
+                    <span class="explain-weight">贡献 {{ (feature.contribution * 100).toFixed(1) }}%</span>
+                  </li>
+                </ul>
+              </div>
 
-          <div class="explain-block">
-            <p class="explain-title">阈值命中</p>
-            <div class="threshold-list">
-              <span
-                v-for="threshold in item.explanation.thresholdHits"
-                :key="threshold.ruleName"
-                class="threshold-chip"
-                :class="threshold.status"
-              >
-                {{ threshold.ruleName }} {{ threshold.currentValue }}/{{ threshold.threshold }}{{ threshold.unit }}
-              </span>
+              <div class="explain-block">
+                <p class="explain-title">阈值命中</p>
+                <div class="threshold-list">
+                  <span
+                    v-for="threshold in item.explanation.thresholdHits"
+                    :key="threshold.ruleName"
+                    class="threshold-chip"
+                    :class="threshold.status"
+                  >
+                    {{ threshold.ruleName }} {{ threshold.currentValue }}/{{ threshold.threshold }}{{ threshold.unit }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -131,11 +143,92 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
 import { useAiStore } from '@/stores/ai'
+import { useUserStore } from '@/stores/user'
 import weatherService, { type WeatherData } from '@/services/weatherService'
 
 const props = defineProps<{
   point: any
 }>()
+
+const userStore = useUserStore()
+const userRole = computed(() => userStore.userInfo?.role || 'resident')
+const userRoleLevel = computed(() => userStore.userInfo?.role_level || 3)
+
+// 角色名称映射
+const roleNameMap: Record<string, string> = {
+  emergency_cmd: '应急指挥部',
+  gov_dept: '政府部门',
+  community: '基层单位',
+  rescue_team: '救援队伍',
+  utility_worker: '抢修人员',
+  resident: '居民',
+  tourist: '游客',
+  business: '企业人员'
+}
+
+const currentRoleName = computed(() => roleNameMap[userRole.value] || '用户')
+
+// 折叠状态管理
+const collapsedItems = ref<Set<number>>(new Set())
+
+const toggleCollapse = (id: number) => {
+  if (collapsedItems.value.has(id)) {
+    collapsedItems.value.delete(id)
+  } else {
+    collapsedItems.value.add(id)
+  }
+}
+
+const isCollapsed = (id: number) => {
+  return collapsedItems.value.has(id)
+}
+
+// 根据角色生成不同的建议动作
+const getRoleSpecificAction = (item: any) => {
+  const baseAction = item.action || ''
+  const riskLevel = item.level || 'warning'
+  
+  switch (userRole.value) {
+    case 'emergency_cmd':
+      return `【指挥部指令】${baseAction}。请立即启动应急响应预案，协调救援力量待命，通知相关单位做好物资准备。`
+    case 'gov_dept':
+      return `【监管要求】${baseAction}。请督促相关单位落实防范措施，24小时内报送落实情况。`
+    case 'community':
+      return `【基层执行】${baseAction}。立即组织网格员对辖区内隐患点进行巡查，通过微信群/广播通知居民做好防范，重点区域安排专人值守。`
+    case 'rescue_team':
+      return `【救援准备】${baseAction}。请救援队伍集结待命，检查救援装备，确保30分钟内可出动。`
+    case 'utility_worker':
+      return `【抢修准备】${baseAction}。请抢修人员检查基础设施，做好应急抢修准备，保障水电气通信畅通。`
+    case 'resident':
+      return `【居民防范】${baseAction}。请密切关注预警信息，避免前往危险区域，提前做好转移准备。`
+    case 'tourist':
+      return `【游客安全】${baseAction}。请暂停前往地质灾害高风险景区，已在景区的游客听从工作人员指引。`
+    case 'business':
+      return `【企业防范】${baseAction}。请企业暂停户外高危作业，检查厂区边坡稳定情况，做好应急准备。`
+    default:
+      return baseAction
+  }
+}
+
+// 根据角色生成不同的执行对象
+const getRoleSpecificTarget = (item: any) => {
+  const baseTarget = item.target || ''
+  
+  switch (userRole.value) {
+    case 'emergency_cmd':
+      return `${baseTarget}、应急指挥部、各联动单位`
+    case 'gov_dept':
+      return `${baseTarget}、相关监管部门`
+    case 'community':
+      return `${baseTarget}、社区网格员、辖区居民`
+    case 'rescue_team':
+      return `${baseTarget}、救援队伍`
+    case 'utility_worker':
+      return `${baseTarget}、抢修班组`
+    default:
+      return baseTarget
+  }
+}
 
 // 可编辑的现场文本
 const dutyNote = ref('巡查员反馈：汤山北麓沟谷口有新裂缝，昨夜累计降雨38mm。')
@@ -161,9 +254,7 @@ const getWeather = async () => {
     if (weather) {
       weatherInfo.value = weather
       
-      // 如果有降雨，可选：添加到 dutyNote（但保留用户输入）
       if (weather.rain_intensity !== 'none' && !dutyNote.value.includes('降雨')) {
-        // 不自动覆盖，让用户自己决定
         console.log(`当前天气: ${weather.rainfall}`)
       }
     }
@@ -180,6 +271,8 @@ const buildRequest = () => ({
   lat: props.point?.lat,
   dutyNote: dutyNote.value,
   scene: 'workspace' as const,
+  userRole: userRole.value,
+  userRoleLevel: userRoleLevel.value
 })
 
 const generateDecision = async () => {
@@ -248,12 +341,19 @@ watch(
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .cockpit-header h3 {
   margin: 0;
   color: #00f0ff;
   font-size: 18px;
+}
+
+.role-tag {
+  background: rgba(0, 150, 200, 0.3);
+  border-color: rgba(0, 200, 255, 0.5);
+  color: #7bc5ff;
 }
 
 .meta {
@@ -461,12 +561,6 @@ watch(
   font-size: 12px;
 }
 
-.score {
-  color: #00f0ff;
-  font-size: 18px;
-  font-weight: 700;
-}
-
 .decision-body {
   margin-top: 8px;
   display: flex;
@@ -482,11 +576,52 @@ watch(
   line-height: 1.5;
 }
 
+/* 折叠区域样式 */
+.collapsible-section {
+  margin-top: 6px;
+}
+
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 6px 8px;
+  background: rgba(0, 100, 150, 0.2);
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.collapsible-header:hover {
+  background: rgba(0, 120, 180, 0.3);
+}
+
+.collapse-icon {
+  font-size: 10px;
+  color: #00f0ff;
+}
+
+.collapse-title {
+  font-size: 12px;
+  color: #8fb4cd;
+}
+
+.collapse-hint {
+  font-size: 10px;
+  color: #6c8eaa;
+}
+
+.collapsible-content {
+  margin-top: 8px;
+  padding-left: 20px;
+}
+
 .explain-block {
   border: 1px solid rgba(0, 180, 255, 0.2);
   border-radius: 8px;
   background: rgba(2, 26, 43, 0.5);
   padding: 8px;
+  margin-bottom: 8px;
 }
 
 .explain-title {
@@ -544,7 +679,7 @@ watch(
 }
 
 .window-line {
-  margin: 0;
+  margin: 8px 0 0;
   font-size: 11px;
   color: #8db0c9;
 }
