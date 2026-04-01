@@ -233,11 +233,11 @@ watch(filteredData, () => {
 }
 
 :deep(.el-table .row-danger) {
-  background: rgba(255, 68, 68, 0.1);
+  background: rgba(244, 67, 54, 0.12);
 }
 
 :deep(.el-table .row-warning) {
-  background: rgba(255, 136, 68, 0.05);
+  background: rgba(255, 152, 0, 0.08);
 }
 
 .level-badge {
@@ -247,27 +247,27 @@ watch(filteredData, () => {
 }
 
 .level-badge.danger {
-  background: #ff4444;
+  background: #F44336;
   color: white;
 }
 
 .level-badge.warning {
-  background: #ff8844;
+  background: #FF9800;
   color: white;
 }
 
 .level-badge.medium {
-  background: #ffcc44;
-  color: #333;
+  background: #FFEE58;
+  color: #4d4300;
 }
 
 .level-badge.safe {
-  background: #44ff44;
-  color: #333;
+  background: #81C784;
+  color: #1f3a25;
 }
 
 .text-danger {
-  color: #ff4444;
+  color: #F44336;
   font-weight: 600;
 }
 
