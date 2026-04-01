@@ -88,11 +88,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref,onMounted} from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { onMounted, ref } from 'vue'
   
 const router = useRouter()
 const userStore = useUserStore()
