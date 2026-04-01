@@ -22,7 +22,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { riskService } from '@/services/riskService'
 import type { MapConfig, RiskPoint } from '@/types/risk'
-import { getRiskLevelColor } from '@/utils/riskLevel'
+import { createMapboxRiskLevelColorExpression, getRiskLevelClass, getRiskLevelColor } from '@/utils/riskLevel'
 
 const emit = defineEmits(['select-point'])
 
@@ -192,6 +192,7 @@ const addDisasterPointsLayer = () => {
           id: index + 1,
           name: item.name,
           level: item.level,
+          levelClass: getRiskLevelClass(item.level),
           type: item.type,
           velocity: item.velocity,
           threat: item.threat,
@@ -210,19 +211,7 @@ const addDisasterPointsLayer = () => {
     source: DISASTER_POINTS_SOURCE_ID,
     paint: {
       'circle-radius': 7,
-      'circle-color': [
-        'match',
-        ['get', 'level'],
-        '极高', '#FF0000',
-        'danger', '#FF0000',
-        '高', '#FF4500',
-        'warning', '#FF4500',
-        '中', '#FFD700',
-        'medium', '#FFD700',
-        '低', '#00FF00',
-        'safe', '#00FF00',
-        '#00FF00',
-      ],
+      'circle-color': createMapboxRiskLevelColorExpression('levelClass') as any,
       'circle-stroke-color': '#ffd4d4',
       'circle-stroke-width': 1.2,
       'circle-opacity': 0.95,
