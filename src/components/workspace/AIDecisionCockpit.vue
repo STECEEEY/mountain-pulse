@@ -70,15 +70,27 @@
       <article v-for="item in decisions" :key="item.id" class="decision-card" :class="item.level">
         <header class="decision-head">
           <div>
-            <h4>{{ getBriefTitle(item.title) }}</h4>
+            <h4>{{ item.title }}</h4>
             <p>{{ item.window }}</p>
           </div>
         </header>
 
         <section class="decision-body">
-          <!-- 先显示执行对象，再显示建议动作 -->
-          <p class="target">执行对象：{{ getRoleSpecificTarget(item) }}</p>
-          <p class="action">建议动作：{{ getRoleSpecificAction(item) }}</p>
+          <!-- 执行对象 -->
+          <div class="target-section">
+            <span class="section-label">执行对象：</span>
+            <span class="section-content">{{ getRoleSpecificTarget(item) }}</span>
+          </div>
+          
+          <!-- 建议动作 - 分行显示 -->
+          <div class="action-section">
+            <span class="section-label">建议动作：</span>
+            <div class="action-list">
+              <div v-for="(actionLine, idx) in getActionLines(item)" :key="idx" class="action-item">
+                {{ actionLine }}
+              </div>
+            </div>
+          </div>
 
           <!-- 折叠区域：特征贡献和阈值命中，默认折叠 -->
           <div class="collapsible-section">
@@ -186,13 +198,6 @@ const currentRoleName = computed(() => roleNameMap[userRole.value] || '用户')
 // 折叠状态管理，默认所有项都是折叠的
 const collapsedItems = ref<Set<number>>(new Set())
 
-// 初始化所有决策项为折叠状态
-const initCollapsedState = (decisionsList: any[]) => {
-  decisionsList.forEach(item => {
-    collapsedItems.value.add(item.id)
-  })
-}
-
 const toggleCollapse = (id: number) => {
   if (collapsedItems.value.has(id)) {
     collapsedItems.value.delete(id)
@@ -205,47 +210,60 @@ const isCollapsed = (id: number) => {
   return collapsedItems.value.has(id)
 }
 
-// 简化标题，只保留风险等级和核心内容
-const getBriefTitle = (title: string) => {
-  // 提取风险等级
-  const levelMatch = title.match(/^(高|中|低)风险预警/)
-  if (levelMatch) {
-    const level = levelMatch[1]
-    // 提取核心动作，只取第一个分号前的内容
-    const actionMatch = title.match(/[：:](.*?)[；;]/)
-    if (actionMatch) {
-      return `${level}风险预警：${actionMatch[1]}`
+// 将建议动作拆分成多行（按句号或分号分割）
+const getActionLines = (item: any) => {
+  let actionText = getRoleSpecificAction(item)
+  
+  // 移除末尾多余的句号
+  actionText = actionText.replace(/[。；]+$/, '')
+  
+  // 按句号、分号、换行符分割
+  let lines = actionText.split(/[。；\n]/)
+  
+  // 过滤空行，并清理每行首尾空格
+  lines = lines
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    // 去除以"-"开头的行前的空白，但保留"-"
+    .map(line => line.replace(/^[-—]\s*/, '• '))
+  
+  // 如果分割后只有一行，尝试按关键词分割
+  if (lines.length === 1 && actionText.length > 30) {
+    // 按"、"分割作为备用
+    const commaLines = actionText.split(/[、，]/)
+    if (commaLines.length > 1) {
+      lines = commaLines.map(l => l.trim()).filter(l => l.length > 0)
     }
-    // 如果找不到，就取前20个字
-    return title.length > 20 ? title.substring(0, 20) + '...' : title
   }
-  return title.length > 25 ? title.substring(0, 25) + '...' : title
+  
+  return lines
 }
 
-// 根据角色生成不同的建议动作
+// 根据角色生成不同的建议动作（不带重复标点）
 const getRoleSpecificAction = (item: any) => {
   const baseAction = item.action || ''
-  const riskLevel = item.level || 'warning'
+  // 清理基础动作中的重复标点
+  let cleanBaseAction = baseAction.replace(/[。；]+$/, '').replace(/[。；]{2,}/g, '。')
   
   switch (userRole.value) {
     case 'emergency_cmd':
-      return `${baseAction}。请立即启动应急响应预案，协调救援力量待命，通知相关单位做好物资准备。`
+      return `${cleanBaseAction}。请立即启动应急响应预案，协调救援力量待命，通知相关单位做好物资准备`
     case 'gov_dept':
-      return `${baseAction}。请督促相关单位落实防范措施，24小时内报送落实情况。`
+      return `${cleanBaseAction}。请督促相关单位落实防范措施，24小时内报送落实情况`
     case 'community':
-      return `${baseAction}。立即组织网格员对辖区内隐患点进行巡查，通过微信群/广播通知居民做好防范，重点区域安排专人值守。`
+      return `${cleanBaseAction}。立即组织网格员对辖区内隐患点进行巡查，通过微信群/广播通知居民做好防范，重点区域安排专人值守`
     case 'rescue_team':
-      return `${baseAction}。请救援队伍集结待命，检查救援装备，确保30分钟内可出动。`
+      return `${cleanBaseAction}。请救援队伍集结待命，检查救援装备，确保30分钟内可出动`
     case 'utility_worker':
-      return `${baseAction}。请抢修人员检查基础设施，做好应急抢修准备，保障水电气通信畅通。`
+      return `${cleanBaseAction}。请抢修人员检查基础设施，做好应急抢修准备，保障水电气通信畅通`
     case 'resident':
-      return `${baseAction}。请密切关注预警信息，避免前往危险区域，提前做好转移准备。`
+      return `${cleanBaseAction}。请密切关注预警信息，避免前往危险区域，提前做好转移准备`
     case 'tourist':
-      return `${baseAction}。请暂停前往地质灾害高风险景区，已在景区的游客听从工作人员指引。`
+      return `${cleanBaseAction}。请暂停前往地质灾害高风险景区，已在景区的游客听从工作人员指引`
     case 'business':
-      return `${baseAction}。请企业暂停户外高危作业，检查厂区边坡稳定情况，做好应急准备。`
+      return `${cleanBaseAction}。请企业暂停户外高危作业，检查厂区边坡稳定情况，做好应急准备`
     default:
-      return baseAction
+      return cleanBaseAction
   }
 }
 
@@ -612,6 +630,9 @@ watch(decisions, (newDecisions) => {
   margin: 0;
   color: #e5f2ff;
   font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .decision-head p {
@@ -624,15 +645,48 @@ watch(decisions, (newDecisions) => {
   margin-top: 8px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+
+/* 执行对象和动作样式 */
+.target-section,
+.action-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.section-label {
+  color: #8fb4cd;
+  font-weight: 500;
+  min-width: 65px;
+}
+
+.section-content {
+  color: #c7dced;
+  flex: 1;
+}
+
+.action-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
-.action,
-.target {
-  margin: 0;
-  font-size: 12px;
+.action-item {
   color: #c7dced;
-  line-height: 1.5;
+  position: relative;
+  padding-left: 12px;
+}
+
+.action-item::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #00f0ff;
 }
 
 /* 折叠区域样式 */
