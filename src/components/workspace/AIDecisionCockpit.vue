@@ -154,17 +154,7 @@
     </div>
 
     <p v-if="error" class="error-tip">{{ error }}</p>
-
-    <div class="demo-script">
-      <h4>演示流程状态</h4>
-      <div class="demo-steps">
-        <div v-for="step in demoSteps" :key="step.key" class="demo-step" :class="step.status">
-          <span class="step-label">{{ step.label }}</span>
-          <span class="step-detail">{{ step.detail }}</span>
-        </div>
-      </div>
-    </div>
-
+          
     <div class="decision-list">
       <article v-for="item in decisions" :key="item.id" class="decision-card" :class="item.level">
         <header class="decision-head">
@@ -380,10 +370,29 @@ const pointName = computed(() => props.point?.name || '重点监测点')
 const modeLabel = computed(() => (mode.value === 'real' ? '接口(阿里云)' : '模拟数据'))
 
 const getWeather = async () => {
-  if (!props.point?.lng || !props.point?.lat) return
+  console.log('🌤️ getWeather 被调用')
+  console.log('props.point:', props.point)
+  console.log('lng:', props.point?.lng, 'lat:', props.point?.lat)
+  
+  if (!props.point) {
+    console.log('❌ props.point 为空')
+    return
+  }
+  
+  if (!props.point.lng || !props.point.lat) {
+    console.log('❌ 缺少经纬度数据')
+    return
+  }
+  
   try {
+    console.log('📡 开始获取天气...')
     const weather = await weatherService.getWeatherByLocation(props.point.lng, props.point.lat)
-    if (weather) weatherInfo.value = weather
+    if (weather) {
+      weatherInfo.value = weather
+      console.log('✅ 天气获取成功:', weather)
+    } else {
+      console.log('❌ 天气数据为空')
+    }
   } catch (error) {
     console.error('获取天气失败:', error)
   }
