@@ -361,30 +361,13 @@ const addDisasterSitesLayer = () => {
     type: 'circle',
     source: DISASTER_SITES_SOURCE_ID,
     paint: {
-      'circle-radius': [
-        'interpolate',
-        ['linear'],
-        ['zoom'],
-        8, 8,    // 低缩放级别半径小
-        12, 12,  // 中等缩放级别
-        16, 16   // 高缩放级别半径大
-      ],
-      'circle-color': [
-        'match',
-        ['get', 'riskLevel'],
-        '极高风险', '#ff0000',
-        '高风险', '#ff4d4f',
-        '中风险', '#faad14',
-        '低风险', '#52c41a',
-        '#faad14'  // 默认颜色
-      ],
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 2,
-      'circle-opacity': 0.85,
-      'circle-stroke-opacity': 0.9
+      'circle-radius': 7,
+      'circle-color': '#9B59B6',  // 紫色
+      'circle-stroke-color': '#FFFFFF',
+      'circle-stroke-width': 1.5,
+      'circle-opacity': 0.85
     }
   })
-
   // 添加点击事件显示详细信息
   map.on('click', DISASTER_SITES_LAYER_ID, (e) => {
     const feature = e.features?.[0]
