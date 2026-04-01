@@ -39,7 +39,7 @@ interface UserInfoResponse {
 }
 
 export const useUserStore = defineStore('user', () => {
-  const token = ref(localStorage.getItem('token') || '')
+  const token = ref(sessionStorage.getItem('token') || '')
   const userInfo = ref<any>(null)
   
   const isLoggedIn = computed(() => !!token.value)
@@ -52,7 +52,7 @@ export const useUserStore = defineStore('user', () => {
       const response = await httpClient.post('/auth/login', { username, password }) as unknown as LoginResponse
       token.value = response.token
       userInfo.value = response.user
-      localStorage.setItem('token', response.token)
+      sessionStorage.setItem('token', response.token)
       return response
     } catch (error) {
       throw error
@@ -83,7 +83,7 @@ export const useUserStore = defineStore('user', () => {
   const logout = () => {
     token.value = ''
     userInfo.value = null
-    localStorage.removeItem('token')
+    sessionStorage.removeItem('token')
   }
   
   // 获取当前用户信息
@@ -101,7 +101,7 @@ export const useUserStore = defineStore('user', () => {
   
   // 初始化
   const init = async () => {
-    const savedToken = localStorage.getItem('token')
+    const savedToken = sessionStorage.getItem('token')
     if (savedToken) {
       token.value = savedToken
       try {
