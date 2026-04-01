@@ -247,7 +247,7 @@ const addDisasterPointsLayer = () => {
     type: 'circle',
     source: DISASTER_POINTS_SOURCE_ID,
     paint: {
-      'circle-radius': 5,
+      'circle-radius': 7,
       'circle-color': createMapboxRiskLevelColorExpression('levelClass') as any,
       'circle-stroke-color': '#9B59B6',
       'circle-stroke-width': 1.2,
