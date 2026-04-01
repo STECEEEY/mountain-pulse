@@ -12,6 +12,10 @@
           <el-checkbox :model-value="props.layerState.disasterPoints" @change="onDisasterPointsChange" />
           <span>风险点</span>
         </label>
+        <label class="layer-item">
+          <el-checkbox :model-value="props.layerState.disasterSites" @change="onDisasterSitesChange" />
+          <span>受灾点</span>
+        </label>
 
         <div class="opacity-item">
           <span>风险底图透明度 {{ Math.round(riskMapOpacity * 100) }}%</span>
@@ -55,6 +59,7 @@ interface LayerState {
   riskMap: boolean
   highRiskArea: boolean
   disasterPoints: boolean
+  disasterSites?: boolean
 }
 
 const props = defineProps<{
@@ -76,6 +81,7 @@ const updateLayer = (key: keyof LayerState, value: unknown) => {
 
 const onRiskMapChange = (value: unknown) => updateLayer('riskMap', value)
 const onDisasterPointsChange = (value: unknown) => updateLayer('disasterPoints', value)
+const onDisasterSitesChange = (value: unknown) => updateLayer('disasterSites', value)  // 新增
 
 const updateOpacity = (value: number | number[]) => {
   const next = Array.isArray(value) ? value[0] : value
