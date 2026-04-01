@@ -96,9 +96,6 @@
         <button class="generate-btn" :disabled="loading" @click="submitPatrolReport">
           {{ loading ? '提交中...' : '上报巡查情况' }}
         </button>
-        <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
-          {{ demoRunning ? '流程执行中...'  }}
-        </button>
       </div>
     </div>
 
@@ -128,9 +125,6 @@
         <button class="generate-btn" :disabled="loading" @click="submitCommand">
           {{ loading ? '发布中...' : '发布指令' }}
         </button>
-        <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
-          {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
-        </button>
       </div>
     </div>
 
@@ -146,9 +140,6 @@
       <div class="action-row">
         <button class="generate-btn" :disabled="loading" @click="generateDecision">
           {{ loading ? '生成中...' : '更新决策' }}
-        </button>
-        <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
-          {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
         </button>
       </div>
     </div>
