@@ -51,13 +51,23 @@ export const useAiStore = defineStore('ai', () => {
     try {
       let result: DecisionItem[]
       
+      // 构建完整的请求参数，包含角色信息
+      const fullRequest = {
+        ...request,
+        // 确保角色信息被传递（如果 request 中没有，使用默认值）
+        userRole: request.userRole || 'resident',
+        userRoleLevel: request.userRoleLevel || 3
+      }
+      
+      console.log('📡 发送决策请求，角色:', fullRequest.userRole, '层级:', fullRequest.userRoleLevel)
+      
       if (mode.value === 'real') {
         console.log('🤖 调用真实阿里云 AI 服务...')
-        result = await aiService.generateDecision(request)
+        result = await aiService.generateDecision(fullRequest)
         modelVersion.value = '通义千问-plus'
       } else {
         console.log('📊 使用模拟数据模式')
-        result = await aiService.generateDecision(request)
+        result = await aiService.generateDecision(fullRequest)
         modelVersion.value = '模拟模型'
       }
       
@@ -65,7 +75,7 @@ export const useAiStore = defineStore('ai', () => {
       lastUpdated.value = new Date().toLocaleString()
       
       // 更新摘要信息（使用实际风险点数据）
-      updateSummary(result, request.pointName, request.lng, request.lat)
+      updateSummary(result, fullRequest.pointName, fullRequest.lng, fullRequest.lat)
       
     } catch (err: any) {
       error.value = err.message || '决策生成失败'
