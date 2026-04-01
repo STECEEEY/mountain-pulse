@@ -25,6 +25,28 @@
         </div>
       </div>
     </div>
+
+    <div class="control-group legend-group">
+      <div class="control-title">图例</div>
+      <div class="legend-list">
+        <div class="legend-item">
+          <span class="legend-dot danger"></span>
+          <span>极高风险</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot warning"></span>
+          <span>高风险</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot medium"></span>
+          <span>中风险</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot safe"></span>
+          <span>低风险</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -116,6 +138,47 @@ const updateOpacity = (value: number | number[]) => {
   color: #a8c5d8;
   font-size: 12px;
   margin-top: 6px;
+}
+
+.legend-group {
+  min-width: 170px;
+}
+
+.legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #d6e7f5;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.legend-dot.danger {
+  background: #F44336;
+}
+
+.legend-dot.warning {
+  background: #FF9800;
+}
+
+.legend-dot.medium {
+  background: #FFEE58;
+}
+
+.legend-dot.safe {
+  background: #81C784;
 }
 
 :deep(.el-slider__runway) {
