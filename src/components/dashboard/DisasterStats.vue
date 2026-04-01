@@ -284,7 +284,7 @@ onMounted(() => {
 .pulse-dot {
   width: 6px;
   height: 6px;
-  background: #ff4444;
+  background: #F44336;
   border-radius: 50%;
   animation: pulseDot 1.5s ease-in-out infinite;
 }
@@ -293,12 +293,12 @@ onMounted(() => {
   0%, 100% {
     transform: scale(1);
     opacity: 1;
-    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
   }
   50% {
     transform: scale(1.2);
     opacity: 0.8;
-    box-shadow: 0 0 0 3px rgba(255, 68, 68, 0);
+    box-shadow: 0 0 0 3px rgba(244, 67, 54, 0);
   }
 }
 
@@ -321,16 +321,16 @@ onMounted(() => {
 }
 
 .risk-segment.danger {
-  background: linear-gradient(90deg, #ff4444, #ff6666);
+  background: #F44336;
 }
 .risk-segment.warning {
-  background: linear-gradient(90deg, #ff8844, #ffaa66);
+  background: #FF9800;
 }
 .risk-segment.medium {
-  background: linear-gradient(90deg, #ffcc44, #ffdd66);
+  background: #FFEE58;
 }
 .risk-segment.safe {
-  background: linear-gradient(90deg, #44ff44, #66ff66);
+  background: #81C784;
 }
 
 .risk-legend {
@@ -350,10 +350,10 @@ onMounted(() => {
   margin-right: 5px;
 }
 
-.legend-dot.danger { background: #ff4444; }
-.legend-dot.warning { background: #ff8844; }
-.legend-dot.medium { background: #ffcc44; }
-.legend-dot.safe { background: #44ff44; }
+.legend-dot.danger { background: #F44336; }
+.legend-dot.warning { background: #FF9800; }
+.legend-dot.medium { background: #FFEE58; }
+.legend-dot.safe { background: #81C784; }
 
 /* 灾害类型分布 */
 .type-chart {
