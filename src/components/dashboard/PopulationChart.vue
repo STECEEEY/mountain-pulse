@@ -343,7 +343,7 @@ onUnmounted(() => {
 
 .chart-container {
   flex: 1;
-  min-height: 150px;
+  min-height: 170px;
   width: 100%;
 }
 
