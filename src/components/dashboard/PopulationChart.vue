@@ -43,6 +43,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import type { ECBasicOption } from 'echarts/types/dist/shared'
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
+import { normalizeRiskLevel } from '@/utils/riskLevel'
 
 // 类型定义
 interface RiskPoint {
@@ -83,12 +84,18 @@ const riskPoints = ref<RiskPoint[]>([])
 
 // 风险等级顺序
 const levelOrder = ['极高风险', '高风险', '中风险', '低风险']
+const normalizedLevelMap: Record<'极高' | '高' | '中' | '低', keyof ExposureStats['byLevel']> = {
+  极高: '极高风险',
+  高: '高风险',
+  中: '中风险',
+  低: '低风险',
+}
 // 颜色配置
 const levelColors: Record<string, string> = {
-  '极高风险': '#f5b042',
-  '高风险': '#ff7c43',
-  '中风险': '#ffc107',
-  '低风险': '#52c41a'
+  '极高风险': '#F44336',
+  '高风险': '#FF9800',
+  '中风险': '#FFEE58',
+  '低风险': '#81C784',
 }
 
 // 加载 JSON 数据
@@ -143,11 +150,11 @@ const exposureStats = computed<ExposureStats>(() => {
       }
     }
     
-    const level = point.level as keyof ExposureStats['byLevel']
-    
-    if (stats.byLevel[level] !== undefined) {
-      stats.byLevel[level] += pop
-      stats.pointCount[level] += 1
+    const normalized = normalizeRiskLevel(point.level)
+    if (normalized !== '未知') {
+      const mappedLevel = normalizedLevelMap[normalized]
+      stats.byLevel[mappedLevel] += pop
+      stats.pointCount[mappedLevel] += 1
     }
     stats.total += pop
   })
@@ -190,7 +197,7 @@ const initChart = () => {
         `
       },
       backgroundColor: 'rgba(10, 20, 30, 0.95)',
-      borderColor: '#f5b042',
+      borderColor: '#FF9800',
       borderWidth: 1,
       textStyle: { color: '#e0f0ff', fontSize: 11 }
     },
@@ -376,7 +383,7 @@ onUnmounted(() => {
 }
 
 .stat-value.up {
-  color: #f5b042;
+  color: #F44336;
 }
 
 .loading-container {
