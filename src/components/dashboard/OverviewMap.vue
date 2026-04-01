@@ -5,6 +5,7 @@
       <div class="map-controls center-controls">
         <el-checkbox v-model="layers.riskMap" label="风险底图" />
         <el-checkbox v-model="layers.disasterPoints" label="风险点" />
+        <el-checkbox v-model="layers.disasterSites" label="受灾点" />
         <div class="opacity-control">
           <span>透明度 {{ Math.round(riskMapOpacity * 100) }}%</span>
           <el-slider v-model="riskMapOpacity" :min="0.1" :max="0.9" :step="0.05" style="width: 110px" />
@@ -30,6 +31,10 @@
         <span class="legend-dot safe"></span>
         <span>低风险</span>
       </div>
+      <div class="legend-item">
+        <span class="legend-dot disaster-site"></span>
+        <span>受灾点</span>
+      </div>
     </div>
   </div>
   <RegionDetail 
@@ -54,6 +59,7 @@ const mapHint = ref('')
 const layers = reactive({
   riskMap: true,
   disasterPoints: true,
+  disasterSites: true,
 })
 const riskMapOpacity = ref(0.45)
 
@@ -69,6 +75,11 @@ const OVERVIEW_HIGH_RISK_FILL_LAYER_ID = 'overview-high-risk-fill'
 const OVERVIEW_HIGH_RISK_LINE_LAYER_ID = 'overview-high-risk-line'
 const OVERVIEW_DISASTER_POINTS_SOURCE_ID = 'overview-disaster-points-source'
 const OVERVIEW_DISASTER_POINTS_LAYER_ID = 'overview-disaster-points-layer'
+const OVERVIEW_DISASTER_SITES_SOURCE_ID = 'overview-disaster-sites-source'
+const OVERVIEW_DISASTER_SITES_LAYER_ID = 'overview-disaster-sites-layer'
+
+// 添加存储受灾点数据的变量
+let disasterSitesData: any = null
 
 const fallbackMapConfig: MapConfig = {
   bounds: {
@@ -152,8 +163,96 @@ const loadStaticData = async () => {
   } else {
     mapHint.value = 'high_risk_points.geojson 加载失败，未渲染高风险面图层。'
   }
+
+  // 处理受灾点数据
+  if (disasterSitesRes.status === 'fulfilled' && disasterSitesRes.value) {
+    disasterSitesData = disasterSitesRes.value
+    console.log('受灾点数据加载成功:', disasterSitesData.features?.length || 0, '个点')
+  } else {
+    console.warn('受灾点数据加载失败')
+    disasterSitesData = null
+  }
 }
 
+// 添加受灾点图层
+const addDisasterSitesLayer = () => {
+  if (!map || !disasterSitesData || !disasterSitesData.features || map.getLayer(OVERVIEW_DISASTER_SITES_LAYER_ID)) return
+
+  // 处理GeoJSON数据，映射中文字段
+  const processedFeatures = disasterSitesData.features.map((feature: any, index: number) => {
+    const props = feature.properties || {}
+    
+    return {
+      type: 'Feature',
+      properties: {
+        id: props.灾害体编号 || props.野外编号 || index + 1,
+        name: props.灾害体名称 || `受灾点${index + 1}`,
+        hazardType: props.灾害体类型 || '未知',
+        hazardLevel: props.险情等级 || '小型',
+        threatPopulation: props.威胁人口 || 0,
+        threatProperty: props.威胁财产 || 0,
+        location: props.地理位置 || ''
+      },
+      geometry: feature.geometry
+    }
+  })
+
+  map.addSource(OVERVIEW_DISASTER_SITES_SOURCE_ID, {
+    type: 'geojson',
+    data: {
+      type: 'FeatureCollection',
+      features: processedFeatures
+    }
+  })
+
+  // 使用紫色，与灾害点的红橙黄绿区分
+  map.addLayer({
+    id: OVERVIEW_DISASTER_SITES_LAYER_ID,
+    type: 'circle',
+    source: OVERVIEW_DISASTER_SITES_SOURCE_ID,
+    paint: {
+      'circle-radius': 5,
+      'circle-color': '#9B59B6',  // 紫色
+      'circle-stroke-color': '#FFFFFF',
+      'circle-stroke-width': 1.5,
+      'circle-opacity': 0.85
+    }
+  })
+
+  // 添加点击事件
+  map.on('click', OVERVIEW_DISASTER_SITES_LAYER_ID, (e) => {
+    const feature = e.features?.[0]
+    if (!feature || !feature.properties) return
+
+    const props = feature.properties
+    
+    new mapboxgl.Popup({ offset: 18, className: 'dark-popup disaster-popup' })
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <div class="popup-content">
+          <strong style="color:#9B59B6;">🏚️ ${props.name}</strong><br/>
+          <span>灾害类型：${props.hazardType}</span><br/>
+          <span>险情等级：${props.hazardLevel}</span><br/>
+          <span>威胁人口：${props.threatPopulation} 人</span><br/>
+          <span>威胁财产：${props.threatProperty} 万元</span><br/>
+          ${props.location ? `<span>地理位置：${props.location}</span>` : ''}
+        </div>
+      `)
+      .addTo(map!)
+  })
+
+  map.on('mouseenter', OVERVIEW_DISASTER_SITES_LAYER_ID, () => {
+    if (map) map.getCanvas().style.cursor = 'pointer'
+  })
+
+  map.on('mouseleave', OVERVIEW_DISASTER_SITES_LAYER_ID, () => {
+    if (map) map.getCanvas().style.cursor = ''
+  })
+
+  // 设置初始可见性
+  map.setLayoutProperty(OVERVIEW_DISASTER_SITES_LAYER_ID, 'visibility', layers.disasterSites ? 'visible' : 'none')
+}
+  
 const addRiskMapLayer = () => {
   if (!map || map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) return
 
@@ -402,6 +501,7 @@ const setLayerVisibility = (layerId: string, visible: boolean) => {
 const updateLayerVisibility = () => {
   setLayerVisibility(OVERVIEW_RISK_MAP_LAYER_ID, layers.riskMap)
   setLayerVisibility(OVERVIEW_DISASTER_POINTS_LAYER_ID, layers.disasterPoints)
+  setLayerVisibility(OVERVIEW_DISASTER_SITES_LAYER_ID, layers.disasterSites)
   if (map && map.getLayer(OVERVIEW_RISK_MAP_LAYER_ID)) {
     map.setPaintProperty(OVERVIEW_RISK_MAP_LAYER_ID, 'raster-opacity', riskMapOpacity.value)
   }
@@ -428,6 +528,7 @@ const initMap = () => {
     addHighRiskAreaLayer()
     addDisasterPointsLayer()
     updateLayerVisibility()
+    addDisasterSitesLayer()
   })
 }
 
@@ -607,6 +708,10 @@ onUnmounted(() => {
   border-radius: 50%;
 }
 
+.legend-dot.disaster-site {
+  background: #9B59B6;
+}
+  
 .legend-dot.danger { background: #F44336; }
 .legend-dot.warning { background: #FF9800; }
 .legend-dot.medium { background: #FFEE58; }
