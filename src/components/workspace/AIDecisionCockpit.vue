@@ -7,8 +7,8 @@
         <el-tag size="small" type="info" class="role-tag">{{ currentRoleName }}</el-tag>
       </div>
       <div class="meta">
-        <span class="model-tag">模型 {{ modelVersion }}</span>
-        <span class="time-tag">{{ lastUpdated || '尚未生成' }}</span>
+        <div class="meta-item">模型 {{ modelVersion }}</div>
+        <div class="meta-item">{{ lastUpdated || '尚未生成' }}</div>
         <button class="mode-tag" @click="switchMode">数据源 {{ modeLabel }}</button>
       </div>
     </div>
@@ -27,16 +27,12 @@
 
     <div class="summary-grid">
       <div class="summary-card">
-        <span class="label">高风险点</span>
-        <span class="value danger">{{ summary.highRiskCount }}</span>
-      </div>
-      <div class="summary-card">
         <span class="label">建议动作</span>
         <span class="value">{{ summary.actionCount }}</span>
       </div>
       <div class="summary-card">
         <span class="label">影响人口</span>
-        <span class="value">{{ summary.affectedPopulation }}</span>
+        <span class="value">{{ totalAffectedPopulation }}</span>
       </div>
     </div>
 
@@ -74,18 +70,17 @@
       <article v-for="item in decisions" :key="item.id" class="decision-card" :class="item.level">
         <header class="decision-head">
           <div>
-            <h4>{{ item.title }}</h4>
+            <h4>{{ getBriefTitle(item.title) }}</h4>
             <p>{{ item.window }}</p>
           </div>
-          <!-- 去掉置信度显示 -->
         </header>
 
         <section class="decision-body">
-          <!-- 根据角色显示不同的建议动作 -->
-          <p class="action">建议动作：{{ getRoleSpecificAction(item) }}</p>
+          <!-- 先显示执行对象，再显示建议动作 -->
           <p class="target">执行对象：{{ getRoleSpecificTarget(item) }}</p>
+          <p class="action">建议动作：{{ getRoleSpecificAction(item) }}</p>
 
-          <!-- 折叠区域：特征贡献和阈值命中 -->
+          <!-- 折叠区域：特征贡献和阈值命中，默认折叠 -->
           <div class="collapsible-section">
             <div class="collapsible-header" @click="toggleCollapse(item.id)">
               <span class="collapse-icon">{{ isCollapsed(item.id) ? '▶' : '▼' }}</span>
@@ -145,6 +140,7 @@ import { ElMessage } from 'element-plus'
 import { useAiStore } from '@/stores/ai'
 import { useUserStore } from '@/stores/user'
 import weatherService, { type WeatherData } from '@/services/weatherService'
+import riskPointsData from '@/../public/data/risk_points.json'
 
 const props = defineProps<{
   point: any
@@ -153,6 +149,25 @@ const props = defineProps<{
 const userStore = useUserStore()
 const userRole = computed(() => userStore.userInfo?.role || 'resident')
 const userRoleLevel = computed(() => userStore.userInfo?.role_level || 3)
+
+// 计算总影响人口（从 risk_points.json 中累加 threat 字段）
+const totalAffectedPopulation = computed(() => {
+  try {
+    const points = riskPointsData.points || []
+    let total = 0
+    points.forEach((point: any) => {
+      if (point.threat) {
+        const match = point.threat.match(/\d+/)
+        if (match) {
+          total += parseInt(match[0], 10)
+        }
+      }
+    })
+    return total
+  } catch (e) {
+    return 504 // 默认值
+  }
+})
 
 // 角色名称映射
 const roleNameMap: Record<string, string> = {
@@ -168,8 +183,15 @@ const roleNameMap: Record<string, string> = {
 
 const currentRoleName = computed(() => roleNameMap[userRole.value] || '用户')
 
-// 折叠状态管理
+// 折叠状态管理，默认所有项都是折叠的
 const collapsedItems = ref<Set<number>>(new Set())
+
+// 初始化所有决策项为折叠状态
+const initCollapsedState = (decisionsList: any[]) => {
+  decisionsList.forEach(item => {
+    collapsedItems.value.add(item.id)
+  })
+}
 
 const toggleCollapse = (id: number) => {
   if (collapsedItems.value.has(id)) {
@@ -183,6 +205,23 @@ const isCollapsed = (id: number) => {
   return collapsedItems.value.has(id)
 }
 
+// 简化标题，只保留风险等级和核心内容
+const getBriefTitle = (title: string) => {
+  // 提取风险等级
+  const levelMatch = title.match(/^(高|中|低)风险预警/)
+  if (levelMatch) {
+    const level = levelMatch[1]
+    // 提取核心动作，只取第一个分号前的内容
+    const actionMatch = title.match(/[：:](.*?)[；;]/)
+    if (actionMatch) {
+      return `${level}风险预警：${actionMatch[1]}`
+    }
+    // 如果找不到，就取前20个字
+    return title.length > 20 ? title.substring(0, 20) + '...' : title
+  }
+  return title.length > 25 ? title.substring(0, 25) + '...' : title
+}
+
 // 根据角色生成不同的建议动作
 const getRoleSpecificAction = (item: any) => {
   const baseAction = item.action || ''
@@ -190,21 +229,21 @@ const getRoleSpecificAction = (item: any) => {
   
   switch (userRole.value) {
     case 'emergency_cmd':
-      return `【指挥部指令】${baseAction}。请立即启动应急响应预案，协调救援力量待命，通知相关单位做好物资准备。`
+      return `${baseAction}。请立即启动应急响应预案，协调救援力量待命，通知相关单位做好物资准备。`
     case 'gov_dept':
-      return `【监管要求】${baseAction}。请督促相关单位落实防范措施，24小时内报送落实情况。`
+      return `${baseAction}。请督促相关单位落实防范措施，24小时内报送落实情况。`
     case 'community':
-      return `【基层执行】${baseAction}。立即组织网格员对辖区内隐患点进行巡查，通过微信群/广播通知居民做好防范，重点区域安排专人值守。`
+      return `${baseAction}。立即组织网格员对辖区内隐患点进行巡查，通过微信群/广播通知居民做好防范，重点区域安排专人值守。`
     case 'rescue_team':
-      return `【救援准备】${baseAction}。请救援队伍集结待命，检查救援装备，确保30分钟内可出动。`
+      return `${baseAction}。请救援队伍集结待命，检查救援装备，确保30分钟内可出动。`
     case 'utility_worker':
-      return `【抢修准备】${baseAction}。请抢修人员检查基础设施，做好应急抢修准备，保障水电气通信畅通。`
+      return `${baseAction}。请抢修人员检查基础设施，做好应急抢修准备，保障水电气通信畅通。`
     case 'resident':
-      return `【居民防范】${baseAction}。请密切关注预警信息，避免前往危险区域，提前做好转移准备。`
+      return `${baseAction}。请密切关注预警信息，避免前往危险区域，提前做好转移准备。`
     case 'tourist':
-      return `【游客安全】${baseAction}。请暂停前往地质灾害高风险景区，已在景区的游客听从工作人员指引。`
+      return `${baseAction}。请暂停前往地质灾害高风险景区，已在景区的游客听从工作人员指引。`
     case 'business':
-      return `【企业防范】${baseAction}。请企业暂停户外高危作业，检查厂区边坡稳定情况，做好应急准备。`
+      return `${baseAction}。请企业暂停户外高危作业，检查厂区边坡稳定情况，做好应急准备。`
     default:
       return baseAction
   }
@@ -281,6 +320,12 @@ const generateDecision = async () => {
     ElMessage.error(error.value)
     return
   }
+  // 新决策生成后，将所有新项设为折叠状态
+  if (decisions.value.length) {
+    decisions.value.forEach(item => {
+      collapsedItems.value.add(item.id)
+    })
+  }
   ElMessage.success('决策结果已更新')
 }
 
@@ -321,6 +366,17 @@ watch(
     generateDecision()
   }
 )
+
+// 监听 decisions 变化，确保新添加的项默认折叠
+watch(decisions, (newDecisions) => {
+  if (newDecisions.length) {
+    newDecisions.forEach(item => {
+      if (!collapsedItems.value.has(item.id)) {
+        collapsedItems.value.add(item.id)
+      }
+    })
+  }
+}, { immediate: true, deep: true })
 </script>
 
 <style scoped>
@@ -363,27 +419,30 @@ watch(
   align-items: flex-end;
 }
 
-.model-tag,
-.time-tag,
-.mode-tag {
+.meta-item {
   font-size: 11px;
   color: #87a5bf;
   padding: 2px 8px;
   border-radius: 10px;
   border: 1px solid rgba(0, 180, 255, 0.2);
   background: rgba(0, 65, 104, 0.24);
+  white-space: nowrap;
 }
 
 .mode-tag {
+  font-size: 11px;
   color: #9fe99f;
-  border-color: rgba(92, 209, 92, 0.25);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(92, 209, 92, 0.25);
   background: rgba(36, 92, 36, 0.26);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
