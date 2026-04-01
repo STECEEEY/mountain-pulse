@@ -1,40 +1,26 @@
 <template>
   <div class="login-wrapper">
-    <!-- 背景动画效果 -->
-    <div class="bg-animation">
-      <div class="mountain-bg"></div>
-      <div class="grid-overlay"></div>
-      <div class="pulse-wave"></div>
-      <div class="pulse-wave delay-1"></div>
-      <div class="pulse-wave delay-2"></div>
-    </div>
+    <!-- 地图背景 -->
+    <div class="map-background"></div>
+    <div class="overlay"></div>
 
     <!-- 左侧品牌区域 -->
     <div class="brand-section">
       <div class="brand-content">
-        <div class="logo">
-          <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-            <path d="M30 5 L35 15 L30 25 L25 15 Z" fill="#00d4ff" stroke="#00d4ff" stroke-width="2"/>
-            <path d="M20 30 L30 20 L40 30 L30 40 Z" fill="#00d4ff" fill-opacity="0.6" stroke="#00d4ff" stroke-width="1.5"/>
-            <circle cx="30" cy="30" r="8" fill="#fff" stroke="#00d4ff" stroke-width="2"/>
-            <path d="M10 45 L30 25 L50 45" stroke="#00d4ff" stroke-width="2" fill="none" stroke-dasharray="4 2"/>
-          </svg>
-        </div>
-        <h1 class="brand-title">
-          <span class="gradient-text">山体脉搏</span>
-        </h1>
+        <h1 class="brand-title">山体脉搏</h1>
         <p class="brand-subtitle">融合InSAR与机器学习的地质灾害识别与风险预警系统</p>
+        <div class="divider"></div>
         <div class="features">
           <div class="feature">
-            <span class="feature-icon">📡</span>
+            <div class="feature-dot"></div>
             <span>InSAR形变监测</span>
           </div>
           <div class="feature">
-            <span class="feature-icon">🤖</span>
+            <div class="feature-dot"></div>
             <span>AI智能预警</span>
           </div>
           <div class="feature">
-            <span class="feature-icon">🗺️</span>
+            <div class="feature-dot"></div>
             <span>空间风险评估</span>
           </div>
         </div>
@@ -45,8 +31,8 @@
     <div class="form-section">
       <div class="form-container">
         <div class="form-header">
-          <h2>欢迎回来</h2>
-          <p>登录您的账号，获取地质灾害预警信息</p>
+          <h2>欢迎登录</h2>
+          <p>请输入您的账号信息</p>
         </div>
 
         <el-form :model="form" @submit.prevent="handleLogin" class="login-form">
@@ -56,7 +42,6 @@
               placeholder="用户名" 
               prefix-icon="User"
               size="large"
-              class="custom-input"
             />
           </el-form-item>
           
@@ -67,7 +52,6 @@
               placeholder="密码" 
               prefix-icon="Lock"
               size="large"
-              class="custom-input"
               @keyup.enter="handleLogin"
             />
           </el-form-item>
@@ -87,7 +71,7 @@
 
         <div class="form-footer">
           <span>还没有账号？</span>
-          <el-link type="primary" @click="goToRegister" class="register-link">立即注册</el-link>
+          <el-link type="primary" @click="goToRegister">立即注册</el-link>
         </div>
 
         <div class="demo-tips">
@@ -148,6 +132,12 @@ const fillDemo = (username: string, password: string) => {
 </script>
 
 <style scoped>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .login-wrapper {
   display: flex;
   min-height: 100vh;
@@ -155,72 +145,64 @@ const fillDemo = (username: string, password: string) => {
   overflow: hidden;
 }
 
-/* 背景动画 */
-.bg-animation {
-  position: fixed;
+/* 地图背景 - 使用与主界面相同的地图风格 */
+.map-background {
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  background: 
+    linear-gradient(180deg, #0a1f2e 0%, #1a3a4a 100%),
+    repeating-linear-gradient(45deg, 
+      rgba(0, 160, 200, 0.05) 0px, 
+      rgba(0, 160, 200, 0.05) 2px,
+      transparent 2px, 
+      transparent 8px);
   z-index: 0;
 }
 
-.mountain-bg {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #0a2a3b 0%, #1a3a4a 50%, #2a4a5a 100%);
-}
-
-.grid-overlay {
+/* 模拟等高线效果 */
+.map-background::before {
+  content: '';
   position: absolute;
   width: 100%;
   height: 100%;
   background-image: 
-    linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
-  background-size: 40px 40px;
-  animation: gridMove 20s linear infinite;
+    radial-gradient(circle at 20% 40%, rgba(0, 180, 220, 0.15) 1px, transparent 1px),
+    radial-gradient(circle at 80% 70%, rgba(0, 180, 220, 0.12) 1px, transparent 1px);
+  background-size: 40px 40px, 60px 60px;
+  pointer-events: none;
 }
 
-@keyframes gridMove {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(40px, 40px); }
-}
-
-.pulse-wave {
+/* 等高线线条 */
+.map-background::after {
+  content: '';
   position: absolute;
-  bottom: 10%;
-  left: 50%;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
-  animation: pulse 3s ease-out infinite;
-  transform: translateX(-50%);
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(0deg, 
+      rgba(0, 180, 220, 0.2) 0px,
+      rgba(0, 180, 220, 0.2) 1px,
+      transparent 1px,
+      transparent 40px),
+    repeating-linear-gradient(90deg, 
+      rgba(0, 180, 220, 0.15) 0px,
+      rgba(0, 180, 220, 0.15) 1px,
+      transparent 1px,
+      transparent 40px);
+  pointer-events: none;
 }
 
-.pulse-wave.delay-1 {
-  animation-delay: 1s;
-  width: 300px;
-  height: 300px;
-}
-
-.pulse-wave.delay-2 {
-  animation-delay: 2s;
-  width: 400px;
-  height: 400px;
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 0.6;
-    transform: translateX(-50%) scale(0.5);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) scale(1.5);
-  }
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(10, 31, 46, 0.85) 0%, rgba(26, 58, 74, 0.75) 100%);
+  z-index: 1;
 }
 
 /* 左侧品牌区域 */
@@ -230,89 +212,85 @@ const fillDemo = (username: string, password: string) => {
   align-items: center;
   justify-content: center;
   position: relative;
-  z-index: 1;
-  backdrop-filter: blur(10px);
-  background: rgba(10, 42, 59, 0.7);
+  z-index: 2;
 }
 
 .brand-content {
   text-align: center;
   color: white;
   padding: 40px;
-  max-width: 500px;
+  max-width: 560px;
 }
 
-.logo {
-  margin-bottom: 30px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
+/* 主标题 */
 .brand-title {
-  font-size: 48px;
+  font-size: 64px;
   font-weight: 700;
-  margin-bottom: 20px;
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+  letter-spacing: 4px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #7bc5d9 50%, #3a9bb5 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
+/* 副标题 - 加大字体，更美观 */
 .brand-subtitle {
-  font-size: 14px;
-  line-height: 1.6;
-  opacity: 0.8;
-  margin-bottom: 40px;
+  font-size: 16px;
+  line-height: 1.8;
+  font-weight: 400;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 32px;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+}
+
+.divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #4bb5d9, transparent);
+  margin: 0 auto 32px auto;
 }
 
 .features {
   display: flex;
-  gap: 30px;
+  gap: 48px;
   justify-content: center;
-  margin-top: 40px;
 }
 
 .feature {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  opacity: 0.7;
-  transition: opacity 0.3s;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
 }
 
-.feature:hover {
-  opacity: 1;
-}
-
-.feature-icon {
-  font-size: 24px;
+.feature-dot {
+  width: 6px;
+  height: 6px;
+  background: #4bb5d9;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #4bb5d9;
 }
 
 /* 右侧表单区域 */
 .form-section {
-  width: 480px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
+  width: 460px;
+  background: rgba(255, 255, 255, 0.96);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  z-index: 1;
-  box-shadow: -20px 0 40px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
 }
 
 .form-container {
-  width: 360px;
-  padding: 40px;
+  width: 340px;
+  padding: 48px 32px;
 }
 
 .form-header {
@@ -322,73 +300,75 @@ const fillDemo = (username: string, password: string) => {
 
 .form-header h2 {
   font-size: 28px;
-  color: #1e3c72;
-  margin-bottom: 8px;
+  font-weight: 600;
+  color: #1a4a5a;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
 }
 
 .form-header p {
-  color: #666;
+  color: #7a8e9a;
   font-size: 14px;
 }
 
-.login-form {
-  margin-bottom: 24px;
-}
-
-.custom-input :deep(.el-input__wrapper) {
-  background: #f5f7fa;
-  border-radius: 12px;
+.login-form :deep(.el-input__wrapper) {
+  background: #f5f7f9;
+  border-radius: 8px;
   box-shadow: none;
+  border: 1px solid #e0e6ea;
   transition: all 0.3s;
 }
 
-.custom-input :deep(.el-input__wrapper:hover) {
-  background: #eef2f6;
-  transform: translateY(-1px);
+.login-form :deep(.el-input__wrapper:hover) {
+  border-color: #4bb5d9;
+  background: #ffffff;
 }
 
-.custom-input :deep(.el-input__wrapper.is-focus) {
-  background: white;
-  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+.login-form :deep(.el-input__wrapper.is-focus) {
+  border-color: #2a7f9a;
+  box-shadow: 0 0 0 2px rgba(75, 181, 217, 0.2);
 }
 
 .login-btn {
   width: 100%;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: linear-gradient(135deg, #1e5a6e 0%, #2a7f9a 100%);
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   height: 48px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 2px;
   transition: all 0.3s;
 }
 
 .login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
+  background: linear-gradient(135deg, #2a6f86 0%, #3a8faa 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(42, 127, 154, 0.3);
 }
 
 .form-footer {
   text-align: center;
   padding: 20px 0;
-  color: #666;
+  color: #7a8e9a;
+  font-size: 14px;
 }
 
-.register-link {
-  font-weight: 600;
-  margin-left: 8px;
+.form-footer :deep(.el-link) {
+  color: #2a7f9a;
+  font-weight: 500;
 }
 
 .demo-tips {
-  margin-top: 30px;
+  margin-top: 28px;
   padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e8ecef;
   text-align: center;
 }
 
 .demo-tips p {
   font-size: 12px;
-  color: #999;
+  color: #9aaeB8;
   margin-bottom: 12px;
 }
 
@@ -401,14 +381,15 @@ const fillDemo = (username: string, password: string) => {
 .demo-buttons :deep(.el-button) {
   border-radius: 20px;
   font-size: 12px;
-  border-color: #1e3c72;
-  color: #1e3c72;
+  border-color: #cbd8e0;
+  color: #4a6a7a;
+  background: transparent;
 }
 
 .demo-buttons :deep(.el-button:hover) {
-  background: #1e3c72;
+  background: #2a7f9a;
+  border-color: #2a7f9a;
   color: white;
-  border-color: #1e3c72;
 }
 
 /* 响应式 */
