@@ -222,17 +222,17 @@ const getActionLines = (item: any) => {
   
   // 过滤空行，并清理每行首尾空格
   lines = lines
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
+    .map((line: string) => line.trim())
+    .filter((line: string) => line.length > 0)
     // 去除以"-"开头的行前的空白，但保留"-"
-    .map(line => line.replace(/^[-—]\s*/, '• '))
+    .map((line: string) => line.replace(/^[-—]\s*/, '• '))
   
   // 如果分割后只有一行，尝试按关键词分割
   if (lines.length === 1 && actionText.length > 30) {
     // 按"、"分割作为备用
     const commaLines = actionText.split(/[、，]/)
     if (commaLines.length > 1) {
-      lines = commaLines.map(l => l.trim()).filter(l => l.length > 0)
+      lines = commaLines.map((l: string) => l.trim()).filter((l: string) => l.length > 0)
     }
   }
   
