@@ -101,8 +101,7 @@ import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
 import XYZ from 'ol/source/XYZ'
 import { fromLonLat } from 'ol/proj'
-
-const loginMapRef = ref(null)
+const loginMapRef = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   if (loginMapRef.value) {
