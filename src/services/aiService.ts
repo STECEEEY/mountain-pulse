@@ -52,17 +52,15 @@ class AIService {
   /**
    * 调用通义千问API进行决策分析
    */
- async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
+async generateDecision(request: DecisionRequest): Promise<DecisionItem[]> {
   console.log('🔧 AI服务调用开始')
   console.log('用户角色:', request.userRole)
   
-  // 直接调用你的后端 API
-  const backendUrl = 'http://47.102.147.118:3000'
-  
   try {
-    console.log('📡 调用后端 AI 决策接口...')
+    console.log('📡 通过 Vercel 代理调用后端...')
     
-    const response = await axios.post(`${backendUrl}/ai/decision`, {
+    // 改为调用 Vercel Serverless Function
+    const response = await axios.post('/api/ai-proxy', {
       pointName: request.pointName,
       lng: request.lng,
       lat: request.lat,
@@ -74,14 +72,11 @@ class AIService {
       timeout: 30000
     })
     
-    console.log('✅ 后端返回成功', response.data)
-    
-    // 后端返回的数据格式已经符合前端要求，直接返回
+    console.log('✅ 代理返回成功', response.data)
     return response.data.decisions
     
   } catch (error: any) {
-    console.error('❌ 调用后端失败:', error.message)
-    // 降级使用模拟数据
+    console.error('❌ 调用失败:', error.message)
     return this.getMockDecisions(request)
   }
 }
