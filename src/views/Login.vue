@@ -1,7 +1,7 @@
 <template>
   <div class="login-wrapper">
     <!-- 地图背景 -->
-    <div class="map-background"></div>
+    <div class="map-background" ref="loginMapRef"></div>
     <div class="overlay"></div>
 
     <!-- 左侧品牌区域 -->
@@ -92,10 +92,60 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-
+import { onMounted, ref } from 'vue'
+  
 const router = useRouter()
 const userStore = useUserStore()
 
+import Map from 'ol/Map'
+import View from 'ol/View'
+import TileLayer from 'ol/layer/Tile'
+import XYZ from 'ol/source/XYZ'
+import { fromLonLat } from 'ol/proj'
+
+const loginMapRef = ref(null)
+
+onMounted(() => {
+  if (loginMapRef.value) {
+    const map = new Map({
+      target: loginMapRef.value,
+      layers: [
+        new TileLayer({
+          source: new XYZ({
+            url: 'https://p3.map.gtimg.com/sateTiles/{z}/{Math.floor(x/16)}/{Math.floor(y/16)}/{x}_{y}.jpg?version=230',
+            maxZoom: 18,
+          }),
+          opacity: 0.9,
+        }),
+        new TileLayer({
+          source: new XYZ({
+            url: 'https://rt0.map.gtimg.com/realtimerender?z={z}&x={x}&y={y}&type=vector&style=0&v=1.1.2',
+          }),
+          opacity: 0.6,
+        }),
+      ],
+      view: new View({
+        projection: 'EPSG:3857',
+        center: fromLonLat([119.0, 32.1]),
+        zoom: 10,
+      }),
+    })
+    
+    setTimeout(() => {
+      const canvas = loginMapRef.value?.querySelector('canvas')
+      if (canvas) {
+        canvas.style.filter = `
+          contrast(1.3)
+          brightness(0.8)
+          saturate(1.5)
+          hue-rotate(10deg)
+        `
+      }
+    }, 500)
+  }
+})
+
+  
 const form = reactive({
   username: '',
   password: ''
