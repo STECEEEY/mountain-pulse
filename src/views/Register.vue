@@ -489,6 +489,10 @@ const goToLogin = () => {
   transition: all 0.3s;
 }
 
+.register-form :deep(.el-form-item) {
+  margin-bottom: 24px;
+}
+  
 .register-form :deep(.el-input__wrapper:hover) {
   border-color: #4bb5d9;
   background: #ffffff;
