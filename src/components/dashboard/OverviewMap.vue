@@ -45,7 +45,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { riskService } from '@/services/riskService'
 import type { HighRiskGeoJSON, MapConfig, RiskPoint } from '@/types/risk'
-import { getRiskLevelColor } from '@/utils/riskLevel'
+import { createMapboxRiskLevelColorExpression, getRiskLevelClass, getRiskLevelColor } from '@/utils/riskLevel'
 import RegionDetail from './RegionDetail.vue'  // 引入 RegionDetail
 
 const mapRef = ref<HTMLElement>()
@@ -292,6 +292,7 @@ const addDisasterPointsLayer = () => {
           id: index + 1,
           name: item.name,
           level: item.level,
+          levelClass: getRiskLevelClass(item.level),
           type: item.type,
           velocity: item.velocity,
           threat: item.threat,
@@ -312,19 +313,7 @@ const addDisasterPointsLayer = () => {
     source: OVERVIEW_DISASTER_POINTS_SOURCE_ID,
     paint: {
       'circle-radius': 7,
-      'circle-color': [
-        'match',
-        ['get', 'level'],
-        '极高风险', '#FF0000',
-        'danger', '#FF0000',
-        '高风险', '#FFA500',
-        'warning', '#FFA500',
-        '中风险', '#FFD700',
-        'medium', '#FFD700',
-        '低风险', '#00FF00',
-        'safe', '#00FF00',
-        '#00FF00',
-      ],
+      'circle-color': createMapboxRiskLevelColorExpression('levelClass') as any,
       'circle-stroke-color': '#ffd4d4',
       'circle-stroke-width': 1.2,
       'circle-opacity': 0.95,
@@ -618,8 +607,8 @@ onUnmounted(() => {
   border-radius: 50%;
 }
 
-.legend-dot.danger { background: #FF0000; }
-.legend-dot.warning { background: #FF4500; }
-.legend-dot.medium { background: #FFD700; }
-.legend-dot.safe { background: #00FF00; }
+.legend-dot.danger { background: #F44336; }
+.legend-dot.warning { background: #FF9800; }
+.legend-dot.medium { background: #FFEE58; }
+.legend-dot.safe { background: #81C784; }
 </style>
