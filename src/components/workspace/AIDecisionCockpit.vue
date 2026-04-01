@@ -97,7 +97,7 @@
           {{ loading ? '提交中...' : '上报巡查情况' }}
         </button>
         <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
-          {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
+          {{ demoRunning ? '流程执行中...'  }}
         </button>
       </div>
     </div>
