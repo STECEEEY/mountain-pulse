@@ -25,12 +25,66 @@
           <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" prefix-icon="Lock" />
         </el-form-item>
         
+        <!-- 角色选择 - 完整8个角色 -->
         <el-form-item prop="role">
-          <el-select v-model="form.role" placeholder="请选择您的身份" style="width: 100%">
-            <el-option label="居民" value="resident" />
-            <el-option label="游客" value="tourist" />
-            <el-option label="企业人员" value="business" />
+          <el-select 
+            v-model="form.role" 
+            placeholder="请选择您的身份" 
+            style="width: 100%"
+            filterable
+            allow-create
+          >
+            <el-option-group label="决策指挥层 (L1)">
+              <el-option label="应急指挥部" value="emergency_cmd">
+                <span>🚨 应急指挥部</span>
+                <span style="float: right; color: #999; font-size: 12px">全局指挥、资源调配</span>
+              </el-option>
+              <el-option label="政府部门" value="gov_dept">
+                <span>🏛️ 政府部门</span>
+                <span style="float: right; color: #999; font-size: 12px">行业监管、政策执行</span>
+              </el-option>
+            </el-option-group>
+            
+            <el-option-group label="执行响应层 (L2)">
+              <el-option label="基层单位" value="community">
+                <span>🏘️ 基层单位</span>
+                <span style="float: right; color: #999; font-size: 12px">辖区管理、居民通知</span>
+              </el-option>
+              <el-option label="救援队伍" value="rescue_team">
+                <span>🚒 救援队伍</span>
+                <span style="float: right; color: #999; font-size: 12px">现场救援、应急处置</span>
+              </el-option>
+              <el-option label="抢修人员" value="utility_worker">
+                <span>🔧 抢修人员</span>
+                <span style="float: right; color: #999; font-size: 12px">水电气通信抢修</span>
+              </el-option>
+            </el-option-group>
+            
+            <el-option-group label="社会公众层 (L3)">
+              <el-option label="居民" value="resident">
+                <span>🏠 居民</span>
+                <span style="float: right; color: #999; font-size: 12px">个人风险预警</span>
+              </el-option>
+              <el-option label="游客" value="tourist">
+                <span>🚗 游客</span>
+                <span style="float: right; color: #999; font-size: 12px">出行安全提示</span>
+              </el-option>
+              <el-option label="企业人员" value="business">
+                <span>🏭 企业人员</span>
+                <span style="float: right; color: #999; font-size: 12px">生产经营安全</span>
+              </el-option>
+            </el-option-group>
           </el-select>
+        </el-form-item>
+        
+        <!-- 单位/组织（当角色为基层单位、救援队伍、抢修人员、政府部门时显示） -->
+        <el-form-item v-if="showOrganization" prop="organization">
+          <el-input v-model="form.organization" placeholder="所属单位/组织" />
+        </el-form-item>
+        
+        <!-- 区域编码（当角色需要管辖区域时显示） -->
+        <el-form-item v-if="showAreaCode" prop="area_code">
+          <el-input v-model="form.area_code" placeholder="管辖区域编码（如：320101）" />
         </el-form-item>
         
         <el-form-item>
@@ -48,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
@@ -62,7 +116,19 @@ const form = reactive({
   full_name: '',
   password: '',
   confirmPassword: '',
-  role: 'resident'
+  role: 'resident',
+  organization: '',
+  area_code: ''
+})
+
+// 是否需要显示单位/组织字段
+const showOrganization = computed(() => {
+  return ['emergency_cmd', 'gov_dept', 'community', 'rescue_team', 'utility_worker'].includes(form.role)
+})
+
+// 是否需要显示区域编码字段
+const showAreaCode = computed(() => {
+  return ['community', 'village_committee', 'property_mgmt'].includes(form.role)
 })
 
 const loading = ref(false)
@@ -92,7 +158,14 @@ const rules = {
       trigger: 'blur'
     }
   ],
-  role: [{ required: true, message: '请选择身份', trigger: 'change' }]
+  role: [{ required: true, message: '请选择身份', trigger: 'change' }],
+  organization: [
+    { 
+      required: showOrganization.value, 
+      message: '请输入所属单位', 
+      trigger: 'blur' 
+    }
+  ]
 }
 
 const handleRegister = async () => {
@@ -103,14 +176,28 @@ const handleRegister = async () => {
     
     loading.value = true
     try {
-      await userStore.register({
+      const registerData: any = {
         username: form.username,
         email: form.email,
         password: form.password,
         full_name: form.full_name,
-        role: form.role,
-        role_level: form.role === 'resident' ? 3 : 3
-      })
+        role: form.role
+      }
+      
+      // 根据角色设置 role_level
+      if (form.role === 'emergency_cmd' || form.role === 'gov_dept') {
+        registerData.role_level = 1
+      } else if (['community', 'rescue_team', 'utility_worker'].includes(form.role)) {
+        registerData.role_level = 2
+      } else {
+        registerData.role_level = 3
+      }
+      
+      // 添加可选字段
+      if (form.organization) registerData.organization = form.organization
+      if (form.area_code) registerData.area_code = form.area_code
+      
+      await userStore.register(registerData)
       ElMessage.success('注册成功，请登录')
       router.push('/login')
     } catch (error: any) {
@@ -136,7 +223,7 @@ const goToLogin = () => {
 }
 
 .register-box {
-  width: 450px;
+  width: 500px;
   padding: 40px;
   background: white;
   border-radius: 16px;
