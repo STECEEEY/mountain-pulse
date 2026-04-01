@@ -36,8 +36,106 @@
       </div>
     </div>
 
-    <!-- 现场文本输入区域 -->
-    <div class="input-zone">
+    <!-- 根据角色显示不同的交互区域 -->
+    <!-- 居民身份：个人安全状态 -->
+    <div class="input-zone" v-if="userRole === 'resident'">
+      <label for="safetyStatus">个人安全状态</label>
+      <div class="safety-options">
+        <div class="safety-option" @click="selectSafetyOption('safe')" :class="{ active: safetyStatus === 'safe' }">
+          <span class="safety-icon">✅</span>
+          <span>安全</span>
+        </div>
+        <div class="safety-option" @click="selectSafetyOption('warning')" :class="{ active: safetyStatus === 'warning' }">
+          <span class="safety-icon">⚠️</span>
+          <span>有风险迹象</span>
+        </div>
+        <div class="safety-option" @click="selectSafetyOption('danger')" :class="{ active: safetyStatus === 'danger' }">
+          <span class="safety-icon">🚨</span>
+          <span>需要帮助</span>
+        </div>
+      </div>
+      <div class="safety-note" v-if="safetyStatus === 'warning' || safetyStatus === 'danger'">
+        <textarea
+          v-model="safetyDetail"
+          rows="2"
+          placeholder="请描述具体情况..."
+        />
+      </div>
+      <div class="action-row">
+        <button class="generate-btn" :disabled="loading" @click="submitSafetyReport">
+          {{ loading ? '提交中...' : '上报安全状态' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- 基层单位身份：巡查情况 -->
+    <div class="input-zone" v-if="userRole === 'community'">
+      <label for="patrolStatus">巡查情况</label>
+      <div class="patrol-options">
+        <div class="patrol-option" @click="selectPatrolOption('safe')" :class="{ active: patrolStatus === 'safe' }">
+          <span class="patrol-icon">✅</span>
+          <span>一切正常</span>
+        </div>
+        <div class="patrol-option" @click="selectPatrolOption('crack')" :class="{ active: patrolStatus === 'crack' }">
+          <span class="patrol-icon">🔄</span>
+          <span>发现新裂缝</span>
+        </div>
+        <div class="patrol-option" @click="selectPatrolOption('landslide')" :class="{ active: patrolStatus === 'landslide' }">
+          <span class="patrol-icon">⛰️</span>
+          <span>滑坡迹象</span>
+        </div>
+      </div>
+      <div class="patrol-note" v-if="patrolStatus !== 'safe'">
+        <textarea
+          v-model="patrolDetail"
+          rows="2"
+          placeholder="请描述具体情况、位置..."
+        />
+      </div>
+      <div class="action-row">
+        <button class="generate-btn" :disabled="loading" @click="submitPatrolReport">
+          {{ loading ? '提交中...' : '上报巡查情况' }}
+        </button>
+        <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
+          {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- 应急指挥部身份：指令下发 -->
+    <div class="input-zone" v-if="userRole === 'emergency_cmd'">
+      <label for="command">应急指令</label>
+      <div class="command-options">
+        <div class="command-option" @click="selectCommand('evacuate')" :class="{ active: selectedCommand === 'evacuate' }">
+          <span class="command-icon">🚶</span>
+          <span>人员转移</span>
+        </div>
+        <div class="command-option" @click="selectCommand('resource')" :class="{ active: selectedCommand === 'resource' }">
+          <span class="command-icon">📦</span>
+          <span>物资调配</span>
+        </div>
+        <div class="command-option" @click="selectCommand('rescue')" :class="{ active: selectedCommand === 'rescue' }">
+          <span class="command-icon">🆘</span>
+          <span>救援出动</span>
+        </div>
+      </div>
+      <textarea
+        v-model="commandDetail"
+        rows="2"
+        placeholder="输入具体指令内容..."
+      />
+      <div class="action-row">
+        <button class="generate-btn" :disabled="loading" @click="submitCommand">
+          {{ loading ? '发布中...' : '发布指令' }}
+        </button>
+        <button class="demo-btn" :disabled="demoRunning" @click="runDemo">
+          {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- 其他身份：保留原有文本输入 -->
+    <div class="input-zone" v-if="!['resident', 'community', 'emergency_cmd'].includes(userRole)">
       <label for="dutyNote">现场文本信息</label>
       <textarea
         id="dutyNote"
@@ -53,8 +151,9 @@
           {{ demoRunning ? '流程执行中...' : '一键流程演示' }}
         </button>
       </div>
-      <p v-if="error" class="error-tip">{{ error }}</p>
     </div>
+
+    <p v-if="error" class="error-tip">{{ error }}</p>
 
     <div class="demo-script">
       <h4>演示流程状态</h4>
@@ -76,13 +175,11 @@
         </header>
 
         <section class="decision-body">
-          <!-- 执行对象 -->
           <div class="target-section">
             <span class="section-label">执行对象：</span>
             <span class="section-content">{{ getRoleSpecificTarget(item) }}</span>
           </div>
           
-          <!-- 建议动作 - 分行显示 -->
           <div class="action-section">
             <span class="section-label">建议动作：</span>
             <div class="action-list">
@@ -92,7 +189,6 @@
             </div>
           </div>
 
-          <!-- 折叠区域：特征贡献和阈值命中，默认折叠 -->
           <div class="collapsible-section">
             <div class="collapsible-header" @click="toggleCollapse(item.id)">
               <span class="collapse-icon">{{ isCollapsed(item.id) ? '▶' : '▼' }}</span>
@@ -162,7 +258,22 @@ const userStore = useUserStore()
 const userRole = computed(() => userStore.userInfo?.role || 'resident')
 const userRoleLevel = computed(() => userStore.userInfo?.role_level || 3)
 
-// 计算总影响人口（从 risk_points.json 中累加 threat 字段）
+// 居民身份相关状态
+const safetyStatus = ref('')
+const safetyDetail = ref('')
+
+// 基层单位身份相关状态
+const patrolStatus = ref('')
+const patrolDetail = ref('')
+
+// 应急指挥部身份相关状态
+const selectedCommand = ref('')
+const commandDetail = ref('')
+
+// 其他身份
+const dutyNote = ref('巡查员反馈：汤山北麓沟谷口有新裂缝，昨夜累计降雨38mm。')
+
+// 计算总影响人口
 const totalAffectedPopulation = computed(() => {
   try {
     const points = riskPointsData.points || []
@@ -177,120 +288,90 @@ const totalAffectedPopulation = computed(() => {
     })
     return total
   } catch (e) {
-    return 504 // 默认值
+    return 504
   }
 })
 
-// 角色名称映射
-const roleNameMap: Record<string, string> = {
-  emergency_cmd: '应急指挥部',
-  gov_dept: '政府部门',
-  community: '基层单位',
-  rescue_team: '救援队伍',
-  utility_worker: '抢修人员',
-  resident: '居民',
-  tourist: '游客',
-  business: '企业人员'
-}
-
-const currentRoleName = computed(() => roleNameMap[userRole.value] || '用户')
-
-// 折叠状态管理，默认所有项都是折叠的
-const collapsedItems = ref<Set<number>>(new Set())
-
-const toggleCollapse = (id: number) => {
-  if (collapsedItems.value.has(id)) {
-    collapsedItems.value.delete(id)
-  } else {
-    collapsedItems.value.add(id)
-  }
-}
-
-const isCollapsed = (id: number) => {
-  return collapsedItems.value.has(id)
-}
-
-// 将建议动作拆分成多行（按句号或分号分割）
-const getActionLines = (item: any) => {
-  let actionText = getRoleSpecificAction(item)
-  
-  // 移除末尾多余的句号
-  actionText = actionText.replace(/[。；]+$/, '')
-  
-  // 按句号、分号、换行符分割
-  let lines = actionText.split(/[。；\n]/)
-  
-  // 过滤空行，并清理每行首尾空格
-  lines = lines
-    .map((line: string) => line.trim())
-    .filter((line: string) => line.length > 0)
-    // 去除以"-"开头的行前的空白，但保留"-"
-    .map((line: string) => line.replace(/^[-—]\s*/, '• '))
-  
-  // 如果分割后只有一行，尝试按关键词分割
-  if (lines.length === 1 && actionText.length > 30) {
-    // 按"、"分割作为备用
-    const commaLines = actionText.split(/[、，]/)
-    if (commaLines.length > 1) {
-      lines = commaLines.map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-    }
+// 居民上报安全状态
+const submitSafetyReport = async () => {
+  if (!safetyStatus.value) {
+    ElMessage.warning('请选择您的安全状态')
+    return
   }
   
-  return lines
-}
-
-// 根据角色生成不同的建议动作（不带重复标点）
-const getRoleSpecificAction = (item: any) => {
-  const baseAction = item.action || ''
-  // 清理基础动作中的重复标点
-  let cleanBaseAction = baseAction.replace(/[。；]+$/, '').replace(/[。；]{2,}/g, '。')
-  
-  switch (userRole.value) {
-    case 'emergency_cmd':
-      return `${cleanBaseAction}。请立即启动应急响应预案，协调救援力量待命，通知相关单位做好物资准备`
-    case 'gov_dept':
-      return `${cleanBaseAction}。请督促相关单位落实防范措施，24小时内报送落实情况`
-    case 'community':
-      return `${cleanBaseAction}。立即组织网格员对辖区内隐患点进行巡查，通过微信群/广播通知居民做好防范，重点区域安排专人值守`
-    case 'rescue_team':
-      return `${cleanBaseAction}。请救援队伍集结待命，检查救援装备，确保30分钟内可出动`
-    case 'utility_worker':
-      return `${cleanBaseAction}。请抢修人员检查基础设施，做好应急抢修准备，保障水电气通信畅通`
-    case 'resident':
-      return `${cleanBaseAction}。请密切关注预警信息，避免前往危险区域，提前做好转移准备`
-    case 'tourist':
-      return `${cleanBaseAction}。请暂停前往地质灾害高风险景区，已在景区的游客听从工作人员指引`
-    case 'business':
-      return `${cleanBaseAction}。请企业暂停户外高危作业，检查厂区边坡稳定情况，做好应急准备`
-    default:
-      return cleanBaseAction
+  let reportText = `居民上报：安全状态 - ${safetyStatus.value === 'safe' ? '安全' : safetyStatus.value === 'warning' ? '有风险迹象' : '需要帮助'}`
+  if (safetyDetail.value) {
+    reportText += `，详情：${safetyDetail.value}`
   }
-}
-
-// 根据角色生成不同的执行对象
-const getRoleSpecificTarget = (item: any) => {
-  const baseTarget = item.target || ''
   
-  switch (userRole.value) {
-    case 'emergency_cmd':
-      return `${baseTarget}、应急指挥部、各联动单位`
-    case 'gov_dept':
-      return `${baseTarget}、相关监管部门`
-    case 'community':
-      return `${baseTarget}、社区网格员、辖区居民`
-    case 'rescue_team':
-      return `${baseTarget}、救援队伍`
-    case 'utility_worker':
-      return `${baseTarget}、抢修班组`
-    default:
-      return baseTarget
-  }
+  dutyNote.value = reportText
+  await generateDecision()
+  
+  // 清空状态
+  safetyStatus.value = ''
+  safetyDetail.value = ''
 }
 
-// 可编辑的现场文本
-const dutyNote = ref('巡查员反馈：汤山北麓沟谷口有新裂缝，昨夜累计降雨38mm。')
+// 基层单位上报巡查情况
+const submitPatrolReport = async () => {
+  if (!patrolStatus.value) {
+    ElMessage.warning('请选择巡查情况')
+    return
+  }
+  
+  let reportText = `基层单位巡查：${patrolStatus.value === 'safe' ? '一切正常' : patrolStatus.value === 'crack' ? '发现新裂缝' : '发现滑坡迹象'}`
+  if (patrolDetail.value) {
+    reportText += `，详情：${patrolDetail.value}`
+  }
+  
+  dutyNote.value = reportText
+  await generateDecision()
+  
+  patrolStatus.value = ''
+  patrolDetail.value = ''
+}
+
+// 应急指挥部发布指令
+const submitCommand = async () => {
+  if (!selectedCommand.value) {
+    ElMessage.warning('请选择指令类型')
+    return
+  }
+  
+  if (!commandDetail.value) {
+    ElMessage.warning('请输入具体指令内容')
+    return
+  }
+  
+  const commandMap: Record<string, string> = {
+    evacuate: '人员转移',
+    resource: '物资调配',
+    rescue: '救援出动'
+  }
+  
+  dutyNote.value = `【指挥部指令】${commandMap[selectedCommand.value]}：${commandDetail.value}`
+  await generateDecision()
+  
+  selectedCommand.value = ''
+  commandDetail.value = ''
+}
+
+// 选择安全状态
+const selectSafetyOption = (status: string) => {
+  safetyStatus.value = status
+}
+
+// 选择巡查情况
+const selectPatrolOption = (status: string) => {
+  patrolStatus.value = status
+}
+
+// 选择指令类型
+const selectCommand = (command: string) => {
+  selectedCommand.value = command
+}
+
 const weatherInfo = ref<WeatherData | null>(null)
-const isLoadingWeather = ref(false)
 
 const aiStore = useAiStore()
 const { mode, loading, error, modelVersion, lastUpdated, summary, decisions, demoRunning, demoSteps } = storeToRefs(aiStore)
@@ -298,27 +379,13 @@ const { mode, loading, error, modelVersion, lastUpdated, summary, decisions, dem
 const pointName = computed(() => props.point?.name || '重点监测点')
 const modeLabel = computed(() => (mode.value === 'real' ? '接口(阿里云)' : '模拟数据'))
 
-// 获取天气信息
 const getWeather = async () => {
-  if (!props.point?.lng || !props.point?.lat) {
-    console.log('无坐标信息，无法获取天气')
-    return
-  }
-  
-  isLoadingWeather.value = true
+  if (!props.point?.lng || !props.point?.lat) return
   try {
     const weather = await weatherService.getWeatherByLocation(props.point.lng, props.point.lat)
-    if (weather) {
-      weatherInfo.value = weather
-      
-      if (weather.rain_intensity !== 'none' && !dutyNote.value.includes('降雨')) {
-        console.log(`当前天气: ${weather.rainfall}`)
-      }
-    }
+    if (weather) weatherInfo.value = weather
   } catch (error) {
     console.error('获取天气失败:', error)
-  } finally {
-    isLoadingWeather.value = false
   }
 }
 
@@ -337,12 +404,6 @@ const generateDecision = async () => {
   if (error.value) {
     ElMessage.error(error.value)
     return
-  }
-  // 新决策生成后，将所有新项设为折叠状态
-  if (decisions.value.length) {
-    decisions.value.forEach(item => {
-      collapsedItems.value.add(item.id)
-    })
   }
   ElMessage.success('决策结果已更新')
 }
@@ -369,6 +430,95 @@ const markReview = (id: number) => {
   aiStore.markReview(id)
 }
 
+// 角色相关函数
+const roleNameMap: Record<string, string> = {
+  emergency_cmd: '应急指挥部',
+  gov_dept: '政府部门',
+  community: '基层单位',
+  rescue_team: '救援队伍',
+  utility_worker: '抢修人员',
+  resident: '居民',
+  tourist: '游客',
+  business: '企业人员'
+}
+
+const currentRoleName = computed(() => roleNameMap[userRole.value] || '用户')
+
+const collapsedItems = ref<Set<number>>(new Set())
+
+const toggleCollapse = (id: number) => {
+  if (collapsedItems.value.has(id)) {
+    collapsedItems.value.delete(id)
+  } else {
+    collapsedItems.value.add(id)
+  }
+}
+
+const isCollapsed = (id: number) => {
+  return collapsedItems.value.has(id)
+}
+
+const getActionLines = (item: any) => {
+  let actionText = getRoleSpecificAction(item)
+  actionText = actionText.replace(/[。；]+$/, '')
+  let lines = actionText.split(/[。；\n]/)
+  lines = lines
+    .map((line: string) => line.trim())
+    .filter((line: string) => line.length > 0)
+    .map((line: string) => line.replace(/^[-—]\s*/, '• '))
+  if (lines.length === 1 && actionText.length > 30) {
+    const commaLines = actionText.split(/[、，]/)
+    if (commaLines.length > 1) {
+      lines = commaLines.map((l: string) => l.trim()).filter((l: string) => l.length > 0)
+    }
+  }
+  return lines
+}
+
+const getRoleSpecificAction = (item: any) => {
+  const baseAction = item.action || ''
+  let cleanBaseAction = baseAction.replace(/[。；]+$/, '').replace(/[。；]{2,}/g, '。')
+  
+  switch (userRole.value) {
+    case 'emergency_cmd':
+      return `${cleanBaseAction}。请立即启动应急响应预案，协调救援力量待命，通知相关单位做好物资准备`
+    case 'gov_dept':
+      return `${cleanBaseAction}。请督促相关单位落实防范措施，24小时内报送落实情况`
+    case 'community':
+      return `${cleanBaseAction}。立即组织网格员对辖区内隐患点进行巡查，通过微信群/广播通知居民做好防范，重点区域安排专人值守`
+    case 'rescue_team':
+      return `${cleanBaseAction}。请救援队伍集结待命，检查救援装备，确保30分钟内可出动`
+    case 'utility_worker':
+      return `${cleanBaseAction}。请抢修人员检查基础设施，做好应急抢修准备，保障水电气通信畅通`
+    case 'resident':
+      return `${cleanBaseAction}。请密切关注预警信息，避免前往危险区域，提前做好转移准备`
+    case 'tourist':
+      return `${cleanBaseAction}。请暂停前往地质灾害高风险景区，已在景区的游客听从工作人员指引`
+    case 'business':
+      return `${cleanBaseAction}。请企业暂停户外高危作业，检查厂区边坡稳定情况，做好应急准备`
+    default:
+      return cleanBaseAction
+  }
+}
+
+const getRoleSpecificTarget = (item: any) => {
+  const baseTarget = item.target || ''
+  switch (userRole.value) {
+    case 'emergency_cmd':
+      return `${baseTarget}、应急指挥部、各联动单位`
+    case 'gov_dept':
+      return `${baseTarget}、相关监管部门`
+    case 'community':
+      return `${baseTarget}、社区网格员、辖区居民`
+    case 'rescue_team':
+      return `${baseTarget}、救援队伍`
+    case 'utility_worker':
+      return `${baseTarget}、抢修班组`
+    default:
+      return baseTarget
+  }
+}
+
 onMounted(() => {
   getWeather()
   if (!decisions.value.length) {
@@ -385,7 +535,6 @@ watch(
   }
 )
 
-// 监听 decisions 变化，确保新添加的项默认折叠
 watch(decisions, (newDecisions) => {
   if (newDecisions.length) {
     newDecisions.forEach(item => {
@@ -648,7 +797,6 @@ watch(decisions, (newDecisions) => {
   gap: 10px;
 }
 
-/* 执行对象和动作样式 */
 .target-section,
 .action-section {
   display: flex;
@@ -689,7 +837,6 @@ watch(decisions, (newDecisions) => {
   color: #00f0ff;
 }
 
-/* 折叠区域样式 */
 .collapsible-section {
   margin-top: 6px;
 }
@@ -864,5 +1011,74 @@ watch(decisions, (newDecisions) => {
   font-size: 11px;
   color: #ffd98e;
   margin-top: 6px;
+}
+
+/* 新增样式 */
+.safety-options,
+.patrol-options,
+.command-options {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.safety-option,
+.patrol-option,
+.command-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(0, 50, 80, 0.4);
+  border: 1px solid rgba(0, 180, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.safety-option:hover,
+.patrol-option:hover,
+.command-option:hover {
+  background: rgba(0, 100, 150, 0.4);
+  border-color: rgba(0, 200, 255, 0.6);
+}
+
+.safety-option.active,
+.patrol-option.active,
+.command-option.active {
+  background: rgba(0, 150, 200, 0.5);
+  border-color: #00f0ff;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.safety-icon,
+.patrol-icon,
+.command-icon {
+  font-size: 24px;
+}
+
+.safety-option span:last-child,
+.patrol-option span:last-child,
+.command-option span:last-child {
+  font-size: 12px;
+  color: #c7dced;
+}
+
+.safety-note,
+.patrol-note {
+  margin-bottom: 12px;
+}
+
+.safety-note textarea,
+.patrol-note textarea {
+  width: 100%;
+  border: 1px solid rgba(0, 180, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(1, 24, 42, 0.78);
+  color: #dceeff;
+  padding: 8px;
+  resize: vertical;
 }
 </style>
