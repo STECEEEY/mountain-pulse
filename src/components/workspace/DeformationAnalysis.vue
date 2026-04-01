@@ -663,10 +663,10 @@ watch(
   font-weight: 500;
 }
 
-.level-badge.danger { background: rgba(255, 68, 68, 0.2); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.5); }
-.level-badge.warning { background: rgba(255, 136, 68, 0.2); color: #ff8844; border: 1px solid rgba(255, 136, 68, 0.5); }
-.level-badge.medium { background: rgba(255, 204, 68, 0.2); color: #ffcc44; border: 1px solid rgba(255, 204, 68, 0.5); }
-.level-badge.safe { background: rgba(68, 255, 68, 0.2); color: #44ff44; border: 1px solid rgba(68, 255, 68, 0.5); }
+.level-badge.danger { background: rgba(244, 67, 54, 0.16); color: #F44336; border: 1px solid rgba(244, 67, 54, 0.45); }
+.level-badge.warning { background: rgba(255, 152, 0, 0.16); color: #FF9800; border: 1px solid rgba(255, 152, 0, 0.45); }
+.level-badge.medium { background: rgba(255, 238, 88, 0.2); color: #FFEE58; border: 1px solid rgba(255, 238, 88, 0.45); }
+.level-badge.safe { background: rgba(129, 199, 132, 0.2); color: #81C784; border: 1px solid rgba(129, 199, 132, 0.45); }
 
 .coords {
   font-size: 13px;
@@ -766,8 +766,8 @@ watch(
 }
 
 @keyframes pulseWarning {
-  0%, 100% { border-color: rgba(255, 136, 68, 0.3); }
-  50% { border-color: rgba(255, 136, 68, 0.6); }
+  0%, 100% { border-color: rgba(255, 152, 0, 0.35); }
+  50% { border-color: rgba(255, 152, 0, 0.65); }
 }
 
 .stat-label {
@@ -781,8 +781,8 @@ watch(
   color: #00f0ff;
 }
 
-.stat-value.danger { color: #ff4444; text-shadow: 0 0 10px rgba(255, 68, 68, 0.5); }
-.stat-value.warning { color: #ffaa00; }
+.stat-value.danger { color: #F44336; text-shadow: 0 0 10px rgba(244, 67, 54, 0.45); }
+.stat-value.warning { color: #FF9800; }
 
 .ai-analysis {
   background: linear-gradient(135deg, rgba(0, 50, 100, 0.4) 0%, rgba(0, 80, 60, 0.3) 100%);
