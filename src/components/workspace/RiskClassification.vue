@@ -455,7 +455,7 @@ const loadSurroundingData = async () => {
   try {
     const baseUrl = '/geodata'
     const center = { lng: props.point.lng, lat: props.point.lat }
-    const radius = 0.015 // 约1.5km
+    const radius = 0.1 // 约1.5km
     
     console.log('📡 请求URL:', `${baseUrl}/building.geojson`)
     
