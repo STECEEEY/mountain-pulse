@@ -201,17 +201,19 @@ const callAI = async () => {
   
   await aiStore.refreshDecision(request)
   
-  if (aiStore.decisions.length > 0) {
-    // 取第一条建议
-    aiSuggestion.value = aiStore.decisions[0].action
-    aiConfidence.value = aiStore.decisions[0].confidence
+  const decisions = aiStore.decisions
+  if (decisions && Array.isArray(decisions) && decisions.length > 0) {
+    const firstDecision = decisions[0]
+    // 使用可选链和空值合并运算符
+    aiSuggestion.value = firstDecision?.action || getFallbackSuggestion()
+    aiConfidence.value = firstDecision?.confidence ?? 65
   } else {
     // 降级建议
     aiSuggestion.value = getFallbackSuggestion()
     aiConfidence.value = 65
   }
 }
-
+  
 const getFallbackSuggestion = () => {
   const score = warningScore.value
   if (score >= 70) {
