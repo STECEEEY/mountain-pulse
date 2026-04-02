@@ -25,6 +25,10 @@
       "destination": "http://47.102.147.118:5000/api/rainfall/$1"
     },
     {
+      "source": "/api/risk/predict",
+      "destination": "http://47.102.147.118:8001/predict"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
