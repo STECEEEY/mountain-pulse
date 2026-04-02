@@ -33,6 +33,8 @@ export interface RiskPoint {
   latitude: number
   elevation: number
   slope: number
+  curvature: number   // 曲率 (新增)
+  aspect: number      // 坡向 (新增) 0-360°
 }
 
 export type RiskLevel = '极高' | '高' | '中' | '低' | 'danger' | 'warning' | 'medium' | 'safe'
