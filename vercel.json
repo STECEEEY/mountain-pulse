@@ -29,6 +29,14 @@
       "destination": "http://47.102.147.118:8001/predict"
     },
     {
+      "source": "/api/weather",
+      "destination": "/api/weather.ts"
+    },
+    {
+      "source": "/geodata/:path*",
+      "destination": "http://47.102.147.118:8080/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
