@@ -47,7 +47,15 @@ export default defineConfig({
       '/geodata': {
         target: 'http://47.102.147.118:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/geodata/, '')
+        rewrite: (path) => path.replace(/^\/geodata/, ''),
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('🔀 GeoJSON代理请求:', req.url)
+          })
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('🔀 GeoJSON代理响应:', proxyRes.statusCode)
+          })
+        }
       },
       '/aliyun': {
         target: 'https://dashscope.aliyuncs.com',
