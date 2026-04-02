@@ -58,7 +58,7 @@ watch(() => props.selectedPoint, (newPoint: any) => {
 const tabs = [
   { key: 'decision', label: '决策驾驶', icon: Cpu },
   { key: 'deformation', label: '形变分析', icon: TrendCharts },
-  { key: 'risk', label: '风险分级', icon: Warning },
+  { key: 'risk', label: '预警分析', icon: Warning },
   { key: 'risk-analysis', label: '风险分析', icon: DataAnalysis },
   { key: 'detail', label: '数据详情', icon: Document },
 ]
