@@ -26,6 +26,23 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
+      // 新增：GeoJSON 数据代理（端口8080）
+      '/geodata': {
+        target: 'http://47.102.147.118:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/geodata/, ''),
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('GeoJSON代理请求:', req.method, req.url)
+          })
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('GeoJSON代理响应状态:', proxyRes.statusCode)
+          })
+          proxy.on('error', (err, req, res) => {
+            console.log('GeoJSON代理错误:', err)
+          })
+        }
+      },
       '/tencent-map': {
         target: 'https://apis.map.qq.com',
         changeOrigin: true,
