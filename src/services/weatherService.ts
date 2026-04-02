@@ -17,14 +17,13 @@ class WeatherService {
     try {
       console.log('🌤️ 获取天气信息:', lng, lat);
       
-      // 通过 Vercel 代理调用
       const response = await axios.get('/api/weather', {
         params: { lng, lat },
-        timeout: 10000
+        timeout: 15000
       });
       
       if (response.data && response.data.city) {
-        console.log('✅ 天气代理返回:', response.data);
+        console.log('✅ 天气API返回:', response.data);
         return {
           city: response.data.city,
           weather: response.data.weather,
@@ -41,11 +40,11 @@ class WeatherService {
       
     } catch (error) {
       console.error('❌ 获取天气失败:', error);
-      // 返回模拟数据作为降级方案
+      // 降级返回模拟数据
       return {
         city: '南京市',
         weather: '多云',
-        temperature: '22°C',
+        temperature: '29°C',
         humidity: '65%',
         rainfall: '无降雨',
         rain_intensity: 'none'
