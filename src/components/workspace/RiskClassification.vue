@@ -271,11 +271,10 @@ interface RainfallData {
 interface GeoJSONFeature {
   geometry: {
     type: string
-    coordinates: number[] | number[][]
+    coordinates: number[] | number[][] | number[][][]
   }
   properties?: any
 }
-
 const props = defineProps<{
   point: {
     id?: number
@@ -387,12 +386,18 @@ const loadSurroundingData = async () => {
     ])
     
     const radius = 0.01
-    const center = { lng: props.point.lng, lat: props.point.lat }
+    const centerLng = props.point.lng
+    const centerLat = props.point.lat
+    
+    // 安全地获取 features 数组
+    const buildingFeatures = (buildingsRes.features || []) as GeoJSONFeature[]
+    const roadFeatures = (roadsRes.features || []) as GeoJSONFeature[]
+    const railwayFeatures = (railwaysRes.features || []) as GeoJSONFeature[]
     
     surroundingData.value = {
-      buildings: filterFeaturesByDistance(buildingsRes.features || [], center, radius),
-      roads: filterFeaturesByDistance(roadsRes.features || [], center, radius),
-      railways: filterFeaturesByDistance(railwaysRes.features || [], center, radius),
+      buildings: filterFeaturesByDistance(buildingFeatures, { lng: centerLng, lat: centerLat }, radius),
+      roads: filterFeaturesByDistance(roadFeatures, { lng: centerLng, lat: centerLat }, radius),
+      railways: filterFeaturesByDistance(railwayFeatures, { lng: centerLng, lat: centerLat }, radius),
       loading: false
     }
     
@@ -407,27 +412,45 @@ const loadSurroundingData = async () => {
   }
 }
 
+const getPointLng = computed(() => props.point?.lng ?? 0)
+const getPointLat = computed(() => props.point?.lat ?? 0)
+  
 const filterFeaturesByDistance = (features: GeoJSONFeature[], center: { lng: number; lat: number }, radius: number): GeoJSONFeature[] => {
   return features.filter(feature => {
-    let coords: number[] = [0, 0]
-    if (feature.geometry.type === 'Point') {
-      coords = feature.geometry.coordinates as number[]
-    } else if (feature.geometry.type === 'LineString') {
-      const lineCoords = feature.geometry.coordinates as number[][]
-      if (lineCoords.length > 0) {
-        coords = lineCoords[0]
-      }
-    } else if (feature.geometry.type === 'Polygon') {
-      const polygonCoords = feature.geometry.coordinates as number[][][]
-      if (polygonCoords.length > 0 && polygonCoords[0].length > 0) {
-        coords = polygonCoords[0][0]
-      }
-    }
+    let lng = 0
+    let lat = 0
     
-    const lng = coords[0]
-    const lat = coords[1]
-    const distance = Math.sqrt(Math.pow(lng - center.lng, 2) + Math.pow(lat - center.lat, 2))
-    return distance <= radius
+    try {
+      const coords = feature.geometry.coordinates
+      
+      if (feature.geometry.type === 'Point') {
+        const pointCoords = coords as number[]
+        lng = pointCoords[0] || 0
+        lat = pointCoords[1] || 0
+      } 
+      else if (feature.geometry.type === 'LineString') {
+        const lineCoords = coords as number[][]
+        if (lineCoords.length > 0 && lineCoords[0]) {
+          lng = lineCoords[0][0] || 0
+          lat = lineCoords[0][1] || 0
+        }
+      } 
+      else if (feature.geometry.type === 'Polygon') {
+        const polygonCoords = coords as number[][][]
+        if (polygonCoords.length > 0 && polygonCoords[0] && polygonCoords[0][0]) {
+          lng = polygonCoords[0][0][0] || 0
+          lat = polygonCoords[0][0][1] || 0
+        }
+      }
+      
+      const centerLng = center.lng ?? 0
+      const centerLat = center.lat ?? 0
+      const distance = Math.sqrt(Math.pow(lng - centerLng, 2) + Math.pow(lat - centerLat, 2))
+      return distance <= radius
+    } catch (error) {
+      console.warn('解析坐标失败:', error)
+      return false
+    }
   })
 }
 
@@ -469,6 +492,11 @@ const generateDutyNote = (): string => {
   
   if (buildingCount > 0) note += `周边${buildingCount}栋建筑，`
   if (railwayCount > 0) note += `周边${railwayCount}条铁路，`
+  
+  // 添加坐标信息
+  if (props.point?.lng && props.point?.lat) {
+    note += `坐标(${props.point.lng.toFixed(4)}, ${props.point.lat.toFixed(4)})，`
+  }
   
   return note || '常规监测点位，需持续关注'
 }
