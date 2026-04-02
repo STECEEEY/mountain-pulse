@@ -361,7 +361,7 @@ const loadRainfallData = async () => {
   }
 }
 
-// 加载周边设施数据
+// 加载周边设施数据 - 加强调试版
 const loadSurroundingData = async () => {
   if (!props.point?.lng || !props.point?.lat) {
     console.log('❌ 跳过周边设施加载：缺少经纬度')
@@ -375,9 +375,9 @@ const loadSurroundingData = async () => {
     const baseUrl = '/geodata'
     const center = { lng: props.point.lng, lat: props.point.lat }
     
-    const buildingRadius = 0.05
-    const roadRadius = 0.05
-    const railwayRadius = 0.08
+    const buildingRadius = 0.1   // 扩大到 0.1（约11公里）测试
+    const roadRadius = 0.1
+    const railwayRadius = 0.1
     
     console.log('📡 开始请求数据...')
     
@@ -393,37 +393,112 @@ const loadSurroundingData = async () => {
       铁路: railwaysRes.features?.length
     })
     
+    // 调试：打印前3个道路数据的坐标
+    if (roadsRes.features && roadsRes.features.length > 0) {
+      console.log('=== 道路数据样例 ===')
+      for (let i = 0; i < Math.min(3, roadsRes.features.length); i++) {
+        const f = roadsRes.features[i]
+        console.log(`道路${i+1}:`, {
+          type: f.geometry?.type,
+          coordinates: f.geometry?.coordinates,
+          // 尝试提取第一个点
+          firstPoint: f.geometry?.type === 'LineString' ? f.geometry.coordinates[0] : 
+                     f.geometry?.type === 'MultiLineString' ? f.geometry.coordinates[0]?.[0] : 
+                     f.geometry?.coordinates
+        })
+      }
+    }
+    
+    // 调试：打印前3个建筑数据的坐标
+    if (buildingsRes.features && buildingsRes.features.length > 0) {
+      console.log('=== 建筑数据样例 ===')
+      for (let i = 0; i < Math.min(3, buildingsRes.features.length); i++) {
+        const f = buildingsRes.features[i]
+        console.log(`建筑${i+1}:`, {
+          type: f.geometry?.type,
+          coordinates: f.geometry?.coordinates,
+          // 如果是多边形，取第一个环的第一个点
+          firstPoint: f.geometry?.type === 'Polygon' ? f.geometry.coordinates[0]?.[0] : 
+                     f.geometry?.coordinates
+        })
+      }
+    }
+    
+    // 调试：打印中心点坐标
+    console.log('中心点坐标:', center)
+    
     const countInRange = (features: any[], radius: number, type: string) => {
       if (!features || !Array.isArray(features) || features.length === 0) {
+        console.log(`${type}: 无数据`)
         return 0
       }
       
       let count = 0
       let minDistance = Infinity
+      let validCoordCount = 0
+      let firstValidDistance = null
       
-      for (let i = 0; i < features.length; i++) {
+      // 只检查前2000个，提高性能
+      const limit = Math.min(features.length, 2000)
+      
+      for (let i = 0; i < limit; i++) {
         const feature = features[i]
         try {
           let lng = 0, lat = 0
           const geom = feature?.geometry
           if (!geom || !geom.coordinates) continue
           
+          // 根据几何类型提取坐标
           if (geom.type === 'Point') {
             lng = geom.coordinates[0]
             lat = geom.coordinates[1]
-          } else if (geom.type === 'LineString' && geom.coordinates[0]) {
-            lng = geom.coordinates[0][0]
-            lat = geom.coordinates[0][1]
-          } else if (geom.type === 'Polygon' && geom.coordinates[0] && geom.coordinates[0][0]) {
-            lng = geom.coordinates[0][0][0]
-            lat = geom.coordinates[0][0][1]
-          } else {
+            validCoordCount++
+          } 
+          else if (geom.type === 'LineString') {
+            // 取线段的中点或第一个点
+            if (geom.coordinates && geom.coordinates.length > 0) {
+              const midIndex = Math.floor(geom.coordinates.length / 2)
+              lng = geom.coordinates[midIndex][0]
+              lat = geom.coordinates[midIndex][1]
+              validCoordCount++
+            }
+          } 
+          else if (geom.type === 'Polygon') {
+            // 取多边形的中心点（第一个环的中间点）
+            if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0].length > 0) {
+              const midIndex = Math.floor(geom.coordinates[0].length / 2)
+              lng = geom.coordinates[0][midIndex][0]
+              lat = geom.coordinates[0][midIndex][1]
+              validCoordCount++
+            }
+          } 
+          else if (geom.type === 'MultiLineString') {
+            // 多线段，取第一条线的中点
+            if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0].length > 0) {
+              const midIndex = Math.floor(geom.coordinates[0].length / 2)
+              lng = geom.coordinates[0][midIndex][0]
+              lat = geom.coordinates[0][midIndex][1]
+              validCoordCount++
+            }
+          }
+          else {
             continue
           }
           
+          // 检查坐标有效性
+          if (lng === 0 && lat === 0) continue
+          if (isNaN(lng) || isNaN(lat)) continue
+          
+          // 计算距离（度）
           const dx = lng - center.lng
           const dy = lat - center.lat
           const distance = Math.sqrt(dx * dx + dy * dy)
+          
+          if (firstValidDistance === null && validCoordCount === 1) {
+            firstValidDistance = distance * 111
+            console.log(`${type} 第一个有效坐标距离中心点: ${firstValidDistance.toFixed(2)}km`)
+            console.log(`  坐标: (${lng}, ${lat})`)
+          }
           
           if (distance < minDistance) {
             minDistance = distance
@@ -433,11 +508,11 @@ const loadSurroundingData = async () => {
             count++
           }
         } catch (e) {
-          // 忽略
+          // 忽略解析错误
         }
       }
       
-      console.log(`${type}: 范围内=${count}, 最近距离=${minDistance === Infinity ? '无' : (minDistance * 111).toFixed(2)}km`)
+      console.log(`${type}: 有效坐标数=${validCoordCount}, 范围内=${count}, 最近距离=${minDistance === Infinity ? '无' : (minDistance * 111).toFixed(2)}km`)
       return count
     }
     
