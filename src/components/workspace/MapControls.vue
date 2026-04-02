@@ -14,7 +14,7 @@
         </label>
         <label class="layer-item">
           <el-checkbox :model-value="props.layerState.disasterSites" @change="onDisasterSitesChange" />
-          <span>受灾点</span>
+          <span>历史受灾点</span>
         </label>
 
         <div class="opacity-item">
