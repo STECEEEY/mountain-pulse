@@ -26,7 +26,7 @@
       <RiskClassification v-if="activeTab === 'risk'" :point="selectedPoint" />
 
       <!-- 风险分析 -->
-      <RiskAnalysisPanel v-if="activeTab === 'risk-analysis'" : :point="selectedPoint"/>
+      <RiskAnalysisPanel v-if="activeTab === 'risk-analysis'" :point="selectedPoint"/>
 
       <!-- 数据详情 -->
       <PointDetail v-if="activeTab === 'detail'" :point="selectedPoint" />
