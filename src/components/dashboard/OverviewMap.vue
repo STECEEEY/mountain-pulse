@@ -17,19 +17,19 @@
     <div class="map-legend">
       <div class="legend-item">
         <span class="legend-dot danger"></span>
-        <span>极高风险</span>
+        <span>重点监测</span>
       </div>
       <div class="legend-item">
         <span class="legend-dot warning"></span>
-        <span>高风险</span>
+        <span>次重点监测</span>
       </div>
       <div class="legend-item">
         <span class="legend-dot medium"></span>
-        <span>中风险</span>
+        <span>一般监测</span>
       </div>
       <div class="legend-item">
         <span class="legend-dot safe"></span>
-        <span>低风险</span>
+        <span>常规监测</span>
       </div>
       <div class="legend-item">
         <span class="legend-dot disaster-site"></span>
