@@ -84,55 +84,44 @@
 
     <!-- 周边设施详情 -->
     <div class="facilities-section">
-      <div class="section-title">
-        <span>🏗️ 周边设施详情</span>
-        <span class="weight-hint">基于GeoJSON空间分析</span>
-      </div>
-      
-      <div class="facilities-grid">
-        <div class="facility-detail-card">
-          <div class="facility-icon building">🏢</div>
-          <div class="facility-info">
-            <div class="facility-count">{{ buildingCount }}</div>
-            <div class="facility-name">建筑</div>
-          </div>
-          <div class="facility-impact" :class="getBuildingImpactClass(buildingCount)">
-            {{ getBuildingImpact(buildingCount) }}
-          </div>
-        </div>
-        
-        <div class="facility-detail-card">
-          <div class="facility-icon road">🛣️</div>
-          <div class="facility-info">
-            <div class="facility-count">{{ roadCount }}</div>
-            <div class="facility-name">道路</div>
-          </div>
-          <div class="facility-impact" :class="getRoadImpactClass(roadCount)">
-            {{ getRoadImpact(roadCount) }}
-          </div>
-        </div>
-        
-        <div class="facility-detail-card">
-          <div class="facility-icon railway">🚂</div>
-          <div class="facility-info">
-            <div class="facility-count">{{ railwayCount }}</div>
-            <div class="facility-name">铁路</div>
-          </div>
-          <div class="facility-impact" :class="getRailwayImpactClass(railwayCount)">
-            {{ getRailwayImpact(railwayCount) }}
-          </div>
+    <div class="section-title">
+      <span>🏗️ 周边设施详情</span>
+      <span class="weight-hint">基于GeoJSON空间分析</span>
+    </div>
+    
+    <div class="facilities-stats">
+      <div class="stat-row">
+        <div class="stat-label">🏢 建筑</div>
+        <div class="stat-value">{{ buildingCount }}</div>
+        <div class="stat-impact" :class="getBuildingImpactClass(buildingCount)">
+          {{ getBuildingImpact(buildingCount) }}
         </div>
       </div>
+      <div class="stat-row">
+        <div class="stat-label">🛣️ 道路</div>
+        <div class="stat-value">{{ roadCount }}</div>
+        <div class="stat-impact" :class="getRoadImpactClass(roadCount)">
+          {{ getRoadImpact(roadCount) }}
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">🚂 铁路</div>
+        <div class="stat-value">{{ railwayCount }}</div>
+        <div class="stat-impact" :class="getRailwayImpactClass(railwayCount)">
+          {{ getRailwayImpact(railwayCount) }}
+        </div>
+      </div>
+    </div>
       
       <!-- 综合影响评估 -->
       <div class="impact-summary" v-if="hasSignificantFacilities">
-        <el-alert :type="facilityAlertType" :closable="false">
-          <template #title>
-            <span>{{ facilityImpactMessage }}</span>
-          </template>
-        </el-alert>
-      </div>
+      <el-alert :type="facilityAlertType" :closable="false">
+        <template #title>
+          <span>{{ facilityImpactMessage }}</span>
+        </template>
+      </el-alert>
     </div>
+  </div>
 
     <!-- AI 预警建议 -->
     <div class="ai-suggestion" v-if="aiSuggestion">
@@ -952,62 +941,68 @@ onMounted(() => {
 .factor-score { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .factor-desc { font-size: 10px; color: #6a6f8f; }
 
-/* 周边设施详情 */
+/* 周边设施详情 - 优化版 */
 .facilities-section {
   background: rgba(6, 182, 212, 0.05);
   border-radius: 16px;
   padding: 16px;
 }
 
-.facilities-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.facilities-stats {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   margin-bottom: 12px;
 }
 
-.facility-detail-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 12px;
+.stat-row {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
 }
 
-.facility-icon {
-  font-size: 28px;
+.stat-label {
+  font-size: 13px;
+  color: #a0a5c0;
+  min-width: 60px;
 }
 
-.facility-info {
-  flex: 1;
-}
-
-.facility-count {
-  font-size: 22px;
-  font-weight: 700;
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
   color: #fff;
+  min-width: 50px;
 }
 
-.facility-name {
-  font-size: 11px;
-  color: #8a8fb0;
+.stat-impact {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 16px;
+  margin-left: auto;
 }
 
-.facility-impact {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 12px;
+.stat-impact.high { 
+  background: rgba(255, 51, 102, 0.2); 
+  color: #ff6699; 
 }
 
-.facility-impact.high { background: rgba(255, 51, 102, 0.2); color: #ff6699; }
-.facility-impact.medium { background: rgba(255, 153, 51, 0.2); color: #ffaa66; }
-.facility-impact.low { background: rgba(102, 204, 255, 0.2); color: #66ccff; }
+.stat-impact.medium { 
+  background: rgba(255, 153, 51, 0.2); 
+  color: #ffaa66; 
+}
+
+.stat-impact.low { 
+  background: rgba(102, 204, 255, 0.2); 
+  color: #66ccff; 
+}
 
 .impact-summary {
   margin-top: 12px;
 }
-
+  
 /* AI 建议 */
 .ai-suggestion {
   background: rgba(102, 204, 255, 0.08);
