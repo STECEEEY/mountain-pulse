@@ -40,7 +40,7 @@ class WeatherService {
         const weatherResponse = await axios.get('https://restapi.amap.com/v3/weather/weatherInfo', {
           params: {
             city: adcode,
-            key: 4d95a8667039c3e5bb3ddb03ce1c71b8,
+            key: GAODE_KEY,
             extensions: 'all'
           },
           timeout: 10000
