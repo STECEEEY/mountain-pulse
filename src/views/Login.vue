@@ -78,11 +78,6 @@
           <span>还没有账号？</span>
           <el-link type="primary" @click="goToRegister">立即注册</el-link>
         </div>
-
-        <div v-if="loading" class="login-status-tip">
-          <span class="dot-flashing"></span>
-          <span>正在验证身份...</span>
-        </div>
         
         <div class="demo-tips">
           <p>测试账号</p>
