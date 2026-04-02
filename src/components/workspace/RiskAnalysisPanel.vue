@@ -238,11 +238,13 @@ const getRiskSuggestionByModel = (result: typeof modelResult.value) => {
 }
 
 // 调用后端 AI 模型预测
+// 调用后端 AI 模型预测（通过 Vercel 代理）
 const predictRisk = async (point: RiskPoint) => {
   isLoading.value = true
   
   try {
-    const response = await fetch(`${API_BASE_URL}/predict`, {
+    // 使用 Vercel 代理路径，不再直接写 IP
+    const response = await fetch('/api/risk/predict', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -251,8 +253,8 @@ const predictRisk = async (point: RiskPoint) => {
         velocity: point.velocity,
         slope: point.slope,
         elevation: point.elevation,
-        curvature: point.curvature || 0,
-        aspect: point.aspect || 0,
+        curvature: point.curvature ?? 0,
+        aspect: point.aspect ?? 90,
         name: point.name
       })
     })
@@ -264,7 +266,7 @@ const predictRisk = async (point: RiskPoint) => {
     const result = await response.json()
     modelResult.value = result
     
-    // 计算特征贡献度（基于实际测量值和模型概率的加权）
+    // 计算特征贡献度
     calculateFeatureImportance(point, result.risk_probability)
     
   } catch (error) {
