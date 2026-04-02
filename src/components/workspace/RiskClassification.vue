@@ -3,7 +3,7 @@
     <!-- 预警指数仪表 -->
     <div class="warning-gauge">
       <div class="gauge-container">
-        <div class="gauge-ring" :class="warningLevel">
+        <div class="gauge-ring" :class="warningLevel" :style="{'--score': warningScore}">
           <div class="gauge-inner">
             <span class="gauge-value">{{ warningScore }}</span>
             <span class="gauge-unit">分</span>
@@ -13,19 +13,67 @@
         <div class="gauge-badge">{{ warningLevelText }}</div>
       </div>
       
-      <!-- 影响因素 -->
+      <!-- 影响因素（权重可视化） -->
       <div class="factors-list">
-        <div v-for="factor in factors" :key="factor.name" class="factor-item">
+        <div class="factor-item">
           <div class="factor-header">
-            <span class="factor-name">{{ factor.icon }} {{ factor.name }}</span>
-            <span class="factor-value">{{ factor.value }}%</span>
+            <span class="factor-name">📊 滑坡概率 (40%)</span>
+            <span class="factor-value">{{ probabilityScore }} / 40</span>
           </div>
-          <el-progress 
-            :percentage="factor.value" 
-            :stroke-width="4"
-            :color="factor.color"
-            :show-text="false"
-          />
+          <el-progress :percentage="probabilityScore / 40 * 100" :stroke-width="4" color="#f59e0b" :show-text="false" />
+        </div>
+        <div class="factor-item">
+          <div class="factor-header">
+            <span class="factor-name">🌧️ 降雨影响 (25%)</span>
+            <span class="factor-value">{{ rainfallScore }} / 25</span>
+          </div>
+          <el-progress :percentage="rainfallScore / 25 * 100" :stroke-width="4" color="#3b82f6" :show-text="false" />
+        </div>
+        <div class="factor-item">
+          <div class="factor-header">
+            <span class="factor-name">👥 威胁人口 (20%)</span>
+            <span class="factor-value">{{ populationScore }} / 20</span>
+          </div>
+          <el-progress :percentage="populationScore / 20 * 100" :stroke-width="4" color="#ec489a" :show-text="false" />
+        </div>
+        <div class="factor-item">
+          <div class="factor-header">
+            <span class="factor-name">⛰️ 地形坡度 (10%)</span>
+            <span class="factor-value">{{ slopeScoreValue }} / 10</span>
+          </div>
+          <el-progress :percentage="slopeScoreValue / 10 * 100" :stroke-width="4" color="#8b5cf6" :show-text="false" />
+        </div>
+        <div class="factor-item" v-if="hasSurroundingData">
+          <div class="factor-header">
+            <span class="factor-name">🏗️ 周边设施 (5%)</span>
+            <span class="factor-value">{{ facilityScore }} / 5</span>
+          </div>
+          <el-progress :percentage="facilityScore / 5 * 100" :stroke-width="4" color="#06b6d4" :show-text="false" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 周边设施统计 -->
+    <div class="surrounding-stats" v-if="hasSurroundingData">
+      <div class="stats-title">
+        <el-icon><Location /></el-icon>
+        周边设施统计
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-icon">🏗️</span>
+          <span class="stat-value">{{ buildingCount }}</span>
+          <span class="stat-label">栋建筑</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">🛣️</span>
+          <span class="stat-value">{{ roadCount }}</span>
+          <span class="stat-label">条道路</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">🚂</span>
+          <span class="stat-value">{{ railwayCount }}</span>
+          <span class="stat-label">条铁路</span>
         </div>
       </div>
     </div>
@@ -41,7 +89,7 @@
         {{ aiSuggestion }}
       </div>
       <div class="suggestion-footer">
-        置信度: {{ aiConfidence }}% | 基于 {{ factorCount }} 项监测数据
+        置信度: {{ aiConfidence }}% | ML模型滑坡概率: {{ (riskProbability * 100).toFixed(1) }}%
       </div>
     </div>
 
@@ -61,8 +109,8 @@
           <span class="info-value">{{ deformationRate }} mm/d</span>
         </div>
         <div class="info-item">
-          <span class="info-label">地质稳定性</span>
-          <span class="info-value">{{ stability }}</span>
+          <span class="info-label">地形坡度</span>
+          <span class="info-value">{{ slope }}°</span>
         </div>
         <div class="info-item">
           <span class="info-label">预警等级</span>
@@ -75,9 +123,10 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
-import { Cpu, Warning } from '@element-plus/icons-vue'
+import { Cpu, Warning, Location } from '@element-plus/icons-vue'
 import { useAiStore } from '@/stores/ai'
 import type { DecisionRequest } from '@/services/aiService'
+import axios from 'axios'
 
 const props = defineProps<{
   point: {
@@ -90,64 +139,96 @@ const props = defineProps<{
     threat?: string
     actual_population?: number
     level?: string
-    geology?: {
-      stability?: string
-    }
+    risk_probability?: number  // ML模型输出的滑坡概率
   } | null
 }>()
 
 const aiStore = useAiStore()
 
-// 基础数据
-const deformationRate = ref(0)
-const population = ref(0)
-const stability = ref('稳定')
-const slope = ref(0)
+// ========== 基础数据 ==========
+const riskProbability = ref(0)      // ML滑坡概率 (0-1)
+const population = ref(0)           // 威胁人口
+const slope = ref(0)                // 地形坡度
+const deformationRate = ref(0)      // 形变速率
 
-// 加载数据
-const loadData = () => {
-  if (!props.point) return
-  
-  deformationRate.value = props.point.velocity || 0
-  slope.value = props.point.slope || 0
-  stability.value = props.point.geology?.stability || '稳定'
-  
-  // 解析威胁人口
-  if (props.point.actual_population) {
-    population.value = props.point.actual_population
-  } else if (props.point.threat) {
-    const match = props.point.threat.match(/\d+/)
-    population.value = match ? parseInt(match[0]) : 0
-  }
-}
+// ========== 降雨数据 ==========
+const monthlyRainfall = ref(0)       // 当月降水量
+const historicalMean = ref(0)        // 历史同期均值
+const historicalStd = ref(0)         // 历史同期标准差
+const rainfallLoading = ref(false)
 
-// 计算预警分数
+// ========== 周边设施数据 ==========
+const buildingCount = ref(0)
+const roadCount = ref(0)
+const railwayCount = ref(0)
+const surroundingLoading = ref(false)
+
+const hasSurroundingData = computed(() => {
+  return buildingCount.value > 0 || roadCount.value > 0 || railwayCount.value > 0
+})
+
+// ========== 各因子评分计算 ==========
+
+// 1. 滑坡概率评分 (0-40分)
+const probabilityScore = computed(() => {
+  return Math.min(riskProbability.value * 40, 40)
+})
+
+// 2. 降雨影响评分 (0-25分) - 基于月降水异常度
+const rainfallScore = computed(() => {
+  if (historicalStd.value === 0 || monthlyRainfall.value === 0) return 0
+  
+  const anomaly = (monthlyRainfall.value - historicalMean.value) / historicalStd.value
+  
+  if (anomaly >= 2.0) return 25   // 显著偏多
+  if (anomaly >= 1.5) return 20   // 明显偏多
+  if (anomaly >= 1.0) return 15   // 偏多
+  if (anomaly >= 0.5) return 10   // 略多
+  if (anomaly >= 0) return 5      // 正常
+  return 0                         // 偏少
+})
+
+// 3. 人口评分 (0-20分)
+const populationScore = computed(() => {
+  const pop = population.value
+  if (pop >= 1000) return 20
+  if (pop >= 500) return 15
+  if (pop >= 200) return 12
+  if (pop >= 100) return 8
+  if (pop >= 50) return 5
+  if (pop >= 10) return 3
+  return 0
+})
+
+// 4. 坡度评分 (0-10分)
+const slopeScoreValue = computed(() => {
+  const s = slope.value
+  if (s >= 35) return 10
+  if (s >= 25) return 8
+  if (s >= 15) return 5
+  if (s >= 8) return 3
+  return 1
+})
+
+// 5. 设施评分 (0-5分)
+const facilityScore = computed(() => {
+  let score = 0
+  score += Math.min(buildingCount.value / 20, 2)   // 建筑最多2分
+  score += Math.min(roadCount.value / 10, 2)       // 道路最多2分
+  score += Math.min(railwayCount.value * 1, 1)     // 铁路最多1分
+  return Math.min(score, 5)
+})
+
+// ========== 综合预警指数计算 ==========
 const warningScore = computed(() => {
-  // 形变速率影响 (0-40分)
-  let deformationScore = 0
-  if (deformationRate.value > 10) deformationScore = 40
-  else if (deformationRate.value > 5) deformationScore = 30
-  else if (deformationRate.value > 1) deformationScore = 20
-  else if (deformationRate.value > 0.1) deformationScore = 10
+  const rawScore = 
+    probabilityScore.value * 0.40 +
+    rainfallScore.value * 0.25 +
+    populationScore.value * 0.20 +
+    slopeScoreValue.value * 0.10 +
+    facilityScore.value * 0.05
   
-  // 坡度影响 (0-30分)
-  let slopeScore = 0
-  if (slope.value > 45) slopeScore = 30
-  else if (slope.value > 30) slopeScore = 20
-  else if (slope.value > 15) slopeScore = 10
-  
-  // 稳定性影响 (0-20分)
-  let stabilityScore = 0
-  if (stability.value === '不稳定') stabilityScore = 20
-  else if (stability.value === '较不稳定') stabilityScore = 15
-  else if (stability.value === '基本稳定') stabilityScore = 8
-  
-  // 人口影响 (0-10分)
-  let populationScore = 0
-  if (population.value > 500) populationScore = 10
-  else if (population.value > 100) populationScore = 5
-  
-  return deformationScore + slopeScore + stabilityScore + populationScore
+  return Math.min(Math.round(rawScore), 100)
 })
 
 // 预警等级
@@ -160,34 +241,187 @@ const warningLevel = computed(() => {
 })
 
 const warningLevelText = computed(() => {
-  const map = {
+  const map: Record<string, string> = {
     critical: '红色预警',
     high: '橙色预警',
     medium: '黄色预警',
     low: '蓝色预警'
   }
-  return map[warningLevel.value]
+  return map[warningLevel.value] || '正常监测'
 })
 
-// 影响因素列表
-const factors = computed(() => [
-  { name: '形变速率', icon: '📈', value: Math.min(40, deformationRate.value * 4), color: '#f59e0b' },
-  { name: '地形坡度', icon: '⛰️', value: Math.min(30, slope.value * 0.67), color: '#3b82f6' },
-  { name: '地质条件', icon: '🪨', value: stability.value === '不稳定' ? 20 : stability.value === '较不稳定' ? 15 : 8, color: '#8b5cf6' },
-  { name: '人口暴露', icon: '👥', value: Math.min(10, population.value / 50), color: '#ec489a' }
-])
+// ========== 数据加载函数 ==========
 
-// AI 建议
+// 加载基础数据
+const loadData = () => {
+  if (!props.point) return
+  
+  riskProbability.value = props.point.risk_probability || 0
+  slope.value = props.point.slope || 0
+  deformationRate.value = props.point.velocity || 0
+  
+  if (props.point.actual_population) {
+    population.value = props.point.actual_population
+  } else if (props.point.threat) {
+    const match = props.point.threat.match(/\d+/)
+    population.value = match ? parseInt(match[0]) : 0
+  }
+  
+  console.log('📊 数据加载:', {
+    滑坡概率: riskProbability.value,
+    坡度: slope.value,
+    人口: population.value
+  })
+}
+
+// 加载降雨数据（需要根据您的API调整）
+const loadRainfallData = async () => {
+  if (!props.point?.lng || !props.point?.lat) return
+  
+  rainfallLoading.value = true
+  
+  try {
+    // 获取当前月份
+    const now = new Date()
+    const currentMonth = now.getMonth() + 1
+    const currentYear = now.getFullYear()
+    
+    // 调用您的降水数据API
+    // 请根据您实际的API接口修改
+    const response = await axios.get('/api/rainfall/statistics', {
+      params: {
+        lng: props.point.lng,
+        lat: props.point.lat,
+        month: currentMonth
+      }
+    })
+    
+    if (response.data) {
+      monthlyRainfall.value = response.data.current_month_rainfall || 0
+      historicalMean.value = response.data.historical_mean || 0
+      historicalStd.value = response.data.historical_std || 1
+    }
+    
+    console.log('🌧️ 降雨数据:', {
+      当月降雨: monthlyRainfall.value,
+      历史均值: historicalMean.value,
+      异常度: ((monthlyRainfall.value - historicalMean.value) / historicalStd.value).toFixed(2)
+    })
+  } catch (error) {
+    console.error('加载降雨数据失败:', error)
+  } finally {
+    rainfallLoading.value = false
+  }
+}
+
+// 加载周边设施数据
+const loadSurroundingData = async () => {
+  if (!props.point?.lng || !props.point?.lat) return
+  
+  surroundingLoading.value = true
+  
+  try {
+    const baseUrl = '/geodata'
+    const center = { lng: props.point.lng, lat: props.point.lat }
+    const radius = 0.01 // 约1km范围
+    
+    const [buildingsRes, roadsRes, railwaysRes] = await Promise.allSettled([
+      fetch(`${baseUrl}/building.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
+      fetch(`${baseUrl}/roads.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
+      fetch(`${baseUrl}/railways.geojson`).then(res => res.json()).catch(() => ({ features: [] }))
+    ])
+    
+    const getFeatures = (result: PromiseSettledResult<any>) => {
+      if (result.status === 'fulfilled' && result.value?.features) {
+        return result.value.features
+      }
+      return []
+    }
+    
+    const countInRange = (features: any[]) => {
+      return features.filter(feature => {
+        try {
+          let lng = 0, lat = 0
+          const coords = feature?.geometry?.coordinates
+          if (!coords) return false
+          
+          if (feature.geometry.type === 'Point') {
+            lng = coords[0] || 0
+            lat = coords[1] || 0
+          } else if (feature.geometry.type === 'LineString' && coords[0]) {
+            lng = coords[0][0] || 0
+            lat = coords[0][1] || 0
+          } else if (feature.geometry.type === 'Polygon' && coords[0] && coords[0][0]) {
+            lng = coords[0][0][0] || 0
+            lat = coords[0][0][1] || 0
+          }
+          
+          const distance = Math.sqrt(Math.pow(lng - center.lng, 2) + Math.pow(lat - center.lat, 2))
+          return distance <= radius
+        } catch {
+          return false
+        }
+      }).length
+    }
+    
+    buildingCount.value = countInRange(getFeatures(buildingsRes))
+    roadCount.value = countInRange(getFeatures(roadsRes))
+    railwayCount.value = countInRange(getFeatures(railwaysRes))
+    
+    console.log('🏗️ 周边设施:', {
+      建筑: buildingCount.value,
+      道路: roadCount.value,
+      铁路: railwayCount.value,
+      设施分: facilityScore.value
+    })
+  } catch (error) {
+    console.error('加载周边设施失败:', error)
+  } finally {
+    surroundingLoading.value = false
+  }
+}
+
+// ========== AI 建议 ==========
 const aiSuggestion = ref('')
 const aiConfidence = ref(0)
-const factorCount = computed(() => factors.value.length)
 
-// 调用 AI 获取建议
+const getFallbackSuggestion = () => {
+  const score = warningScore.value
+  const prob = riskProbability.value
+  
+  if (score >= 70) {
+    let impact = ''
+    if (railwayCount.value > 0) impact = `，影响范围内有${railwayCount.value}条铁路`
+    if (buildingCount.value > 50) impact += `，${buildingCount.value}栋建筑需关注`
+    return `⚠️ 红色预警：ML模型显示滑坡概率${(prob * 100).toFixed(1)}%，建议立即启动应急响应，组织受影响人员转移${impact}`
+  }
+  if (score >= 50) {
+    if (railwayCount.value > 0) {
+      return `📊 橙色预警：滑坡概率${(prob * 100).toFixed(1)}%，周边有${railwayCount.value}条铁路，建议通知铁路部门关注`
+    }
+    if (buildingCount.value > 30) {
+      return `📊 橙色预警：滑坡概率${(prob * 100).toFixed(1)}%，周边建筑密集(${buildingCount.value}栋)，建议做好疏散准备`
+    }
+    return `📊 橙色预警：滑坡概率${(prob * 100).toFixed(1)}%，建议加强巡查监测`
+  }
+  if (score >= 30) {
+    return `🔍 黄色预警：滑坡概率${(prob * 100).toFixed(1)}%，建议保持常规监测，重点关注降雨`
+  }
+  return `✅ 蓝色预警：滑坡概率${(prob * 100).toFixed(1)}%，各项指标正常，保持常规监测`
+}
+
 const callAI = async () => {
   if (!props.point) return
   
   // 构建提示词
-  const dutyNote = `监测点: ${props.point.name}，形变速率${deformationRate.value}mm/d，坡度${slope.value}°，地质${stability.value}，威胁人口${population.value}人`
+  let dutyNote = `监测点: ${props.point.name}，ML模型预测滑坡概率${(riskProbability.value * 100).toFixed(1)}%，坡度${slope.value}°，威胁人口${population.value}人`
+  
+  if (rainfallScore.value > 0) {
+    dutyNote += `，当前月降水异常度${((monthlyRainfall.value - historicalMean.value) / historicalStd.value).toFixed(2)}`
+  }
+  if (buildingCount.value > 0) dutyNote += `，周边${buildingCount.value}栋建筑`
+  if (roadCount.value > 0) dutyNote += `，周边${roadCount.value}条道路`
+  if (railwayCount.value > 0) dutyNote += `，周边${railwayCount.value}条铁路`
   
   const request: DecisionRequest = {
     pointName: props.point.name || '未知点位',
@@ -204,40 +438,27 @@ const callAI = async () => {
   const decisions = aiStore.decisions
   if (decisions && Array.isArray(decisions) && decisions.length > 0) {
     const firstDecision = decisions[0]
-    // 使用可选链和空值合并运算符
     aiSuggestion.value = firstDecision?.action || getFallbackSuggestion()
-    aiConfidence.value = firstDecision?.confidence ?? 65
+    aiConfidence.value = firstDecision?.confidence ?? 70
   } else {
-    // 降级建议
     aiSuggestion.value = getFallbackSuggestion()
-    aiConfidence.value = 65
+    aiConfidence.value = 70
   }
-}
-  
-const getFallbackSuggestion = () => {
-  const score = warningScore.value
-  if (score >= 70) {
-    return '⚠️ 红色预警：建议立即启动应急响应，组织受影响人员转移，加密监测频次至2小时/次'
-  }
-  if (score >= 50) {
-    return '📊 橙色预警：建议加强巡查监测，做好应急准备，关注形变速率变化趋势'
-  }
-  if (score >= 30) {
-    return '🔍 黄色预警：建议保持常规监测，重点关注降雨和形变数据'
-  }
-  return '✅ 蓝色预警：各项指标正常，保持常规监测即可'
 }
 
-// 监听点位变化
+// ========== 监听点位变化 ==========
 watch(() => props.point, async (newPoint) => {
   if (newPoint) {
+    console.log('📡 监听到 point 变化:', newPoint.name)
     loadData()
+    await loadRainfallData()
+    await loadSurroundingData()
     await callAI()
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
 
 onMounted(() => {
-  console.log('预警模块已加载')
+  console.log('🚀 预警模块已加载，权重分配: 滑坡概率40% + 降雨25% + 人口20% + 坡度10% + 设施5%')
 })
 </script>
 
@@ -255,7 +476,7 @@ onMounted(() => {
 .warning-gauge {
   display: flex;
   gap: 24px;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
@@ -277,19 +498,16 @@ onMounted(() => {
 }
 
 .gauge-ring.critical {
-  background: conic-gradient(#ff3366 0deg, #ff3366 calc(360deg * var(--score, 0.7) / 100), #1a1f3a calc(360deg * var(--score, 0.7) / 100));
+  background: conic-gradient(#ff3366 0deg, #ff3366 calc(360deg * var(--score, 0) / 100), #1a1f3a calc(360deg * var(--score, 0) / 100));
 }
-
 .gauge-ring.high {
-  background: conic-gradient(#ff9933 0deg, #ff9933 calc(360deg * var(--score, 0.5) / 100), #1a1f3a calc(360deg * var(--score, 0.5) / 100));
+  background: conic-gradient(#ff9933 0deg, #ff9933 calc(360deg * var(--score, 0) / 100), #1a1f3a calc(360deg * var(--score, 0) / 100));
 }
-
 .gauge-ring.medium {
-  background: conic-gradient(#ffcc00 0deg, #ffcc00 calc(360deg * var(--score, 0.3) / 100), #1a1f3a calc(360deg * var(--score, 0.3) / 100));
+  background: conic-gradient(#ffcc00 0deg, #ffcc00 calc(360deg * var(--score, 0) / 100), #1a1f3a calc(360deg * var(--score, 0) / 100));
 }
-
 .gauge-ring.low {
-  background: conic-gradient(#33ff66 0deg, #33ff66 calc(360deg * var(--score, 0.1) / 100), #1a1f3a calc(360deg * var(--score, 0.1) / 100));
+  background: conic-gradient(#33ff66 0deg, #33ff66 calc(360deg * var(--score, 0) / 100), #1a1f3a calc(360deg * var(--score, 0) / 100));
 }
 
 .gauge-ring::before {
@@ -340,7 +558,8 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  min-width: 180px;
 }
 
 .factor-item {
@@ -351,7 +570,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .factor-name {
@@ -361,6 +580,52 @@ onMounted(() => {
 .factor-value {
   color: #66ccff;
   font-family: monospace;
+}
+
+/* 周边设施统计 */
+.surrounding-stats {
+  background: rgba(6, 182, 212, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.stats-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #06b6d4;
+  margin-bottom: 10px;
+}
+
+.stats-grid {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-icon {
+  font-size: 20px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #8a8fb0;
 }
 
 /* AI 建议区域 */
@@ -438,15 +703,12 @@ onMounted(() => {
 .info-value.critical {
   color: #ff6699;
 }
-
 .info-value.high {
   color: #ffaa66;
 }
-
 .info-value.medium {
   color: #ffcc44;
 }
-
 .info-value.low {
   color: #66ff99;
 }
