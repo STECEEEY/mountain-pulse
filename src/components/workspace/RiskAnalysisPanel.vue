@@ -49,16 +49,7 @@
       <div class="loading-spinner"></div>
       <span>加载中...</span>
     </div>
-
-    <!-- 综合风险评分 -->
-    <div v-else-if="totalRiskScore !== null" class="risk-score-summary">
-      <span class="score-label">综合风险评分</span>
-      <span class="score-value" :class="getRiskLevelClassByScore(totalRiskScore)">
-        {{ (totalRiskScore * 100).toFixed(1) }}分
-      </span>
-      <span class="score-level">{{ riskLevelText }}</span>
-    </div>
-
+    
     <!-- 风险因子列表 - 基于真实权重展示 -->
     <div v-if="dynamicFactors" class="factors-list">
       <div 
