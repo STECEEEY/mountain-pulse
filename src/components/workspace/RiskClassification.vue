@@ -14,22 +14,6 @@
           <div class="gauge-badge" :class="warningLevel">{{ warningLevelText }}</div>
         </div>
       </div>
-      
-      <!-- 核心指标卡片 -->
-      <div class="core-metrics">
-        <div class="metric-card">
-          <div class="metric-value">{{ (riskProbability * 100).toFixed(1) }}%</div>
-          <div class="metric-label">滑坡概率</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value">{{ population }}人</div>
-          <div class="metric-label">威胁人口</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value">{{ facilityScore }}/15</div>
-          <div class="metric-label">设施影响</div>
-        </div>
-      </div>
     </div>
 
     <!-- 权重因子详情 -->
