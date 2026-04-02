@@ -174,7 +174,7 @@ import { riskService } from '@/services/riskService'
 import type { RiskPoint, RiskStatistics } from '@/types/risk'
 
 // API 地址（你的阿里云服务器）
-const API_BASE_URL = 'http://47.102.147.118:8001'
+const API_BASE_URL = ''
 
 const stats = ref<RiskStatistics | null>(null)
 const pointsList = ref<RiskPoint[]>([])
