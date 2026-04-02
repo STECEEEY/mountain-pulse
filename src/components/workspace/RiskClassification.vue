@@ -417,93 +417,93 @@ const loadSurroundingData = async () => {
     console.log('中心点坐标:', center)
     
     const countInRange = (features: any[], radius: number, type: string) => {
-      if (!features || !Array.isArray(features) || features.length === 0) {
-        console.log(`${type}: 无数据`)
-        return 0
-      }
-      
-      let count = 0
-      let minDistance = Infinity
-      let validCoordCount = 0
-      let firstValidDistance = null
-      
-      // 只检查前2000个，提高性能
-      const limit = Math.min(features.length, 2000)
-      
-      for (let i = 0; i < limit; i++) {
-        const feature = features[i]
-        try {
-          let lng = 0, lat = 0
-          const geom = feature?.geometry
-          if (!geom || !geom.coordinates) continue
-          
-          // 根据几何类型提取坐标
-          if (geom.type === 'Point') {
-            lng = geom.coordinates[0]
-            lat = geom.coordinates[1]
-            validCoordCount++
-          } 
-          else if (geom.type === 'LineString') {
-            // 取线段的中点或第一个点
-            if (geom.coordinates && geom.coordinates.length > 0) {
-              const midIndex = Math.floor(geom.coordinates.length / 2)
-              lng = geom.coordinates[midIndex][0]
-              lat = geom.coordinates[midIndex][1]
-              validCoordCount++
-            }
-          } 
-          else if (geom.type === 'Polygon') {
-            // 取多边形的中心点（第一个环的中间点）
-            if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0].length > 0) {
-              const midIndex = Math.floor(geom.coordinates[0].length / 2)
-              lng = geom.coordinates[0][midIndex][0]
-              lat = geom.coordinates[0][midIndex][1]
-              validCoordCount++
-            }
-          } 
-          else if (geom.type === 'MultiLineString') {
-            // 多线段，取第一条线的中点
-            if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0].length > 0) {
-              const midIndex = Math.floor(geom.coordinates[0].length / 2)
-              lng = geom.coordinates[0][midIndex][0]
-              lat = geom.coordinates[0][midIndex][1]
-              validCoordCount++
-            }
-          }
-          else {
-            continue
-          }
-          
-          // 检查坐标有效性
-          if (lng === 0 && lat === 0) continue
-          if (isNaN(lng) || isNaN(lat)) continue
-          
-          // 计算距离（度）
-          const dx = lng - center.lng
-          const dy = lat - center.lat
-          const distance = Math.sqrt(dx * dx + dy * dy)
-          
-          if (firstValidDistance === null && validCoordCount === 1) {
-            firstValidDistance = distance * 111
-            console.log(`${type} 第一个有效坐标距离中心点: ${firstValidDistance.toFixed(2)}km`)
-            console.log(`  坐标: (${lng}, ${lat})`)
-          }
-          
-          if (distance < minDistance) {
-            minDistance = distance
-          }
-          
-          if (distance <= radius) {
-            count++
-          }
-        } catch (e) {
-          // 忽略解析错误
-        }
-      }
-      
-      console.log(`${type}: 有效坐标数=${validCoordCount}, 范围内=${count}, 最近距离=${minDistance === Infinity ? '无' : (minDistance * 111).toFixed(2)}km`)
-      return count
+    if (!features || !Array.isArray(features) || features.length === 0) {
+      console.log(`${type}: 无数据`)
+      return 0
     }
+    
+    let count = 0
+    let minDistance = Infinity
+    let validCoordCount = 0
+    
+    // 只检查前2000个，提高性能
+    const limit = Math.min(features.length, 2000)
+    
+    for (let i = 0; i < limit; i++) {
+      const feature = features[i]
+      try {
+        let lng = 0, lat = 0
+        const geom = feature?.geometry
+        if (!geom || !geom.coordinates) continue
+        
+        // 根据几何类型提取坐标
+        if (geom.type === 'Point') {
+          lng = geom.coordinates[0]
+          lat = geom.coordinates[1]
+          validCoordCount++
+        } 
+        else if (geom.type === 'LineString') {
+          if (geom.coordinates && geom.coordinates.length > 0) {
+            const midIndex = Math.floor(geom.coordinates.length / 2)
+            lng = geom.coordinates[midIndex][0]
+            lat = geom.coordinates[midIndex][1]
+            validCoordCount++
+          }
+        } 
+        else if (geom.type === 'Polygon') {
+          if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0].length > 0) {
+            const midIndex = Math.floor(geom.coordinates[0].length / 2)
+            lng = geom.coordinates[0][midIndex][0]
+            lat = geom.coordinates[0][midIndex][1]
+            validCoordCount++
+          }
+        } 
+        else if (geom.type === 'MultiPolygon') {
+          // 修复：处理 MultiPolygon 类型
+          if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0][0] && geom.coordinates[0][0].length > 0) {
+            // MultiPolygon 结构: [[[lng, lat], ...]]
+            const midIndex = Math.floor(geom.coordinates[0][0].length / 2)
+            lng = geom.coordinates[0][0][midIndex][0]
+            lat = geom.coordinates[0][0][midIndex][1]
+            validCoordCount++
+          }
+        }
+        else if (geom.type === 'MultiLineString') {
+          if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0].length > 0) {
+            const midIndex = Math.floor(geom.coordinates[0].length / 2)
+            lng = geom.coordinates[0][midIndex][0]
+            lat = geom.coordinates[0][midIndex][1]
+            validCoordCount++
+          }
+        }
+        else {
+          continue
+        }
+        
+        // 检查坐标有效性
+        if (lng === 0 && lat === 0) continue
+        if (isNaN(lng) || isNaN(lat)) continue
+        
+        // 计算距离（度）
+        const dx = lng - center.lng
+        const dy = lat - center.lat
+        const distance = Math.sqrt(dx * dx + dy * dy)
+        
+        if (distance < minDistance) {
+          minDistance = distance
+        }
+        
+        if (distance <= radius) {
+          count++
+        }
+      } catch (e) {
+        // 忽略解析错误
+      }
+    }
+    
+    console.log(`${type}: 有效坐标数=${validCoordCount}, 范围内=${count}, 最近距离=${minDistance === Infinity ? '无' : (minDistance * 111).toFixed(2)}km`)
+    return count
+  }
     
     buildingCount.value = countInRange(buildingsRes.features || [], buildingRadius, '建筑')
     roadCount.value = countInRange(roadsRes.features || [], roadRadius, '道路')
