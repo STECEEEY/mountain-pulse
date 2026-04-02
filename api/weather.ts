@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   
   const { lng, lat } = req.query;
-  const gaodeKey = process.env.GAODE_API_KEY || '你的高德地图Key';
+  const gaodeKey = process.env.GAODE_API_KEY || '4d95a8667039c3e5bb3ddb03ce1c71b8';
   
   try {
     console.log('🌤️ 天气代理被调用:', lng, lat);
