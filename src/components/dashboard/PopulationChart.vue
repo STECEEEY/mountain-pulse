@@ -20,9 +20,9 @@
           </span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">极高风险区</span>
+          <span class="stat-label">重点监测区</span>
           <span class="stat-value up">
-            <AnimatedNumber :value="exposureStats.byLevel['极高风险'] / 10000" :decimals="1" />
+            <AnimatedNumber :value="exposureStats.byLevel['重点监测'] / 10000" :decimals="1" />
             <small>万</small>
           </span>
         </div>
