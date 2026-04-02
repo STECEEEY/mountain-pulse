@@ -36,6 +36,10 @@ export interface RiskPoint {
   curvature: number   // 曲率 (新增)
   aspect: number      // 坡向 (新增) 0-360°
   risk_probability?: number      // 滑坡概率 (0-1)
+  actual_population?: number     // 实际人口
+  id?: number
+  projection_x?: number
+  projection_y?: number
 }
 
 export type RiskLevel = '极高' | '高' | '中' | '低' | 'danger' | 'warning' | 'medium' | 'safe'
