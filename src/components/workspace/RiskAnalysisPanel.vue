@@ -3,110 +3,101 @@
     <!-- ==================== 监测点信息 ==================== -->
     <div class="section-title">📍 监测点信息</div>
 
-    <!-- 监测点选择器 -->
-    <div class="point-selector">
-      <label>选择监测点：</label>
-      <input 
-        type="text" 
-        v-model="searchText" 
-        @input="onSearch"
-        placeholder="输入监测点名称搜索..."
-        class="search-input"
-      />
-      <select v-if="searchResults.length > 0" v-model="selectedPointId" @change="onPointChange" class="result-select">
-        <option v-for="point in searchResults" :key="point.name" :value="point.name">
-          {{ point.name }} ({{ point.level }})
-        </option>
-      </select>
-    </div>
-
     <!-- 当前监测点详情 -->
-    <div v-if="currentPoint" class="point-summary">
+    <div v-if="selectedPoint" class="point-summary">
       <div class="summary-item">
         <span class="summary-label">监测点</span>
-        <span class="summary-value">{{ currentPoint.name }}</span>
+        <span class="summary-value">{{ selectedPoint.name || '选中的点位' }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">风险等级</span>
-        <span class="summary-value risk-extreme">{{ currentPoint.level }}</span>
+        <span class="summary-value risk-extreme">{{ selectedPoint.level || '极高风险' }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">灾害类型</span>
-        <span class="summary-value">{{ currentPoint.type }}</span>
+        <span class="summary-value">{{ selectedPoint.type || '滑坡' }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">威胁对象</span>
-        <span class="summary-value">{{ currentPoint.threat }}</span>
+        <span class="summary-value">{{ selectedPoint.threat || '待核查' }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">模型预测概率</span>
-        <span class="summary-value risk-extreme">{{ ((currentPoint as any).risk_probability * 100).toFixed(1) }}%</span>
+        <span class="summary-value risk-extreme">
+          {{ ((selectedPoint.risk_probability || 0.92) * 100).toFixed(1) }}%
+        </span>
       </div>
     </div>
 
-    <!-- ==================== 特征重要性分析 ==================== -->
-    <div class="section-title">📊 特征重要性分析（Feature Importance）</div>
-    <div class="feature-desc">
-      基于 RandomForest 模型的特征重要性评估，反映各因子对滑坡预测的贡献程度。
-      重要性总和为 100%，数值越大表示该因子对模型决策越关键。
+    <div v-else class="empty-state">
+      请在地图上点击监测点查看风险分析
     </div>
 
-    <!-- 特征重要性卡片 -->
-    <div class="factors-list">
-      <div 
-        v-for="factor in featureImportanceList" 
-        :key="factor.name"
-        class="factor-card"
-        :class="{ 'primary-driver': factor.isTop }"
-      >
-        <div class="factor-header">
-          <div class="factor-name">
-            {{ factor.name }}
-            <span v-if="factor.isTop" class="driver-badge">🎯 最重要特征</span>
-          </div>
-          <div class="factor-weight">
-            特征重要性
-            <strong :style="{ color: factor.color }">
-              {{ (factor.importance * 100).toFixed(1) }}%
-            </strong>
-          </div>
-        </div>
+    <!-- ==================== 特征重要性分析 ==================== -->
+    <div v-if="selectedPoint" class="feature-section">
+      <div class="section-title">📊 特征重要性分析（Feature Importance）</div>
+      <div class="feature-desc">
+        基于 RandomForest 模型的特征重要性评估，反映各因子对滑坡预测的贡献程度。
+        重要性总和为 100%，数值越大表示该因子对模型决策越关键。
+      </div>
 
-        <div class="factor-body">
-          <!-- 当前点的实际测量值 -->
-          <div class="actual-value">
-            <div class="value-label">当前点实测值</div>
-            <div class="value-number">{{ factor.displayValue }}</div>
-          </div>
-
-          <!-- 重要性进度条 -->
-          <div class="importance-bar-container">
-            <div class="importance-bar-bg">
-              <div 
-                class="importance-bar-fill" 
-                :style="{ width: factor.importance * 100 + '%', background: factor.color }"
-              ></div>
+      <!-- 特征重要性卡片 -->
+      <div class="factors-list">
+        <div 
+          v-for="factor in featureImportanceList" 
+          :key="factor.name"
+          class="factor-card"
+          :class="{ 'primary-driver': factor.isTop }"
+        >
+          <div class="factor-header">
+            <div class="factor-name">
+              {{ factor.name }}
+              <span v-if="factor.isTop" class="driver-badge">🎯 最重要特征</span>
             </div>
-            <div class="importance-label">模型重要性占比</div>
+            <div class="factor-weight">
+              特征重要性
+              <strong :style="{ color: factor.color }">
+                {{ (factor.importance * 100).toFixed(1) }}%
+              </strong>
+            </div>
           </div>
-        </div>
 
-        <!-- 特征的科学解释 -->
-        <div class="factor-desc">
-          <span class="desc-icon">📖</span>
-          <span>{{ factor.scientificDesc }}</span>
-        </div>
+          <div class="factor-body">
+            <!-- 当前点的实际测量值 -->
+            <div class="actual-value">
+              <div class="value-label">当前点实测值</div>
+              <div class="value-number">{{ factor.displayValue }}</div>
+            </div>
 
-        <!-- 当前点的具体分析 -->
-        <div class="factor-analysis">
-          <span class="analysis-icon">🔍</span>
-          <span>{{ factor.currentAnalysis }}</span>
+            <!-- 重要性进度条 -->
+            <div class="importance-bar-container">
+              <div class="importance-bar-bg">
+                <div 
+                  class="importance-bar-fill" 
+                  :style="{ width: factor.importance * 100 + '%', background: factor.color }"
+                ></div>
+              </div>
+              <div class="importance-label">模型重要性占比</div>
+            </div>
+          </div>
+
+          <!-- 特征的科学解释 -->
+          <div class="factor-desc">
+            <span class="desc-icon">📖</span>
+            <span>{{ factor.scientificDesc }}</span>
+          </div>
+
+          <!-- 当前点的具体分析 -->
+          <div class="factor-analysis">
+            <span class="analysis-icon">🔍</span>
+            <span>{{ factor.currentAnalysis }}</span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- ==================== 模型决策逻辑说明 ==================== -->
-    <div class="model-logic">
+    <div v-if="selectedPoint" class="model-logic">
       <div class="section-title">⚙️ 模型决策逻辑</div>
       <div class="logic-content">
         <div class="logic-step">
@@ -127,19 +118,21 @@
         </div>
         <div class="logic-step">
           <div class="step-number">5</div>
-          <div class="step-text">召回率0.95，模型精度0.9637</div>
+          <div class="step-text">召回率 0.95，模型精度 AUC = 0.9637</div>
         </div>
       </div>
     </div>
-
-    <div v-if="!currentPoint && !isLoading" class="empty-state">请选择一个监测点</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { riskService } from '@/services/riskService'
+import { ref, watch } from 'vue'
 import type { RiskPoint } from '@/types/risk'
+
+// ==================== 定义 Props ====================
+const props = defineProps<{
+  selectedPoint: RiskPoint | null
+}>()
 
 // ==================== 特征重要性数据（从 RandomForest 模型提取） ====================
 const FEATURE_IMPORTANCE = [
@@ -212,16 +205,8 @@ const FEATURE_IMPORTANCE = [
   }
 ]
 
-// 计算排序后的特征重要性列表（重要性从高到低）
+// 特征重要性列表（响应式）
 const featureImportanceList = ref<any[]>([])
-
-// 当前选中的点
-const pointsList = ref<RiskPoint[]>([])
-const selectedPointId = ref<string>('')
-const currentPoint = ref<RiskPoint | null>(null)
-const searchText = ref('')
-const searchResults = ref<RiskPoint[]>([])
-const isLoading = ref(false)
 
 // 生成带当前点数据的特征列表
 const updateFeatureList = (point: RiskPoint) => {
@@ -229,56 +214,19 @@ const updateFeatureList = (point: RiskPoint) => {
     ...f,
     displayValue: f.getDisplayValue(point),
     currentAnalysis: f.getCurrentAnalysis(point),
-    isTop: f.name === '坡度' // 坡度永远是第一重要
+    isTop: f.name === '坡度'
   }))
 }
 
-// 监测点切换
-const onPointChange = async () => {
-  const point = pointsList.value.find(p => p.name === selectedPointId.value)
-  if (point) {
-    isLoading.value = true
-    currentPoint.value = point
-    updateFeatureList(point)
-    searchText.value = point.name
-    searchResults.value = []
-    isLoading.value = false
+// 监听 selectedPoint 变化，更新特征列表
+watch(() => props.selectedPoint, (newPoint) => {
+  if (newPoint) {
+    updateFeatureList(newPoint)
   }
-}
-
-// 加载数据
-const loadData = async () => {
-  try {
-    const pointsRes = await riskService.loadRiskPoints()
-    pointsList.value = pointsRes.points
-    
-    if (pointsList.value && pointsList.value.length > 0 && pointsList.value[0]) {
-      selectedPointId.value = pointsList.value[0].name
-      await onPointChange()
-    }
-  } catch (error) {
-    console.error('加载失败:', error)
-  }
-}
-
-// 搜索
-const onSearch = () => {
-  if (!searchText.value.trim()) {
-    searchResults.value = []
-    return
-  }
-  searchResults.value = pointsList.value.filter(point => 
-    point.name.toLowerCase().includes(searchText.value.toLowerCase())
-  )
-}
-
-onMounted(() => {
-  loadData()
-})
+}, { immediate: true })
 </script>
 
 <style scoped>
-/* 样式保持与之前类似，需要我补充完整吗？ */
 .risk-analysis {
   display: flex;
   flex-direction: column;
@@ -293,32 +241,6 @@ onMounted(() => {
   border-left: 3px solid #00f0ff;
   padding-left: 10px;
   margin-bottom: 12px;
-}
-
-/* 监测点选择器 */
-.point-selector {
-  background: rgba(8, 27, 44, 0.75);
-  border: 1px solid rgba(0, 200, 255, 0.2);
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.point-selector label {
-  color: #9ec0d8;
-  font-size: 13px;
-}
-
-.search-input, .result-select {
-  flex: 1;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(0, 200, 255, 0.3);
-  color: #e8f5ff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
 }
 
 /* 监测点摘要 */
@@ -351,45 +273,6 @@ onMounted(() => {
 
 .summary-value.risk-extreme {
   color: #ff4444;
-}
-
-/* 模型卡片 */
-.model-card {
-  background: linear-gradient(135deg, rgba(0, 100, 150, 0.2), rgba(0, 50, 80, 0.3));
-  border: 1px solid rgba(0, 200, 255, 0.3);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.model-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 12px;
-}
-
-.stat-badge {
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 8px;
-  padding: 8px 12px;
-  min-width: 120px;
-}
-
-.stat-label {
-  font-size: 11px;
-  color: #88a0b0;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: #e8f5ff;
-}
-
-.stat-value.highlight {
-  color: #ffaa44;
 }
 
 /* 特征说明 */
@@ -567,66 +450,13 @@ onMounted(() => {
   color: #e8f5ff;
 }
 
-/* 风险解读 */
-.risk-interpretation {
-  background: rgba(8, 27, 44, 0.75);
-  border: 1px solid rgba(0, 200, 255, 0.2);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.interpretation-content {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.level-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 0;
-}
-
-.level-badge {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 2px 10px;
-  border-radius: 20px;
-  min-width: 80px;
-  text-align: center;
-}
-
-.level-item.extreme .level-badge {
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff6666;
-}
-
-.level-item.high .level-badge {
-  background: rgba(255, 136, 68, 0.2);
-  color: #ffaa66;
-}
-
-.level-item.medium .level-badge {
-  background: rgba(255, 170, 68, 0.2);
-  color: #ffcc66;
-}
-
-.level-item.low .level-badge {
-  background: rgba(68, 255, 136, 0.2);
-  color: #66ffaa;
-}
-
-.level-desc {
-  font-size: 11px;
-  color: #9ec0d8;
-}
-
 .empty-state {
   text-align: center;
-  padding: 40px;
+  padding: 60px 20px;
   color: #88a0b0;
+  background: rgba(8, 27, 44, 0.5);
+  border-radius: 12px;
+  font-size: 14px;
 }
 
 @media (max-width: 600px) {
@@ -636,11 +466,6 @@ onMounted(() => {
   
   .point-summary {
     grid-template-columns: 1fr;
-  }
-  
-  .model-stats {
-    flex-direction: column;
-    gap: 8px;
   }
 }
 </style>
