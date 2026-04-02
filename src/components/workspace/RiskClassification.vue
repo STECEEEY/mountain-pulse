@@ -15,7 +15,9 @@
         </div>
       </div>
     </div>
-
+<div v-if="showBatchButton" class="batch-btn" @click="calculateAllPointsWarning">
+    📊 批量导出预警指数
+  </div>
     <!-- 权重因子详情 -->
     <div class="factors-section">
       <div class="section-title">
@@ -749,6 +751,133 @@ watch(() => props.point, async (newPoint) => {
 onMounted(() => {
   console.log('🚀 预警模块已加载，权重分配: 滑坡概率40% + 降雨25% + 人口20% + 设施15%')
 })
+
+// 批量计算所有点的预警指数
+const calculateAllPointsWarning = async () => {
+  console.log('🚀 开始批量计算所有风险点预警指数...');
+  
+  // 1. 加载所有风险点
+  const response = await fetch('/data/risk_points.json');
+  const data = await response.json();
+  const allPoints = data.points;
+  
+  console.log(`📊 共加载 ${allPoints.length} 个风险点`);
+  
+  const results = [];
+  
+  // 2. 逐个计算
+  for (let i = 0; i < allPoints.length; i++) {
+    const point = allPoints[i];
+    console.log(`  计算 ${i+1}/${allPoints.length}: ${point.name}`);
+    
+    // 临时设置当前点
+    const tempPoint = {
+      name: point.name,
+      lng: point.longitude,
+      lat: point.latitude,
+      risk_probability: point.risk_probability,
+      actual_population: point.actual_population,
+      slope: point.slope,
+      velocity: point.velocity,
+      level: point.level,
+      type: point.type,
+      threat: point.threat
+    };
+    
+    // 调用现有的计算方法
+    // 注意：这里需要复用现有的计算逻辑
+    const warningData = await calculateSinglePointWarning(tempPoint);
+    
+    results.push({
+      name: point.name,
+      type: point.type,
+      level: point.level,
+      threat: point.threat,
+      longitude: point.longitude,
+      latitude: point.latitude,
+      actual_population: point.actual_population,
+      risk_probability: point.risk_probability,
+      warning_score: warningData.score,
+      warning_level: warningData.level,
+      components: warningData.components
+    });
+    
+    // 避免请求过快
+    await new Promise(r => setTimeout(r, 200));
+  }
+  
+  // 3. 排序和统计
+  results.sort((a, b) => b.warning_score - a.warning_score);
+  
+  const stats = {
+    total: results.length,
+    red: results.filter(p => p.warning_level === '红色预警').length,
+    orange: results.filter(p => p.warning_level === '橙色预警').length,
+    yellow: results.filter(p => p.warning_level === '黄色预警').length,
+    blue: results.filter(p => p.warning_level === '蓝色预警').length,
+    avgScore: Math.round(results.reduce((s, p) => s + p.warning_score, 0) / results.length)
+  };
+  
+  const outputData = {
+    statistics: stats,
+    generatedAt: new Date().toISOString(),
+    points: results
+  };
+  
+  // 4. 下载 JSON 文件
+  const blob = new Blob([JSON.stringify(outputData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'risk_points_with_warning.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('✅ 生成完成！', stats);
+};
+
+// 计算单个点的预警指数（复用现有逻辑）
+const calculateSinglePointWarning = async (point) => {
+  // 临时设置当前点
+  const originalPoint = props.point;
+  props.point = point;
+  
+  // 触发数据加载
+  await loadFullPointData();
+  loadData();
+  await loadRainfallData();
+  await loadSurroundingData();
+  
+  // 获取计算结果
+  const score = warningScore.value;
+  let level = '';
+  if (score >= 90) level = '红色预警';
+  else if (score >= 85) level = '橙色预警';
+  else if (score >= 75) level = '黄色预警';
+  else level = '蓝色预警';
+  
+  // 获取各因子得分
+  const components = {
+    landslideProb: { score: Math.round(riskProbability.value * 40), maxScore: 40, rawValue: riskProbability.value },
+    rainfall: { score: rainfallScore.value, maxScore: 25, anomaly: rainfallAnomaly.value },
+    population: { score: populationScore.value, maxScore: 20, rawValue: population.value },
+    facilities: { score: facilityScore.value, maxScore: 15 }
+  };
+  
+  // 恢复原始点
+  props.point = originalPoint;
+  if (originalPoint) {
+    await loadFullPointData();
+    loadData();
+    await loadRainfallData();
+    await loadSurroundingData();
+  }
+  
+  return { score, level, components };
+};
+
+// 添加一个按钮来触发批量计算（测试用）
+const showBatchButton = ref(true);
 </script>
 
 <style scoped>
@@ -1063,4 +1192,21 @@ onMounted(() => {
 .info-value.high { color: #ffaa66; }
 .info-value.medium { color: #ffcc44; }
 .info-value.low { color: #66ff99; }
+
+.batch-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+.batch-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
 </style>
