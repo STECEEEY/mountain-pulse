@@ -443,27 +443,64 @@ const loadRainfallData = async () => {
   }
 }
 
-// 加载周边设施
+// 加载周边设施数据（带调试）
 const loadSurroundingData = async () => {
-  if (!props.point?.lng || !props.point?.lat) return
+  if (!props.point?.lng || !props.point?.lat) {
+    console.log('❌ 跳过周边设施加载：缺少经纬度', props.point)
+    return
+  }
+  
+  console.log('🔍 开始加载周边设施，中心点:', props.point.lng, props.point.lat)
   
   try {
     const baseUrl = '/geodata'
     const center = { lng: props.point.lng, lat: props.point.lat }
-    const radius = 0.015 // 扩大范围到约1.5km
+    const radius = 0.015 // 约1.5km
     
-    const [buildingsRes, roadsRes, railwaysRes] = await Promise.allSettled([
-      fetch(`${baseUrl}/building.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
-      fetch(`${baseUrl}/roads.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
-      fetch(`${baseUrl}/railways.geojson`).then(res => res.json()).catch(() => ({ features: [] }))
-    ])
+    console.log('📡 请求URL:', `${baseUrl}/building.geojson`)
     
-    const countInRange = (features: any[]) => {
-      return features.filter(feature => {
+    // 分别请求，便于调试
+    console.log('🏢 加载建筑数据...')
+    const buildingsRes = await fetch(`${baseUrl}/building.geojson`)
+    console.log('建筑数据响应状态:', buildingsRes.status, buildingsRes.statusText)
+    
+    if (!buildingsRes.ok) {
+      console.error('建筑数据加载失败:', buildingsRes.status)
+    }
+    
+    const buildingsData = await buildingsRes.json()
+    console.log('建筑数据条数:', buildingsData.features?.length || 0)
+    
+    console.log('🛣️ 加载道路数据...')
+    const roadsRes = await fetch(`${baseUrl}/roads.geojson`)
+    console.log('道路数据响应状态:', roadsRes.status)
+    const roadsData = await roadsRes.json()
+    console.log('道路数据条数:', roadsData.features?.length || 0)
+    
+    console.log('🚂 加载铁路数据...')
+    const railwaysRes = await fetch(`${baseUrl}/railways.geojson`)
+    console.log('铁路数据响应状态:', railwaysRes.status)
+    const railwaysData = await railwaysRes.json()
+    console.log('铁路数据条数:', railwaysData.features?.length || 0)
+    
+    // 调试：检查前几个要素的坐标
+    if (buildingsData.features && buildingsData.features.length > 0) {
+      console.log('建筑数据样例坐标:', buildingsData.features.slice(0, 3).map((f: any) => f.geometry?.coordinates))
+    }
+    
+    const countInRange = (features: any[], type: string) => {
+      let inRange = 0
+      let outOfRange = 0
+      let noCoord = 0
+      
+      features.forEach((feature, idx) => {
         try {
           let lng = 0, lat = 0
           const coords = feature?.geometry?.coordinates
-          if (!coords) return false
+          if (!coords) {
+            noCoord++
+            return
+          }
           
           if (feature.geometry.type === 'Point') {
             lng = coords[0] || 0
@@ -474,33 +511,41 @@ const loadSurroundingData = async () => {
           } else if (feature.geometry.type === 'Polygon' && coords[0] && coords[0][0]) {
             lng = coords[0][0][0] || 0
             lat = coords[0][0][1] || 0
+          } else {
+            return
           }
           
           const distance = Math.sqrt(Math.pow(lng - center.lng, 2) + Math.pow(lat - center.lat, 2))
-          return distance <= radius
-        } catch {
-          return false
+          if (distance <= radius) {
+            inRange++
+            if (idx < 3) {
+              console.log(`${type} 在范围内:`, { lng, lat, distance })
+            }
+          } else {
+            outOfRange++
+          }
+        } catch (e) {
+          console.error(`${type} 解析坐标错误:`, e)
         }
-      }).length
+      })
+      
+      console.log(`${type} 统计: 范围内=${inRange}, 范围外=${outOfRange}, 无坐标=${noCoord}`)
+      return inRange
     }
     
-    const getFeatures = (result: PromiseSettledResult<any>) => {
-      if (result.status === 'fulfilled' && result.value?.features) {
-        return result.value.features
-      }
-      return []
-    }
+    buildingCount.value = countInRange(buildingsData.features || [], '建筑')
+    roadCount.value = countInRange(roadsData.features || [], '道路')
+    railwayCount.value = countInRange(railwaysData.features || [], '铁路')
     
-    buildingCount.value = countInRange(getFeatures(buildingsRes))
-    roadCount.value = countInRange(getFeatures(roadsRes))
-    railwayCount.value = countInRange(getFeatures(railwaysRes))
-    
-    console.log('🏗️ 周边设施:', {
+    console.log('🏗️ 周边设施最终统计:', {
       建筑: buildingCount.value,
       道路: roadCount.value,
       铁路: railwayCount.value,
-      设施分: facilityScore.value
+      设施分: facilityScore.value,
+      中心点: center,
+      半径: radius
     })
+    
   } catch (error) {
     console.error('加载周边设施失败:', error)
   }
