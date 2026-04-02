@@ -255,7 +255,7 @@ const loadFullPointData = async () => {
       })
     } else {
       console.warn('⚠️ 未找到完整数据，使用传入的部分数据')
-      // 尝试用传入的数据构建
+      // 使用传入的数据构建
       currentFullPoint.value = {
         name: props.point.name || '',
         level: props.point.level || '中风险',
@@ -263,13 +263,13 @@ const loadFullPointData = async () => {
         slope: 0,
         elevation: 0,
         velocity: 0,
-        risk_probability: 0,
-        actual_population: 0,
         threat: '',
         curvature: 0,
         aspect: 0,
         longitude: props.point.lng || 0,
-        latitude: props.point.lat || 0
+        latitude: props.point.lat || 0,
+        risk_probability: 0,
+        actual_population: 0
       } as RiskPoint
     }
   } catch (error) {
