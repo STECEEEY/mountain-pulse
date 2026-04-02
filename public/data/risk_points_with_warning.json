@@ -1,0 +1,5013 @@
+{
+  "statistics": {
+    "total": 500,
+    "red": 0,
+    "orange": 3,
+    "yellow": 21,
+    "blue": 476,
+    "avgScore": 52
+  },
+  "generatedAt": "2026-04-02T23:04:53.950Z",
+  "points": [
+    {
+      "name": "风险点_78",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "5000人",
+      "longitude": 118.780174,
+      "latitude": 32.108776,
+      "warning_score": 88,
+      "warning_level": "橙色预警"
+    },
+    {
+      "name": "风险点_248",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "5000人",
+      "longitude": 118.687897,
+      "latitude": 32.161995,
+      "warning_score": 86,
+      "warning_level": "橙色预警"
+    },
+    {
+      "name": "风险点_259",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "5000人",
+      "longitude": 118.754519,
+      "latitude": 32.052851,
+      "warning_score": 86,
+      "warning_level": "橙色预警"
+    },
+    {
+      "name": "风险点_360",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "9000人",
+      "longitude": 118.785237,
+      "latitude": 32.063967,
+      "warning_score": 84,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_374",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "9000人",
+      "longitude": 118.743331,
+      "latitude": 32.088363,
+      "warning_score": 84,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_381",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "5000人",
+      "longitude": 118.802166,
+      "latitude": 32.063006,
+      "warning_score": 84,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_399",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "5000人",
+      "longitude": 118.735417,
+      "latitude": 32.207533,
+      "warning_score": 84,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_410",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "10000人",
+      "longitude": 118.806263,
+      "latitude": 32.099026,
+      "warning_score": 84,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_442",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "10000人",
+      "longitude": 118.757845,
+      "latitude": 32.00518,
+      "warning_score": 84,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_58",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "2000人",
+      "longitude": 118.677146,
+      "latitude": 31.944935,
+      "warning_score": 81,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_99",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "2000人",
+      "longitude": 118.905861,
+      "latitude": 32.119213,
+      "warning_score": 81,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_147",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "5000人",
+      "longitude": 119.414183,
+      "latitude": 32.202162,
+      "warning_score": 81,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_177",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "4000人",
+      "longitude": 118.912242,
+      "latitude": 32.059228,
+      "warning_score": 79,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_205",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "2000人",
+      "longitude": 118.737023,
+      "latitude": 31.978767,
+      "warning_score": 79,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_211",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "3000人",
+      "longitude": 118.749283,
+      "latitude": 32.222495,
+      "warning_score": 79,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_233",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "4000人",
+      "longitude": 118.772029,
+      "latitude": 31.994158,
+      "warning_score": 79,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_242",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "3000人",
+      "longitude": 118.79988,
+      "latitude": 32.119321,
+      "warning_score": 79,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_278",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "2000人",
+      "longitude": 119.15338,
+      "latitude": 31.936308,
+      "warning_score": 79,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_465",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "12000人",
+      "longitude": 118.8694,
+      "latitude": 32.119035,
+      "warning_score": 79,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_478",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1900人",
+      "longitude": 118.77296,
+      "latitude": 32.042492,
+      "warning_score": 79,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_328",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "3000人",
+      "longitude": 118.891155,
+      "latitude": 32.105003,
+      "warning_score": 77,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_362",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "3000人",
+      "longitude": 118.851694,
+      "latitude": 32.039923,
+      "warning_score": 77,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_373",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "2000人",
+      "longitude": 118.638162,
+      "latitude": 32.084716,
+      "warning_score": 77,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_402",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "3000人",
+      "longitude": 118.764196,
+      "latitude": 32.115494,
+      "warning_score": 77,
+      "warning_level": "黄色预警"
+    },
+    {
+      "name": "风险点_53",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "1000人",
+      "longitude": 118.820155,
+      "latitude": 32.072851,
+      "warning_score": 74,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_65",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "2000人",
+      "longitude": 119.423027,
+      "latitude": 32.2157,
+      "warning_score": 74,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_69",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "1000人",
+      "longitude": 118.924811,
+      "latitude": 32.133357,
+      "warning_score": 74,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_82",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "1000人",
+      "longitude": 118.839169,
+      "latitude": 32.091337,
+      "warning_score": 74,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_100",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "2000人",
+      "longitude": 119.453581,
+      "latitude": 32.215832,
+      "warning_score": 74,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_137",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "1000人",
+      "longitude": 118.762915,
+      "latitude": 31.96037,
+      "warning_score": 74,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_300",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "3000人",
+      "longitude": 119.469345,
+      "latitude": 32.202539,
+      "warning_score": 72,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_461",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "2000人",
+      "longitude": 118.743398,
+      "latitude": 31.957753,
+      "warning_score": 72,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_496",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "2137人",
+      "longitude": 118.935822,
+      "latitude": 32.052376,
+      "warning_score": 72,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_497",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "4086人",
+      "longitude": 118.694188,
+      "latitude": 32.135212,
+      "warning_score": 72,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_321",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 118.716583,
+      "latitude": 32.153671,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_347",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 118.731681,
+      "latitude": 32.189545,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_355",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 118.88656,
+      "latitude": 32.252268,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_367",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 118.754129,
+      "latitude": 31.987913,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_375",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 119.062093,
+      "latitude": 32.053991,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_382",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 118.881819,
+      "latitude": 31.98031,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_390",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "2000人",
+      "longitude": 118.865797,
+      "latitude": 31.731598,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_393",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 118.780933,
+      "latitude": 31.92909,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_432",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 118.9336,
+      "latitude": 32.067562,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_434",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 119.173526,
+      "latitude": 31.929471,
+      "warning_score": 70,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_3",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "733人",
+      "longitude": 118.858074,
+      "latitude": 32.104049,
+      "warning_score": 69,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_4",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "504人",
+      "longitude": 118.977431,
+      "latitude": 32.056784,
+      "warning_score": 69,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_13",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "679人",
+      "longitude": 118.913552,
+      "latitude": 32.00004,
+      "warning_score": 69,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_107",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "727人",
+      "longitude": 118.949686,
+      "latitude": 32.146686,
+      "warning_score": 67,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_153",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "746人",
+      "longitude": 118.841777,
+      "latitude": 32.052334,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_160",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "899人",
+      "longitude": 118.914327,
+      "latitude": 32.077957,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_170",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "642人",
+      "longitude": 118.934593,
+      "latitude": 32.154855,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_185",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "1000人",
+      "longitude": 119.484154,
+      "latitude": 32.216678,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_230",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "585人",
+      "longitude": 119.070626,
+      "latitude": 32.169296,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_237",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "1000人",
+      "longitude": 118.871622,
+      "latitude": 31.68533,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_249",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "655人",
+      "longitude": 118.870372,
+      "latitude": 32.166644,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_263",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "520人",
+      "longitude": 119.078678,
+      "latitude": 32.262239,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_277",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "664人",
+      "longitude": 118.82929,
+      "latitude": 32.148484,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_292",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "880人",
+      "longitude": 118.868028,
+      "latitude": 32.13493,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_477",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1023人",
+      "longitude": 118.697571,
+      "latitude": 31.951158,
+      "warning_score": 65,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_301",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 119.449434,
+      "latitude": 32.187777,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_351",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "512人",
+      "longitude": 119.048872,
+      "latitude": 32.258398,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_366",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 119.504351,
+      "latitude": 32.210508,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_376",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "653人",
+      "longitude": 118.793214,
+      "latitude": 32.255071,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_395",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "508人",
+      "longitude": 118.592975,
+      "latitude": 32.069417,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_400",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "684人",
+      "longitude": 119.188488,
+      "latitude": 32.167312,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_401",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 119.405341,
+      "latitude": 32.188623,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_416",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "585人",
+      "longitude": 119.137193,
+      "latitude": 31.931531,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_417",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "533人",
+      "longitude": 119.018554,
+      "latitude": 32.116023,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_428",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "968人",
+      "longitude": 118.931167,
+      "latitude": 32.113057,
+      "warning_score": 63,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_5",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "225人",
+      "longitude": 118.781386,
+      "latitude": 32.12752,
+      "warning_score": 62,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_6",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.1951,
+      "latitude": 32.089275,
+      "warning_score": 62,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_7",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.073917,
+      "latitude": 32.089875,
+      "warning_score": 62,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_17",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.166041,
+      "latitude": 32.078953,
+      "warning_score": 62,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_26",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.144569,
+      "latitude": 32.139204,
+      "warning_score": 62,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_34",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 118.65687,
+      "latitude": 32.134984,
+      "warning_score": 62,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_43",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 118.956213,
+      "latitude": 32.015263,
+      "warning_score": 62,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_46",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "270人",
+      "longitude": 118.936862,
+      "latitude": 32.021333,
+      "warning_score": 62,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_55",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "268人",
+      "longitude": 118.696105,
+      "latitude": 32.192913,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_56",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.036622,
+      "latitude": 32.051517,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_75",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "263人",
+      "longitude": 118.800319,
+      "latitude": 32.141684,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_76",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "425人",
+      "longitude": 118.854946,
+      "latitude": 32.158934,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_80",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "754人",
+      "longitude": 119.419994,
+      "latitude": 32.165258,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_83",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "525人",
+      "longitude": 119.38842,
+      "latitude": 32.157922,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_87",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.851356,
+      "latitude": 32.065183,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_88",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "366人",
+      "longitude": 119.134666,
+      "latitude": 32.150915,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_93",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.198229,
+      "latitude": 32.113752,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_104",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.662477,
+      "latitude": 32.116871,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_106",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "497人",
+      "longitude": 118.896786,
+      "latitude": 32.008229,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_108",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "231人",
+      "longitude": 118.823961,
+      "latitude": 32.051149,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_112",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.636366,
+      "latitude": 32.126592,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_117",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.129907,
+      "latitude": 32.128629,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_119",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.992663,
+      "latitude": 32.01686,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_124",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.760906,
+      "latitude": 31.943801,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_129",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.096417,
+      "latitude": 32.147226,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_131",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.955056,
+      "latitude": 32.040535,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_139",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "216人",
+      "longitude": 118.719087,
+      "latitude": 31.924891,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_141",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.758939,
+      "latitude": 31.929397,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_142",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.143355,
+      "latitude": 32.087275,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_148",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "934人",
+      "longitude": 119.377831,
+      "latitude": 32.174715,
+      "warning_score": 60,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_163",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "808人",
+      "longitude": 119.416803,
+      "latitude": 32.140789,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_175",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "389人",
+      "longitude": 118.768842,
+      "latitude": 31.91627,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_176",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.042107,
+      "latitude": 32.107708,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_195",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.94363,
+      "latitude": 31.980822,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_210",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "543人",
+      "longitude": 118.773863,
+      "latitude": 31.869296,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_213",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.87316,
+      "latitude": 32.054039,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_223",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.616486,
+      "latitude": 32.105199,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_224",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "495人",
+      "longitude": 118.953401,
+      "latitude": 32.161781,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_231",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.59087,
+      "latitude": 32.094699,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_252",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "262人",
+      "longitude": 118.863728,
+      "latitude": 32.090256,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_279",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "378人",
+      "longitude": 118.956346,
+      "latitude": 32.101126,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_283",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "517人",
+      "longitude": 118.883511,
+      "latitude": 31.897304,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_284",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "401人",
+      "longitude": 118.895821,
+      "latitude": 31.961341,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_286",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.084887,
+      "latitude": 32.125049,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_294",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.528329,
+      "latitude": 32.055059,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_451",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 118.698637,
+      "latitude": 31.871045,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_473",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "1000人",
+      "longitude": 119.384123,
+      "latitude": 32.188304,
+      "warning_score": 58,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_14",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "162人",
+      "longitude": 118.93565,
+      "latitude": 31.963626,
+      "warning_score": 57,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_19",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "73人",
+      "longitude": 119.012861,
+      "latitude": 32.049732,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_27",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "83人",
+      "longitude": 118.970437,
+      "latitude": 32.165125,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_44",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "99人",
+      "longitude": 119.012678,
+      "latitude": 32.08004,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_309",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "804人",
+      "longitude": 118.60017,
+      "latitude": 31.898301,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_319",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 119.011394,
+      "latitude": 32.09882,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_324",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.595421,
+      "latitude": 32.112682,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_330",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "349人",
+      "longitude": 118.937414,
+      "latitude": 32.087707,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_332",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.528617,
+      "latitude": 32.072374,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_333",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.546168,
+      "latitude": 32.057729,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_335",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.561601,
+      "latitude": 32.068364,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_343",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "255人",
+      "longitude": 118.986358,
+      "latitude": 32.038606,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_344",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "283人",
+      "longitude": 118.664972,
+      "latitude": 32.160855,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_350",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.960724,
+      "latitude": 31.988496,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_359",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "283人",
+      "longitude": 118.994856,
+      "latitude": 32.078879,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_363",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "364人",
+      "longitude": 118.560808,
+      "latitude": 31.971676,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_371",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.866736,
+      "latitude": 32.071451,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_403",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "249人",
+      "longitude": 119.002613,
+      "latitude": 32.162455,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_404",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "296人",
+      "longitude": 118.509715,
+      "latitude": 32.056725,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_407",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "329人",
+      "longitude": 119.043523,
+      "latitude": 32.17118,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_413",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "503人",
+      "longitude": 118.927189,
+      "latitude": 31.8014,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_415",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "296人",
+      "longitude": 118.544825,
+      "latitude": 32.078672,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_420",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "296人",
+      "longitude": 118.57225,
+      "latitude": 32.096375,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_423",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "302人",
+      "longitude": 118.926577,
+      "latitude": 32.257436,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_427",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "393人",
+      "longitude": 118.678355,
+      "latitude": 32.196758,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_430",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "522人",
+      "longitude": 118.472081,
+      "latitude": 31.715826,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_438",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "219人",
+      "longitude": 119.056831,
+      "latitude": 32.15942,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_439",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "637人",
+      "longitude": 119.358336,
+      "latitude": 32.109427,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_441",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "237人",
+      "longitude": 118.552238,
+      "latitude": 32.116106,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_443",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "511人",
+      "longitude": 119.138089,
+      "latitude": 32.405546,
+      "warning_score": 56,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_8",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.323549,
+      "latitude": 31.839513,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_21",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.438951,
+      "latitude": 32.176436,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_28",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.253946,
+      "latitude": 32.138745,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_31",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 118.691228,
+      "latitude": 31.69651,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_33",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 118.873558,
+      "latitude": 31.655716,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_35",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 118.573038,
+      "latitude": 31.594825,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_37",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.299773,
+      "latitude": 31.69853,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_38",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 118.760134,
+      "latitude": 31.635682,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_41",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.380416,
+      "latitude": 32.143644,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_42",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.335769,
+      "latitude": 31.888351,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_47",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.183815,
+      "latitude": 31.683973,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_48",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "298人",
+      "longitude": 119.307013,
+      "latitude": 31.820334,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_49",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "325人",
+      "longitude": 119.244481,
+      "latitude": 32.09851,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_90",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "152人",
+      "longitude": 119.077832,
+      "latitude": 32.150419,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_111",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "169人",
+      "longitude": 118.975253,
+      "latitude": 32.113099,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_113",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "139人",
+      "longitude": 118.651221,
+      "latitude": 32.150933,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_123",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "116人",
+      "longitude": 119.040602,
+      "latitude": 32.07815,
+      "warning_score": 55,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_16",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "34人",
+      "longitude": 118.748297,
+      "latitude": 31.903566,
+      "warning_score": 54,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_73",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "87人",
+      "longitude": 118.89501,
+      "latitude": 32.168442,
+      "warning_score": 54,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_140",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "53人",
+      "longitude": 119.052172,
+      "latitude": 32.140736,
+      "warning_score": 54,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_51",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.803676,
+      "latitude": 31.619198,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_52",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.215815,
+      "latitude": 32.104787,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_54",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.65323,
+      "latitude": 31.695565,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_64",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.304522,
+      "latitude": 31.754,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_68",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.790518,
+      "latitude": 31.636702,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_70",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.716502,
+      "latitude": 32.211174,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_71",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.352608,
+      "latitude": 31.785588,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_81",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.703255,
+      "latitude": 32.222279,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_84",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.355546,
+      "latitude": 31.768218,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_89",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.590046,
+      "latitude": 31.751935,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_91",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.785391,
+      "latitude": 31.853259,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_95",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.314201,
+      "latitude": 31.803609,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_101",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.866527,
+      "latitude": 31.893946,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_103",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.26001,
+      "latitude": 32.075146,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_110",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.939958,
+      "latitude": 31.643899,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_122",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "290人",
+      "longitude": 119.345001,
+      "latitude": 32.118332,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_130",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.672612,
+      "latitude": 31.693869,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_132",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.841339,
+      "latitude": 31.647525,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_134",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 119.180256,
+      "latitude": 31.712174,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_136",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.602414,
+      "latitude": 31.783533,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_138",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.573122,
+      "latitude": 31.749981,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_144",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.813944,
+      "latitude": 31.670288,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_149",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "298人",
+      "longitude": 118.784089,
+      "latitude": 31.65339,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_162",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "149人",
+      "longitude": 118.915777,
+      "latitude": 31.984853,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_191",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "172人",
+      "longitude": 119.095068,
+      "latitude": 32.1624,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_196",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "149人",
+      "longitude": 118.675733,
+      "latitude": 32.146282,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_202",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "101人",
+      "longitude": 118.916735,
+      "latitude": 31.949482,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_225",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "174人",
+      "longitude": 118.720282,
+      "latitude": 31.943637,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_235",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "168人",
+      "longitude": 119.181183,
+      "latitude": 32.181146,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_238",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "176人",
+      "longitude": 118.867679,
+      "latitude": 31.909083,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_245",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "173人",
+      "longitude": 118.945718,
+      "latitude": 31.99955,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_250",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "136人",
+      "longitude": 118.740207,
+      "latitude": 31.92316,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_287",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "103人",
+      "longitude": 119.059288,
+      "latitude": 32.080012,
+      "warning_score": 53,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_62",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "39人",
+      "longitude": 118.703121,
+      "latitude": 31.930879,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_77",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "25人",
+      "longitude": 119.166301,
+      "latitude": 32.125846,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_96",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "28人",
+      "longitude": 118.982559,
+      "latitude": 31.980219,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_102",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "40人",
+      "longitude": 119.185931,
+      "latitude": 32.131281,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_193",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "96人",
+      "longitude": 119.172678,
+      "latitude": 32.144496,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_198",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "66人",
+      "longitude": 119.011635,
+      "latitude": 32.032434,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_209",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "94人",
+      "longitude": 118.976315,
+      "latitude": 32.00485,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_243",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "74人",
+      "longitude": 119.158858,
+      "latitude": 32.097835,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_260",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "54人",
+      "longitude": 119.116813,
+      "latitude": 32.149051,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_269",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "75人",
+      "longitude": 119.14845,
+      "latitude": 32.160062,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_271",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "59人",
+      "longitude": 119.136032,
+      "latitude": 32.027513,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_282",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "93人",
+      "longitude": 119.15393,
+      "latitude": 32.032261,
+      "warning_score": 52,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_159",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.819849,
+      "latitude": 31.626907,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_164",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.845855,
+      "latitude": 31.662614,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_166",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.689521,
+      "latitude": 31.741995,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_167",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "218人",
+      "longitude": 119.106944,
+      "latitude": 32.346186,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_168",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "220人",
+      "longitude": 119.601931,
+      "latitude": 32.150824,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_171",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "208人",
+      "longitude": 119.264438,
+      "latitude": 32.151545,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_173",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "384人",
+      "longitude": 118.690791,
+      "latitude": 31.85816,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_174",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "380人",
+      "longitude": 119.012969,
+      "latitude": 31.704824,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_178",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.244163,
+      "latitude": 32.120161,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_179",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.277786,
+      "latitude": 32.142647,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_181",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "274人",
+      "longitude": 119.309715,
+      "latitude": 32.097337,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_182",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.060665,
+      "latitude": 31.724266,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_188",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.236504,
+      "latitude": 32.084222,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_203",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.890394,
+      "latitude": 32.314264,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_206",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.536025,
+      "latitude": 31.497127,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_207",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "210人",
+      "longitude": 119.615638,
+      "latitude": 32.126013,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_208",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.871568,
+      "latitude": 31.640591,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_212",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "278人",
+      "longitude": 119.45475,
+      "latitude": 32.164588,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_220",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.217039,
+      "latitude": 32.085285,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_221",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.608606,
+      "latitude": 31.701909,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_222",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.308641,
+      "latitude": 31.681774,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_239",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "291人",
+      "longitude": 119.119989,
+      "latitude": 31.697317,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_254",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.565663,
+      "latitude": 31.708216,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_257",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.95909,
+      "latitude": 31.711437,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_261",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "263人",
+      "longitude": 119.334609,
+      "latitude": 32.176242,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_264",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.671209,
+      "latitude": 31.709763,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_267",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "234人",
+      "longitude": 119.278485,
+      "latitude": 31.794152,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_272",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.267186,
+      "latitude": 32.125522,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_275",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 118.64586,
+      "latitude": 31.61267,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_276",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.53104,
+      "latitude": 32.163084,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_293",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "298人",
+      "longitude": 119.208832,
+      "latitude": 32.131605,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_385",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "117人",
+      "longitude": 118.912001,
+      "latitude": 32.169629,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_405",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "173人",
+      "longitude": 119.19797,
+      "latitude": 32.06758,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_448",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "593人",
+      "longitude": 119.123141,
+      "latitude": 32.42095,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_449",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "445人",
+      "longitude": 118.923951,
+      "latitude": 32.011427,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_454",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "295人",
+      "longitude": 119.066404,
+      "latitude": 32.132568,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_456",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "324人",
+      "longitude": 119.117357,
+      "latitude": 31.988864,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_458",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "208人",
+      "longitude": 118.635789,
+      "latitude": 32.141753,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_475",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "576人",
+      "longitude": 119.575461,
+      "latitude": 32.174451,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_480",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "295人",
+      "longitude": 119.033345,
+      "latitude": 32.094862,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_482",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "493人",
+      "longitude": 118.573117,
+      "latitude": 32.048016,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_485",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "428人",
+      "longitude": 118.978018,
+      "latitude": 31.965859,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_493",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "163人",
+      "longitude": 118.506598,
+      "latitude": 32.07336,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_499",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "314人",
+      "longitude": 118.507523,
+      "latitude": 32.026443,
+      "warning_score": 51,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_2",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "145人",
+      "longitude": 118.742823,
+      "latitude": 31.792512,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_12",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "174人",
+      "longitude": 119.742864,
+      "latitude": 32.043247,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_23",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "113人",
+      "longitude": 119.632643,
+      "latitude": 32.098248,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_50",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "183人",
+      "longitude": 118.807691,
+      "latitude": 31.826245,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_156",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "22人",
+      "longitude": 118.906213,
+      "latitude": 31.97273,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_189",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "44人",
+      "longitude": 119.086363,
+      "latitude": 32.078126,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_194",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "29人",
+      "longitude": 119.020364,
+      "latitude": 32.005599,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_199",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "41人",
+      "longitude": 119.148317,
+      "latitude": 32.118216,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_215",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "12人",
+      "longitude": 119.101061,
+      "latitude": 32.09087,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_227",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "30人",
+      "longitude": 118.962049,
+      "latitude": 31.971158,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_253",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "11人",
+      "longitude": 119.074406,
+      "latitude": 32.111513,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_255",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "38人",
+      "longitude": 118.549342,
+      "latitude": 32.095214,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_285",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "47人",
+      "longitude": 119.196516,
+      "latitude": 32.148413,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_289",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "11人",
+      "longitude": 118.573394,
+      "latitude": 32.11368,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_298",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "11人",
+      "longitude": 119.092967,
+      "latitude": 32.107599,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_307",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "95人",
+      "longitude": 118.639306,
+      "latitude": 32.101298,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_331",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "61人",
+      "longitude": 119.013588,
+      "latitude": 32.27556,
+      "warning_score": 50,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_305",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 119.299832,
+      "latitude": 31.769237,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_306",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.836768,
+      "latitude": 31.629551,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_308",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "205人",
+      "longitude": 119.298736,
+      "latitude": 32.06507,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_312",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.958373,
+      "latitude": 31.637124,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_320",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 119.312496,
+      "latitude": 31.870739,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_323",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 119.361289,
+      "latitude": 31.861184,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_327",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.787561,
+      "latitude": 31.614373,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_334",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.692934,
+      "latitude": 31.790299,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_345",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "236人",
+      "longitude": 118.493196,
+      "latitude": 31.768984,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_346",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "247人",
+      "longitude": 119.100651,
+      "latitude": 31.700523,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_352",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 119.204194,
+      "latitude": 31.689395,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_354",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 119.301941,
+      "latitude": 31.717971,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_356",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "282人",
+      "longitude": 119.475299,
+      "latitude": 32.077615,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_361",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 118.642044,
+      "latitude": 31.683441,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_368",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "297人",
+      "longitude": 119.329221,
+      "latitude": 31.79612,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_369",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "433人",
+      "longitude": 119.750913,
+      "latitude": 32.0575,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_377",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "250人",
+      "longitude": 118.764608,
+      "latitude": 31.60459,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_380",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "246人",
+      "longitude": 118.555066,
+      "latitude": 31.680201,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_384",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "223人",
+      "longitude": 119.632645,
+      "latitude": 32.127825,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_387",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "341人",
+      "longitude": 118.553497,
+      "latitude": 31.838984,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_389",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "331人",
+      "longitude": 119.374185,
+      "latitude": 31.70438,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_406",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "355人",
+      "longitude": 118.563147,
+      "latitude": 31.859794,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_412",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "373人",
+      "longitude": 119.274318,
+      "latitude": 32.173733,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_414",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "264人",
+      "longitude": 119.331711,
+      "latitude": 31.76072,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_422",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "323人",
+      "longitude": 118.743876,
+      "latitude": 31.758582,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_429",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "325人",
+      "longitude": 119.336987,
+      "latitude": 32.136517,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_435",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "296人",
+      "longitude": 118.600135,
+      "latitude": 31.601705,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_436",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "248人",
+      "longitude": 119.292263,
+      "latitude": 31.804727,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_444",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "287人",
+      "longitude": 119.593845,
+      "latitude": 32.164697,
+      "warning_score": 49,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_66",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "101人",
+      "longitude": 118.68655,
+      "latitude": 31.764405,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_86",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "136人",
+      "longitude": 119.57675,
+      "latitude": 32.159996,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_94",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "113人",
+      "longitude": 119.025838,
+      "latitude": 31.791931,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_126",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "158人",
+      "longitude": 119.128184,
+      "latitude": 32.34583,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_135",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "127人",
+      "longitude": 118.539145,
+      "latitude": 31.738127,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_145",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "197人",
+      "longitude": 119.643567,
+      "latitude": 32.183144,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_314",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "12人",
+      "longitude": 118.978619,
+      "latitude": 32.072639,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_317",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "10人",
+      "longitude": 119.184659,
+      "latitude": 32.077912,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_364",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "36人",
+      "longitude": 118.896474,
+      "latitude": 31.99308,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_372",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "37人",
+      "longitude": 119.160279,
+      "latitude": 32.014115,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_396",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "49人",
+      "longitude": 119.101446,
+      "latitude": 32.070661,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_408",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "22人",
+      "longitude": 118.577835,
+      "latitude": 32.076101,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_431",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "46人",
+      "longitude": 119.028422,
+      "latitude": 32.293361,
+      "warning_score": 48,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_9",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "18人",
+      "longitude": 119.353975,
+      "latitude": 32.137645,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_10",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "38人",
+      "longitude": 119.673828,
+      "latitude": 32.086563,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_11",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "10人",
+      "longitude": 119.288733,
+      "latitude": 32.105654,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_18",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "29人",
+      "longitude": 119.2949,
+      "latitude": 32.148831,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_20",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "10人",
+      "longitude": 118.689894,
+      "latitude": 31.716012,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_22",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "41人",
+      "longitude": 119.358089,
+      "latitude": 32.165706,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_24",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "48人",
+      "longitude": 119.345767,
+      "latitude": 31.681818,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_25",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "37人",
+      "longitude": 119.704162,
+      "latitude": 32.052014,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_32",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "18人",
+      "longitude": 119.325301,
+      "latitude": 31.774546,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_36",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "19人",
+      "longitude": 119.342644,
+      "latitude": 32.158778,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_39",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "44人",
+      "longitude": 119.27489,
+      "latitude": 31.716293,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_40",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "25人",
+      "longitude": 119.697899,
+      "latitude": 32.069461,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_57",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "76人",
+      "longitude": 119.683007,
+      "latitude": 32.226317,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_59",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "71人",
+      "longitude": 119.32235,
+      "latitude": 31.690184,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_74",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "56人",
+      "longitude": 119.439145,
+      "latitude": 32.151904,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_85",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "68人",
+      "longitude": 118.777768,
+      "latitude": 31.675849,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_118",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "68人",
+      "longitude": 119.338667,
+      "latitude": 32.06939,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_121",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "58人",
+      "longitude": 119.303426,
+      "latitude": 32.116931,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_133",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "60人",
+      "longitude": 118.781207,
+      "latitude": 31.811465,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_146",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "61人",
+      "longitude": 119.095913,
+      "latitude": 31.677511,
+      "warning_score": 47,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_161",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "184人",
+      "longitude": 118.643417,
+      "latitude": 31.808989,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_165",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "2人",
+      "longitude": 119.006401,
+      "latitude": 32.064265,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_169",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "138人",
+      "longitude": 119.035024,
+      "latitude": 31.74849,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_180",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "119人",
+      "longitude": 118.579449,
+      "latitude": 31.774438,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_183",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "177人",
+      "longitude": 118.725757,
+      "latitude": 31.874288,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_190",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "100人",
+      "longitude": 119.39456,
+      "latitude": 32.133276,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_214",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "5人",
+      "longitude": 119.117375,
+      "latitude": 32.099978,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_218",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "104人",
+      "longitude": 119.768971,
+      "latitude": 32.038351,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_226",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "147人",
+      "longitude": 118.478242,
+      "latitude": 31.731632,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_228",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "179人",
+      "longitude": 118.608121,
+      "latitude": 31.67377,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_234",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "107人",
+      "longitude": 118.717279,
+      "latitude": 31.827497,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_256",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "6人",
+      "longitude": 118.610831,
+      "latitude": 32.121147,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_268",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "8人",
+      "longitude": 119.120811,
+      "latitude": 32.065288,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_274",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "115人",
+      "longitude": 118.977121,
+      "latitude": 31.646215,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_280",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "4人",
+      "longitude": 119.109466,
+      "latitude": 32.124642,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_288",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "102人",
+      "longitude": 118.766783,
+      "latitude": 31.852798,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_296",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "138人",
+      "longitude": 119.323861,
+      "latitude": 32.086977,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_453",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "198人",
+      "longitude": 118.966175,
+      "latitude": 32.0851,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_455",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "162人",
+      "longitude": 118.625152,
+      "latitude": 31.923963,
+      "warning_score": 46,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_60",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "12人",
+      "longitude": 119.658114,
+      "latitude": 32.099879,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_61",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "20人",
+      "longitude": 119.630536,
+      "latitude": 32.113441,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_67",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "13人",
+      "longitude": 119.334182,
+      "latitude": 31.7246,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_72",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "19人",
+      "longitude": 118.596145,
+      "latitude": 31.713612,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_79",
+      "type": "滑坡",
+      "level": "高风险",
+      "threat": "44人",
+      "longitude": 118.547259,
+      "latitude": 31.76906,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_92",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "25人",
+      "longitude": 118.768294,
+      "latitude": 31.621136,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_97",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "11人",
+      "longitude": 118.75191,
+      "latitude": 31.871044,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_98",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "39人",
+      "longitude": 118.970034,
+      "latitude": 31.670137,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_105",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "29人",
+      "longitude": 118.657067,
+      "latitude": 31.721494,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_115",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "11人",
+      "longitude": 119.115362,
+      "latitude": 31.679355,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_116",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "40人",
+      "longitude": 118.710861,
+      "latitude": 31.708515,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_120",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "40人",
+      "longitude": 119.341943,
+      "latitude": 32.098188,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_125",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "47人",
+      "longitude": 119.729139,
+      "latitude": 32.065906,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_127",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "40人",
+      "longitude": 118.678338,
+      "latitude": 31.730597,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_128",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "20人",
+      "longitude": 118.765548,
+      "latitude": 31.654369,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_155",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "56人",
+      "longitude": 118.681556,
+      "latitude": 31.674988,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_158",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "57人",
+      "longitude": 119.38613,
+      "latitude": 31.742396,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_187",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "60人",
+      "longitude": 118.821184,
+      "latitude": 31.652144,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_197",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "55人",
+      "longitude": 118.657883,
+      "latitude": 31.672412,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_200",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "80人",
+      "longitude": 119.275046,
+      "latitude": 31.68815,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_232",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "59人",
+      "longitude": 118.668985,
+      "latitude": 31.774018,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_246",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "93人",
+      "longitude": 119.083168,
+      "latitude": 31.786676,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_273",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "90人",
+      "longitude": 118.721879,
+      "latitude": 31.847641,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_281",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "83人",
+      "longitude": 118.66587,
+      "latitude": 31.741585,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_291",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "62人",
+      "longitude": 119.051668,
+      "latitude": 31.7374,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_295",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "93人",
+      "longitude": 119.270664,
+      "latitude": 32.060526,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_297",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "99人",
+      "longitude": 119.369853,
+      "latitude": 32.128691,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_495",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "72人",
+      "longitude": 118.774566,
+      "latitude": 32.256778,
+      "warning_score": 45,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_311",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "103人",
+      "longitude": 118.996808,
+      "latitude": 31.659619,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_315",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "113人",
+      "longitude": 119.344479,
+      "latitude": 31.697715,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_337",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "4人",
+      "longitude": 119.140376,
+      "latitude": 32.068566,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_348",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "146人",
+      "longitude": 119.364443,
+      "latitude": 32.148993,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_349",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "161人",
+      "longitude": 119.324696,
+      "latitude": 32.153338,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_353",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "147人",
+      "longitude": 118.596998,
+      "latitude": 31.812467,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_386",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "189人",
+      "longitude": 119.674867,
+      "latitude": 32.209177,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_391",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "112人",
+      "longitude": 119.362064,
+      "latitude": 32.05669,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_392",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "8人",
+      "longitude": 118.612829,
+      "latitude": 32.090092,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_411",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "184人",
+      "longitude": 118.738336,
+      "latitude": 31.823603,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_418",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "165人",
+      "longitude": 119.300034,
+      "latitude": 32.083084,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_424",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "3人",
+      "longitude": 119.121992,
+      "latitude": 32.079699,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_425",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "102人",
+      "longitude": 119.351573,
+      "latitude": 31.711293,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_437",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "152人",
+      "longitude": 119.569824,
+      "latitude": 32.094489,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_440",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "129人",
+      "longitude": 119.726064,
+      "latitude": 32.047938,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_457",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "272人",
+      "longitude": 119.399079,
+      "latitude": 32.111547,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_466",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "240人",
+      "longitude": 118.70389,
+      "latitude": 31.557786,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_476",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "211人",
+      "longitude": 119.476318,
+      "latitude": 32.240639,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_483",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "295人",
+      "longitude": 119.188371,
+      "latitude": 31.698326,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_489",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "295人",
+      "longitude": 118.424269,
+      "latitude": 32.065652,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_491",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "226人",
+      "longitude": 118.828026,
+      "latitude": 31.6138,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_498",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "499人",
+      "longitude": 119.785853,
+      "latitude": 32.036538,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_500",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "202人",
+      "longitude": 119.377007,
+      "latitude": 32.044867,
+      "warning_score": 44,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_1",
+      "type": "滑坡",
+      "level": "极高风险",
+      "threat": "7人",
+      "longitude": 119.34101,
+      "latitude": 31.861559,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_15",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "6人",
+      "longitude": 119.062832,
+      "latitude": 31.859884,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_29",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "5人",
+      "longitude": 119.305709,
+      "latitude": 31.733776,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_30",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "6人",
+      "longitude": 118.723437,
+      "latitude": 31.749479,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_45",
+      "type": "高风险滑坡区",
+      "level": "极高风险",
+      "threat": "2人",
+      "longitude": 118.711371,
+      "latitude": 31.782115,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_151",
+      "type": "滑坡",
+      "level": "中风险",
+      "threat": "24人",
+      "longitude": 118.706538,
+      "latitude": 31.748985,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_152",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "41人",
+      "longitude": 118.581063,
+      "latitude": 31.720295,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_157",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "19人",
+      "longitude": 118.630484,
+      "latitude": 31.698023,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_172",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "26人",
+      "longitude": 119.233586,
+      "latitude": 32.138385,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_186",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "17人",
+      "longitude": 119.695069,
+      "latitude": 32.203698,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_192",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "16人",
+      "longitude": 119.674129,
+      "latitude": 32.067801,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_204",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "14人",
+      "longitude": 118.984558,
+      "latitude": 31.718258,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_216",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "21人",
+      "longitude": 118.70523,
+      "latitude": 31.677561,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_217",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "22人",
+      "longitude": 119.283129,
+      "latitude": 32.084833,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_229",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "30人",
+      "longitude": 118.601656,
+      "latitude": 31.739522,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_240",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "17人",
+      "longitude": 118.560045,
+      "latitude": 31.725605,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_241",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "15人",
+      "longitude": 118.554582,
+      "latitude": 31.752373,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_244",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "22人",
+      "longitude": 119.006487,
+      "latitude": 32.300205,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_247",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "41人",
+      "longitude": 119.287499,
+      "latitude": 31.748535,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_251",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "38人",
+      "longitude": 119.094729,
+      "latitude": 31.73742,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_258",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "16人",
+      "longitude": 119.302829,
+      "latitude": 31.787942,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_265",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "19人",
+      "longitude": 119.110801,
+      "latitude": 31.664278,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_266",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "48人",
+      "longitude": 118.705024,
+      "latitude": 31.80457,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_270",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "12人",
+      "longitude": 119.347482,
+      "latitude": 31.816707,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_290",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "18人",
+      "longitude": 119.306995,
+      "latitude": 31.853523,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_299",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "30人",
+      "longitude": 119.272746,
+      "latitude": 31.732204,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_304",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "98人",
+      "longitude": 118.641539,
+      "latitude": 31.750561,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_318",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "68人",
+      "longitude": 119.346464,
+      "latitude": 31.87661,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_326",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "51人",
+      "longitude": 118.454558,
+      "latitude": 31.674892,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_340",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "78人",
+      "longitude": 119.291068,
+      "latitude": 31.961315,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_341",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "65人",
+      "longitude": 118.709144,
+      "latitude": 31.660911,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_357",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "61人",
+      "longitude": 118.731533,
+      "latitude": 31.776069,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_365",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "63人",
+      "longitude": 118.879947,
+      "latitude": 32.302153,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_370",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "77人",
+      "longitude": 118.758102,
+      "latitude": 31.88539,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_388",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "93人",
+      "longitude": 119.160307,
+      "latitude": 31.725502,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_394",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "96人",
+      "longitude": 119.08658,
+      "latitude": 31.750542,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_398",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "65人",
+      "longitude": 118.946387,
+      "latitude": 31.669057,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_409",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "84人",
+      "longitude": 119.257299,
+      "latitude": 31.687023,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_433",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "51人",
+      "longitude": 119.022158,
+      "latitude": 32.355511,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_445",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "75人",
+      "longitude": 119.02857,
+      "latitude": 32.338092,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_446",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "59人",
+      "longitude": 119.37307,
+      "latitude": 31.759956,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_447",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "25人",
+      "longitude": 118.97584,
+      "latitude": 32.022174,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_452",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "20人",
+      "longitude": 119.123623,
+      "latitude": 32.113582,
+      "warning_score": 43,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_63",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "7人",
+      "longitude": 118.612394,
+      "latitude": 31.725675,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_109",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "5人",
+      "longitude": 118.732053,
+      "latitude": 31.894407,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_114",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "6人",
+      "longitude": 118.670985,
+      "latitude": 31.791311,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_143",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "5人",
+      "longitude": 119.049776,
+      "latitude": 32.336306,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_150",
+      "type": "潜在滑坡区",
+      "level": "高风险",
+      "threat": "2人",
+      "longitude": 118.712854,
+      "latitude": 31.725086,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_303",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "17人",
+      "longitude": 119.211387,
+      "latitude": 31.70803,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_316",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "33人",
+      "longitude": 119.042713,
+      "latitude": 31.790939,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_322",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "35人",
+      "longitude": 118.985335,
+      "latitude": 32.304147,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_329",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "11人",
+      "longitude": 119.041815,
+      "latitude": 31.865274,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_336",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "17人",
+      "longitude": 118.59158,
+      "latitude": 31.693462,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_339",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "28人",
+      "longitude": 119.224742,
+      "latitude": 32.123389,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_342",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "15人",
+      "longitude": 119.032895,
+      "latitude": 31.72832,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_378",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "48人",
+      "longitude": 119.36518,
+      "latitude": 32.078998,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_379",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "43人",
+      "longitude": 118.8018,
+      "latitude": 31.653141,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_383",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "31人",
+      "longitude": 118.64872,
+      "latitude": 31.631396,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_397",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "19人",
+      "longitude": 119.272457,
+      "latitude": 32.098733,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_419",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "23人",
+      "longitude": 118.835961,
+      "latitude": 31.674303,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_421",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "45人",
+      "longitude": 119.373493,
+      "latitude": 31.776543,
+      "warning_score": 41,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_154",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "8人",
+      "longitude": 118.62377,
+      "latitude": 31.748623,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_184",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "3人",
+      "longitude": 118.629213,
+      "latitude": 31.721853,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_201",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "6人",
+      "longitude": 118.733815,
+      "latitude": 31.807789,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_219",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "9人",
+      "longitude": 119.164465,
+      "latitude": 31.686468,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_236",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "4人",
+      "longitude": 118.79464,
+      "latitude": 31.675612,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_262",
+      "type": "地面沉降区",
+      "level": "中风险",
+      "threat": "9人",
+      "longitude": 118.985543,
+      "latitude": 31.764424,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_459",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "145人",
+      "longitude": 119.002776,
+      "latitude": 31.741064,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_463",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "136人",
+      "longitude": 119.689368,
+      "latitude": 32.240609,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_468",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "8人",
+      "longitude": 119.003402,
+      "latitude": 32.004425,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_469",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "165人",
+      "longitude": 118.589085,
+      "latitude": 31.794525,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_471",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "196人",
+      "longitude": 119.618611,
+      "latitude": 32.170679,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_474",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "184人",
+      "longitude": 119.04073,
+      "latitude": 32.311921,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_479",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "109人",
+      "longitude": 119.364357,
+      "latitude": 31.682918,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_481",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "102人",
+      "longitude": 119.614355,
+      "latitude": 32.140468,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_487",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "170人",
+      "longitude": 118.756691,
+      "latitude": 31.721603,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_490",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "162人",
+      "longitude": 119.015344,
+      "latitude": 31.775501,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_492",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "8人",
+      "longitude": 119.033867,
+      "latitude": 32.270906,
+      "warning_score": 39,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_450",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "62人",
+      "longitude": 118.660041,
+      "latitude": 31.651456,
+      "warning_score": 38,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_462",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "59人",
+      "longitude": 118.736518,
+      "latitude": 31.861874,
+      "warning_score": 38,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_464",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "59人",
+      "longitude": 118.996945,
+      "latitude": 32.329939,
+      "warning_score": 38,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_470",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "52人",
+      "longitude": 118.719239,
+      "latitude": 31.796441,
+      "warning_score": 38,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_472",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "51人",
+      "longitude": 119.029262,
+      "latitude": 32.369106,
+      "warning_score": 38,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_484",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "89人",
+      "longitude": 118.536041,
+      "latitude": 31.754763,
+      "warning_score": 38,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_486",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "87人",
+      "longitude": 119.315429,
+      "latitude": 31.886559,
+      "warning_score": 38,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_302",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "5人",
+      "longitude": 118.678004,
+      "latitude": 31.805651,
+      "warning_score": 37,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_310",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "5人",
+      "longitude": 118.63538,
+      "latitude": 31.640228,
+      "warning_score": 37,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_313",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "2人",
+      "longitude": 119.349291,
+      "latitude": 31.754625,
+      "warning_score": 37,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_325",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "3人",
+      "longitude": 119.131025,
+      "latitude": 31.66322,
+      "warning_score": 37,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_338",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "4人",
+      "longitude": 119.353046,
+      "latitude": 31.802896,
+      "warning_score": 37,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_358",
+      "type": "滑坡",
+      "level": "低风险",
+      "threat": "7人",
+      "longitude": 119.319497,
+      "latitude": 31.711159,
+      "warning_score": 37,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_426",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "8人",
+      "longitude": 119.336359,
+      "latitude": 31.744041,
+      "warning_score": 37,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_460",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "18人",
+      "longitude": 119.676885,
+      "latitude": 32.046101,
+      "warning_score": 36,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_467",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "46人",
+      "longitude": 118.69622,
+      "latitude": 31.831388,
+      "warning_score": 36,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_488",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "39人",
+      "longitude": 119.232823,
+      "latitude": 32.419053,
+      "warning_score": 36,
+      "warning_level": "蓝色预警"
+    },
+    {
+      "name": "风险点_494",
+      "type": "地面沉降区",
+      "level": "低风险",
+      "threat": "23人",
+      "longitude": 119.048236,
+      "latitude": 32.381064,
+      "warning_score": 36,
+      "warning_level": "蓝色预警"
+    }
+  ]
+}
