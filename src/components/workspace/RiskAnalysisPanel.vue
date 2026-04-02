@@ -3,38 +3,44 @@
     <!-- ==================== 监测点信息 ==================== -->
     <div class="section-title">📍 监测点信息</div>
 
+    <!-- 加载状态 -->
+    <div v-if="isLoadingData" class="loading-state">
+      <div class="loading-spinner"></div>
+      <span>加载监测点数据...</span>
+    </div>
+
     <!-- 当前监测点详情 -->
-    <div v-if="selectedPoint" class="point-summary">
+    <div v-else-if="currentFullPoint" class="point-summary">
       <div class="summary-item">
         <span class="summary-label">监测点</span>
-        <span class="summary-value">{{ selectedPoint.name || '选中的点位' }}</span>
+        <span class="summary-value">{{ currentFullPoint.name }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">风险等级</span>
-        <span class="summary-value risk-extreme">{{ selectedPoint.level || '极高风险' }}</span>
+        <span class="summary-value risk-extreme">{{ currentFullPoint.level }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">灾害类型</span>
-        <span class="summary-value">{{ selectedPoint.type || '滑坡' }}</span>
+        <span class="summary-value">{{ currentFullPoint.type }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">威胁对象</span>
-        <span class="summary-value">{{ selectedPoint.threat || '待核查' }}</span>
+        <span class="summary-value">{{ currentFullPoint.threat || '待核查' }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">模型预测概率</span>
         <span class="summary-value risk-extreme">
-          {{ ((selectedPoint.risk_probability || 0.92) * 100).toFixed(1) }}%
+          {{ ((currentFullPoint as any).risk_probability * 100).toFixed(1) }}%
         </span>
       </div>
     </div>
 
-    <div v-else class="empty-state">
-      请在地图上点击监测点查看风险分析
+    <div v-else-if="!isLoadingData && !currentFullPoint" class="empty-state">
+      👆 请在地图上点击监测点查看风险分析
     </div>
 
     <!-- ==================== 特征重要性分析 ==================== -->
-    <div v-if="selectedPoint" class="feature-section">
+    <div v-if="currentFullPoint" class="feature-section">
       <div class="section-title">📊 特征重要性分析（Feature Importance）</div>
       <div class="feature-desc">
         基于 RandomForest 模型的特征重要性评估，反映各因子对滑坡预测的贡献程度。
@@ -97,7 +103,7 @@
     </div>
 
     <!-- ==================== 模型决策逻辑说明 ==================== -->
-    <div v-if="selectedPoint" class="model-logic">
+    <div v-if="currentFullPoint" class="model-logic">
       <div class="section-title">⚙️ 模型决策逻辑</div>
       <div class="logic-content">
         <div class="logic-step">
@@ -127,11 +133,12 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { riskService } from '@/services/riskService'
 import type { RiskPoint } from '@/types/risk'
 
-// ==================== 定义 Props ====================
+// ==================== Props ====================
 const props = defineProps<{
-  selectedPoint: RiskPoint | null
+  point: { name: string; lng: number; lat: number; level?: string; type?: string } | null
 }>()
 
 // ==================== 特征重要性数据（从 RandomForest 模型提取） ====================
@@ -205,10 +212,13 @@ const FEATURE_IMPORTANCE = [
   }
 ]
 
-// 特征重要性列表（响应式）
+// ==================== 数据状态 ====================
+const isLoadingData = ref(false)
+const fullPointsList = ref<RiskPoint[]>([])
+const currentFullPoint = ref<RiskPoint | null>(null)
 const featureImportanceList = ref<any[]>([])
 
-// 生成带当前点数据的特征列表
+// ==================== 生成带当前点数据的特征列表 ====================
 const updateFeatureList = (point: RiskPoint) => {
   featureImportanceList.value = FEATURE_IMPORTANCE.map(f => ({
     ...f,
@@ -218,12 +228,78 @@ const updateFeatureList = (point: RiskPoint) => {
   }))
 }
 
-// 监听 selectedPoint 变化，更新特征列表
-watch(() => props.selectedPoint, (newPoint) => {
-  if (newPoint) {
-    updateFeatureList(newPoint)
+// ==================== 从 riskService 加载完整数据 ====================
+const loadFullPointData = async () => {
+  if (!props.point?.name) {
+    console.log('❌ 跳过加载：没有点位名称')
+    currentFullPoint.value = null
+    return
   }
-}, { immediate: true })
+  
+  isLoadingData.value = true
+  
+  try {
+    console.log('🔍 从 riskService 加载完整数据，点位名称:', props.point.name)
+    
+    // 如果还没加载列表，先加载
+    if (fullPointsList.value.length === 0) {
+      const response = await riskService.loadRiskPoints()
+      fullPointsList.value = response.points
+      console.log('✅ 风险点列表加载完成，共', fullPointsList.value.length, '个点')
+    }
+    
+    // 根据名称查找完整数据
+    const fullPoint = fullPointsList.value.find(p => p.name === props.point?.name)
+    
+    if (fullPoint) {
+      currentFullPoint.value = fullPoint
+      updateFeatureList(fullPoint)
+      console.log('✅ 找到完整数据:', {
+        name: fullPoint.name,
+        risk_probability: (fullPoint as any).risk_probability,
+        velocity: fullPoint.velocity,
+        slope: fullPoint.slope,
+        curvature: fullPoint.curvature,
+        aspect: fullPoint.aspect,
+        threat: fullPoint.threat
+      })
+    } else {
+      console.warn('⚠️ 未找到完整数据，使用传入的部分数据')
+      // 使用传入的数据构建
+      const fallbackPoint: RiskPoint = {
+        name: props.point.name || '',
+        level: props.point.level || '极高风险',
+        type: props.point.type || '滑坡',
+        slope: 0,
+        elevation: 0,
+        velocity: 0,
+        threat: '',
+        curvature: 0,
+        aspect: 0,
+        longitude: props.point.lng || 0,
+        latitude: props.point.lat || 0,
+        risk_probability: 0.92,
+        actual_population: 0
+      } as RiskPoint
+      currentFullPoint.value = fallbackPoint
+      updateFeatureList(fallbackPoint)
+    }
+  } catch (error) {
+    console.error('❌ 加载完整数据失败:', error)
+  } finally {
+    isLoadingData.value = false
+  }
+}
+
+// ==================== 监听传入的点位变化 ====================
+watch(() => props.point, (newPoint) => {
+  if (newPoint?.name) {
+    loadFullPointData()
+  } else {
+    currentFullPoint.value = null
+    featureImportanceList.value = []
+  }
+}, { immediate: true, deep: true })
 </script>
 
 <style scoped>
@@ -241,6 +317,31 @@ watch(() => props.selectedPoint, (newPoint) => {
   border-left: 3px solid #00f0ff;
   padding-left: 10px;
   margin-bottom: 12px;
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  background: rgba(8, 27, 44, 0.75);
+  border-radius: 12px;
+  color: #00f0ff;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(0, 240, 255, 0.3);
+  border-top-color: #00f0ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* 监测点摘要 */
