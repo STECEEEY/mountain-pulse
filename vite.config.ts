@@ -44,6 +44,11 @@ export default defineConfig({
           });
         }
       },
+      '/geodata': {
+        target: 'http://47.102.147.118:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/geodata/, '')
+      },
       '/aliyun': {
         target: 'https://dashscope.aliyuncs.com',
         changeOrigin: true,
