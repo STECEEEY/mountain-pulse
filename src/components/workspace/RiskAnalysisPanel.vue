@@ -130,15 +130,6 @@
       </div>
     </div>
 
-    <!-- 风险建议 -->
-    <div v-if="totalRiskScore !== null" class="risk-suggestion">
-      <div class="section-title">防治建议</div>
-      <div class="suggestion-content">
-        <div class="suggestion-icon">⚠️</div>
-        <div class="suggestion-text">{{ getRiskSuggestion() }}</div>
-      </div>
-    </div>
-
     <div v-else-if="!isLoading" class="empty-state">请选择一个监测点</div>
   </div>
 </template>
