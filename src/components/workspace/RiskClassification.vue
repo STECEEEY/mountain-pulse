@@ -765,28 +765,13 @@ const calculateAllPointsWarning = async () => {
   
   const results = [];
   
-  // 2. 逐个计算
+  // 2. 逐个计算（使用独立的计算函数）
   for (let i = 0; i < allPoints.length; i++) {
     const point = allPoints[i];
     console.log(`  计算 ${i+1}/${allPoints.length}: ${point.name}`);
     
-    // 临时设置当前点
-    const tempPoint = {
-      name: point.name,
-      lng: point.longitude,
-      lat: point.latitude,
-      risk_probability: point.risk_probability,
-      actual_population: point.actual_population,
-      slope: point.slope,
-      velocity: point.velocity,
-      level: point.level,
-      type: point.type,
-      threat: point.threat
-    };
-    
-    // 调用现有的计算方法
-    // 注意：这里需要复用现有的计算逻辑
-    const warningData = await calculateSinglePointWarning(tempPoint);
+    // 调用独立计算函数
+    const warningData = await calculateWarningForPoint(point);
     
     results.push({
       name: point.name,
@@ -797,9 +782,10 @@ const calculateAllPointsWarning = async () => {
       latitude: point.latitude,
       actual_population: point.actual_population,
       risk_probability: point.risk_probability,
+      slope: point.slope,
+      velocity: point.velocity,
       warning_score: warningData.score,
-      warning_level: warningData.level,
-      components: warningData.components
+      warning_level: warningData.level
     });
     
     // 避免请求过快
@@ -836,44 +822,120 @@ const calculateAllPointsWarning = async () => {
   console.log('✅ 生成完成！', stats);
 };
 
-// 计算单个点的预警指数（复用现有逻辑）
-const calculateSinglePointWarning = async (point) => {
-  // 临时设置当前点
-  const originalPoint = props.point;
-  props.point = point;
-  
-  // 触发数据加载
-  await loadFullPointData();
-  loadData();
-  await loadRainfallData();
-  await loadSurroundingData();
-  
-  // 获取计算结果
-  const score = warningScore.value;
-  let level = '';
-  if (score >= 90) level = '红色预警';
-  else if (score >= 85) level = '橙色预警';
-  else if (score >= 75) level = '黄色预警';
-  else level = '蓝色预警';
-  
-  // 获取各因子得分
-  const components = {
-    landslideProb: { score: Math.round(riskProbability.value * 40), maxScore: 40, rawValue: riskProbability.value },
-    rainfall: { score: rainfallScore.value, maxScore: 25, anomaly: rainfallAnomaly.value },
-    population: { score: populationScore.value, maxScore: 20, rawValue: population.value },
-    facilities: { score: facilityScore.value, maxScore: 15 }
-  };
-  
-  // 恢复原始点
-  props.point = originalPoint;
-  if (originalPoint) {
-    await loadFullPointData();
-    loadData();
-    await loadRainfallData();
-    await loadSurroundingData();
+// 独立计算单个点的预警指数（不依赖 props）
+const calculateWarningForPoint = async (point: any) => {
+  // 1. 获取降雨数据
+  let rainfallAnomaly = 0;
+  let rainScore = 0;
+  try {
+    const rainfallRes = await axios.get(`/api/rainfall/point`, {
+      params: { lon: point.longitude, lat: point.latitude }
+    });
+    if (rainfallRes.data?.data?.statistics) {
+      const stats = rainfallRes.data.data.statistics;
+      const monthlyAvg = stats.avg_annual / 12;
+      const currentMonth = new Date().getMonth() + 1;
+      const isRainy = currentMonth >= 4 && currentMonth <= 9;
+      const currentRain = monthlyAvg * (isRainy ? 1.5 : 0.8);
+      rainfallAnomaly = (currentRain - monthlyAvg) / (monthlyAvg * 0.3);
+      
+      if (rainfallAnomaly >= 2) rainScore = 25;
+      else if (rainfallAnomaly >= 1.5) rainScore = 20;
+      else if (rainfallAnomaly >= 1) rainScore = 15;
+      else if (rainfallAnomaly >= 0.5) rainScore = 10;
+      else if (rainfallAnomaly > 0) rainScore = 5;
+    }
+  } catch (e) {
+    console.log('降雨API失败');
   }
   
-  return { score, level, components };
+  // 2. 获取周边设施数据
+  let facilityScore = 0;
+  try {
+    const baseUrl = '/geodata';
+    const center = { lng: point.longitude, lat: point.latitude };
+    const radius = 0.1;
+    
+    const [buildingsRes, roadsRes, railwaysRes] = await Promise.all([
+      fetch(`${baseUrl}/building.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
+      fetch(`${baseUrl}/roads.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
+      fetch(`${baseUrl}/railways.geojson`).then(res => res.json()).catch(() => ({ features: [] }))
+    ]);
+    
+    const countInRange = (features: any[], radius: number) => {
+      let count = 0;
+      for (const feature of features) {
+        try {
+          let lng = 0, lat = 0;
+          const geom = feature?.geometry;
+          if (!geom?.coordinates) continue;
+          if (geom.type === 'Point') {
+            lng = geom.coordinates[0];
+            lat = geom.coordinates[1];
+          } else if (geom.type === 'LineString' && geom.coordinates[0]) {
+            lng = geom.coordinates[0][0];
+            lat = geom.coordinates[0][1];
+          } else if (geom.type === 'Polygon' && geom.coordinates[0]?.[0]) {
+            lng = geom.coordinates[0][0][0];
+            lat = geom.coordinates[0][0][1];
+          } else if (geom.type === 'MultiPolygon' && geom.coordinates[0]?.[0]?.[0]) {
+            lng = geom.coordinates[0][0][0][0];
+            lat = geom.coordinates[0][0][0][1];
+          } else continue;
+          const distance = Math.sqrt(Math.pow(lng - center.lng, 2) + Math.pow(lat - center.lat, 2));
+          if (distance <= radius) count++;
+        } catch (e) {}
+      }
+      return count;
+    };
+    
+    const buildingCount = countInRange(buildingsRes.features || [], radius);
+    const roadCount = countInRange(roadsRes.features || [], radius);
+    const railwayCount = countInRange(railwaysRes.features || [], radius);
+    
+    if (buildingCount >= 50) facilityScore += 6;
+    else if (buildingCount >= 20) facilityScore += 5;
+    else if (buildingCount >= 10) facilityScore += 4;
+    else if (buildingCount >= 5) facilityScore += 3;
+    else if (buildingCount >= 1) facilityScore += 2;
+    
+    if (roadCount >= 30) facilityScore += 5;
+    else if (roadCount >= 15) facilityScore += 4;
+    else if (roadCount >= 5) facilityScore += 3;
+    else if (roadCount >= 1) facilityScore += 2;
+    
+    if (railwayCount >= 3) facilityScore += 4;
+    else if (railwayCount >= 1) facilityScore += 3;
+    
+    facilityScore = Math.min(facilityScore, 15);
+  } catch (e) {
+    console.log('设施API失败');
+  }
+  
+  // 3. 滑坡概率评分 (0-40分)
+  const probScore = (point.risk_probability || 0) * 40;
+  
+  // 4. 人口评分 (0-20分)
+  const pop = point.actual_population || 0;
+  let popScore = 0;
+  if (pop >= 1000) popScore = 20;
+  else if (pop >= 500) popScore = 15;
+  else if (pop >= 200) popScore = 12;
+  else if (pop >= 100) popScore = 8;
+  else if (pop >= 50) popScore = 5;
+  else if (pop >= 10) popScore = 3;
+  
+  // 5. 总分
+  const totalScore = probScore + rainScore + popScore + facilityScore;
+  const finalScore = Math.min(Math.round(totalScore), 100);
+  
+  // 6. 预警等级
+  let level = '蓝色预警';
+  if (finalScore >= 90) level = '红色预警';
+  else if (finalScore >= 85) level = '橙色预警';
+  else if (finalScore >= 75) level = '黄色预警';
+  
+  return { score: finalScore, level: level };
 };
 
 // 添加一个按钮来触发批量计算（测试用）
