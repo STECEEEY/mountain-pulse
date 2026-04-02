@@ -159,29 +159,6 @@
       </div>
     </div>
 
-    <!-- ==================== 风险解读 ==================== -->
-    <div class="risk-interpretation">
-      <div class="section-title">📖 风险等级解读</div>
-      <div class="interpretation-content">
-        <div class="level-item extreme">
-          <span class="level-badge">极高风险</span>
-          <span class="level-desc">概率 ≥ 80%：滑坡可能性极高，建议立即采取措施</span>
-        </div>
-        <div class="level-item high">
-          <span class="level-badge">高风险</span>
-          <span class="level-desc">概率 60%-80%：滑坡可能性较高，建议加密监测</span>
-        </div>
-        <div class="level-item medium">
-          <span class="level-badge">中风险</span>
-          <span class="level-desc">概率 40%-60%：存在一定风险，保持常规监测</span>
-        </div>
-        <div class="level-item low">
-          <span class="level-badge">低风险</span>
-          <span class="level-desc">概率 < 40%：风险较低，常规巡查即可</span>
-        </div>
-      </div>
-    </div>
-
     <div v-if="!currentPoint && !isLoading" class="empty-state">请选择一个监测点</div>
   </div>
 </template>
