@@ -44,37 +44,6 @@
       </div>
     </div>
 
-    <!-- ==================== 模型介绍 ==================== -->
-    <div class="model-card">
-      <div class="section-title">🧠 滑坡风险评估模型</div>
-      <div class="model-stats">
-        <div class="stat-badge">
-          <span class="stat-label">模型架构</span>
-          <span class="stat-value">Stacking 集成学习</span>
-        </div>
-        <div class="stat-badge">
-          <span class="stat-label">基学习器</span>
-          <span class="stat-value">RF + XGBoost + LightGBM</span>
-        </div>
-        <div class="stat-badge">
-          <span class="stat-label">元学习器</span>
-          <span class="stat-value">Logistic Regression</span>
-        </div>
-        <div class="stat-badge">
-          <span class="stat-label">训练样本</span>
-          <span class="stat-value">1113 个（滑坡 + 非滑坡）</span>
-        </div>
-        <div class="stat-badge">
-          <span class="stat-label">模型精度</span>
-          <span class="stat-value highlight">AUC = 0.9637</span>
-        </div>
-        <div class="stat-badge">
-          <span class="stat-label">召回率</span>
-          <span class="stat-value">0.95</span>
-        </div>
-      </div>
-    </div>
-
     <!-- ==================== 特征重要性分析 ==================== -->
     <div class="section-title">📊 特征重要性分析（Feature Importance）</div>
     <div class="feature-desc">
@@ -155,6 +124,10 @@
         <div class="logic-step">
           <div class="step-number">4</div>
           <div class="step-text">输出滑坡概率（0-1），概率越高风险越大</div>
+        </div>
+        <div class="logic-step">
+          <div class="step-number">5</div>
+          <div class="step-text">召回率0.95，模型精度0.9637</div>
         </div>
       </div>
     </div>
