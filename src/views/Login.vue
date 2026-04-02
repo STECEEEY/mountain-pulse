@@ -69,11 +69,21 @@
           </el-form-item>
         </el-form>
 
+        <div v-if="loading" class="login-status-tip">
+          <span class="dot-flashing"></span>
+          <span>{{ retryCount > 0 ? '网络有点慢，正在重试...' : '验证中...' }}</span>
+        </div>
+        
         <div class="form-footer">
           <span>还没有账号？</span>
           <el-link type="primary" @click="goToRegister">立即注册</el-link>
         </div>
 
+        <div v-if="loading" class="login-status-tip">
+          <span class="dot-flashing"></span>
+          <span>正在验证身份...</span>
+        </div>
+        
         <div class="demo-tips">
           <p>测试账号</p>
           <div class="demo-buttons">
@@ -88,24 +98,27 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref,onMounted} from 'vue'
+import { reactive, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-  
+
 const router = useRouter()
 const userStore = useUserStore()
 
+// 地图初始化代码保持不变...
 import Map from 'ol/Map'
 import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
 import XYZ from 'ol/source/XYZ'
 import { fromLonLat } from 'ol/proj'
+
 const loginMapRef = ref<HTMLElement | null>(null)
+let mapInstance: Map | null = null
 
 onMounted(() => {
   if (loginMapRef.value) {
-    const map = new Map({
+    mapInstance = new Map({
       target: loginMapRef.value,
       layers: [
         new TileLayer({
@@ -141,41 +154,198 @@ onMounted(() => {
       }
     }, 500)
   }
+  
+  // ---------- 新增：登录状态续传 ----------
+  restoreFormState()
 })
 
-  
+onUnmounted(() => {
+  if (mapInstance) {
+    mapInstance.setTarget(undefined)
+    mapInstance = null
+  }
+})
+
 const form = reactive({
   username: '',
   password: ''
 })
 
 const loading = ref(false)
+const retryCount = ref(0)
 
+// ========== 功能1：登录状态续传（sessionStorage） ==========
+const SESSION_STORAGE_KEY = 'login_form_backup'
+
+// 保存当前表单内容（防抖，避免频繁写入）
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+const saveFormState = () => {
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    if (form.username || form.password) {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+        username: form.username,
+        password: form.password,
+        timestamp: Date.now()
+      }))
+    }
+  }, 300)
+}
+
+// 监听表单变化，自动保存（需要在 template 中添加 @input 或使用 watch）
+// 方案1：使用 watch（推荐）
+import { watch } from 'vue'
+watch([() => form.username, () => form.password], () => {
+  saveFormState()
+})
+
+// 恢复之前保存的表单状态
+const restoreFormState = () => {
+  const saved = sessionStorage.getItem(SESSION_STORAGE_KEY)
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      // 可选：设置过期时间，比如 10 分钟内有效
+      const isValid = Date.now() - data.timestamp < 10 * 60 * 1000
+      if (isValid && data.username && !form.username) {
+        form.username = data.username
+        form.password = data.password || ''
+        ElMessage.info('已恢复上次未完成的登录信息')
+      }
+      // 清理已恢复的数据
+      sessionStorage.removeItem(SESSION_STORAGE_KEY)
+    } catch (e) {
+      console.error('恢复表单状态失败', e)
+    }
+  }
+}
+
+// 清理保存的表单状态（登录成功后调用）
+const clearSavedFormState = () => {
+  sessionStorage.removeItem(SESSION_STORAGE_KEY)
+  if (saveTimer) clearTimeout(saveTimer)
+}
+
+// ========== 功能2：智能预判刷新（静默重试） ==========
+// 重试配置
+const RETRY_CONFIG = {
+  enabled: true,           // 是否启用静默重试
+  timeout: 10000,          // 第一次超时时间（10秒）
+  retryDelay: 1000,        // 重试前等待时间（1秒）
+  maxRetries: 1            // 最多重试1次（静默）
+}
+
+// 带超时和重试的登录请求
+const loginWithRetry = async (
+  username: string, 
+  password: string, 
+  isRetry = false  // 是否为重试请求
+): Promise<any> => {
+  // 构建登录 Promise
+  const loginPromise = userStore.login(username, password)
+  
+  // 超时控制（第一次 10 秒，重试时缩短为 8 秒）
+  const timeoutDuration = isRetry ? 8000 : RETRY_CONFIG.timeout
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('TIMEOUT')), timeoutDuration)
+  })
+  
+  // 竞速：请求 vs 超时
+  const result = await Promise.race([loginPromise, timeoutPromise])
+  return result
+}
+
+// 主登录逻辑（带静默重试）
 const handleLogin = async () => {
+  // 防重复提交
+  if (loading.value) {
+    ElMessage.warning('正在登录中，请勿重复点击')
+    return
+  }
+  
+  // 表单校验
   if (!form.username || !form.password) {
     ElMessage.warning('请输入用户名和密码')
     return
   }
   
   loading.value = true
+  let retried = false  // 是否已经重试过
+  
   try {
-    await userStore.login(form.username, form.password)
+    // 第一次尝试
+    await loginWithRetry(form.username, form.password, false)
+    
+    // 登录成功
+    clearSavedFormState()  // 清除保存的草稿
     ElMessage.success('登录成功')
     router.push('/dashboard')
+    
   } catch (error: any) {
-    ElMessage.error(error.message || '登录失败')
+    const errorMsg = error.message || ''
+    
+    // 判断是否为超时错误
+    const isTimeout = errorMsg === 'TIMEOUT' || errorMsg?.includes('超时')
+    
+    if (isTimeout && !retried && RETRY_CONFIG.enabled) {
+      // ========== 静默重试 ==========
+      retried = true
+      retryCount.value = 1
+      console.log('首次登录超时，开始静默重试...')
+      
+      // 可选：在控制台输出，但不打扰用户
+      // 稍等片刻后重试
+      await new Promise(resolve => setTimeout(resolve, RETRY_CONFIG.retryDelay))
+      
+      try {
+        // 第二次尝试（重试）
+        await loginWithRetry(form.username, form.password, true)
+        
+        // 重试成功
+        clearSavedFormState()
+        ElMessage.success('登录成功')
+        router.push('/dashboard')
+        
+      } catch (retryError: any) {
+        // 重试也失败，此时才提示用户
+        const isRetryTimeout = retryError.message === 'TIMEOUT'
+        if (isRetryTimeout) {
+          ElMessage.error({
+            message: '网络较慢，请刷新页面后重试',
+            duration: 5000
+          })
+        } else {
+          ElMessage.error(retryError.message || '登录失败，请重试')
+        }
+      }
+    } else {
+      // 非超时错误，或已经重试过但仍然失败
+      if (errorMsg === 'TIMEOUT') {
+        ElMessage.error('请求超时，请检查网络连接')
+      } else {
+        ElMessage.error(errorMsg || '登录失败')
+      }
+    }
   } finally {
     loading.value = false
   }
+}
+
+// 刷新页面（供用户手动使用）
+const refreshPage = () => {
+  window.location.reload()
 }
 
 const goToRegister = () => {
   router.push('/register')
 }
 
-const fillDemo = (username: string, password: string) => {
+// 改进：填充测试账号后自动登录
+const fillDemo = async (username: string, password: string) => {
   form.username = username
   form.password = password
+  // 自动登录
+  await handleLogin()
 }
 </script>
 
@@ -446,6 +616,33 @@ const fillDemo = (username: string, password: string) => {
   color: white;
 }
 
+/* 登录状态提示（非侵入） */
+.login-status-tip {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #7a8e9a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dot-flashing {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #4bb5d9;
+  animation: dotFlashing 1s infinite linear alternate;
+  animation-delay: 0.5s;
+}
+
+@keyframes dotFlashing {
+  0% { opacity: 0.2; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.2); }
+}
+  
 /* 响应式 */
 @media (max-width: 768px) {
   .brand-section {
