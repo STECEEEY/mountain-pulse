@@ -1,6 +1,6 @@
 <template>
   <div class="warning-module">
-    <!-- 预警指数仪表 - 大号显示 -->
+    <!-- 预警指数仪表 -->
     <div class="warning-header">
       <div class="gauge-container">
         <div class="gauge-ring" :class="warningLevel" :style="{'--score': warningScore}">
@@ -26,7 +26,7 @@
           <div class="metric-label">威胁人口</div>
         </div>
         <div class="metric-card">
-          <div class="metric-value">{{ facilityScore }}/5</div>
+          <div class="metric-value">{{ facilityScore }}/15</div>
           <div class="metric-label">设施影响</div>
         </div>
       </div>
@@ -180,8 +180,11 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
 import { Cpu, Warning, Location } from '@element-plus/icons-vue'
+import { ElAlert } from 'element-plus'
 import { useAiStore } from '@/stores/ai'
 import type { DecisionRequest } from '@/services/aiService'
+import { riskService } from '@/services/riskService'
+import type { RiskPoint } from '@/types/risk'
 import axios from 'axios'
 
 const props = defineProps<{
@@ -190,16 +193,17 @@ const props = defineProps<{
     name?: string
     lng?: number
     lat?: number
-    velocity?: number
-    slope?: number
-    threat?: string
-    actual_population?: number
     level?: string
-    risk_probability?: number
+    type?: string
   } | null
 }>()
 
 const aiStore = useAiStore()
+
+// ========== 完整数据（从 riskService 加载） ==========
+const fullPointsList = ref<RiskPoint[]>([])
+const currentFullPoint = ref<RiskPoint | null>(null)
+const isLoadingData = ref(false)
 
 // ========== 基础数据 ==========
 const riskProbability = ref(0)
@@ -217,35 +221,106 @@ const buildingCount = ref(0)
 const roadCount = ref(0)
 const railwayCount = ref(0)
 
-// ========== 数据加载 ==========
+// ========== 从 riskService 加载完整数据 ==========
+const loadFullPointData = async () => {
+  if (!props.point?.name) {
+    console.log('❌ 跳过加载：没有点位名称')
+    return
+  }
+  
+  isLoadingData.value = true
+  
+  try {
+    console.log('🔍 从 riskService 加载完整数据，点位名称:', props.point.name)
+    
+    // 如果还没加载列表，先加载
+    if (fullPointsList.value.length === 0) {
+      const response = await riskService.loadRiskPoints()
+      fullPointsList.value = response.points
+      console.log('✅ 风险点列表加载完成，共', fullPointsList.value.length, '个点')
+    }
+    
+    // 根据名称查找完整数据
+    const fullPoint = fullPointsList.value.find(p => p.name === props.point?.name)
+    
+    if (fullPoint) {
+      currentFullPoint.value = fullPoint
+      console.log('✅ 找到完整数据:', {
+        name: fullPoint.name,
+        risk_probability: fullPoint.risk_probability,
+        velocity: fullPoint.velocity,
+        slope: fullPoint.slope,
+        actual_population: fullPoint.actual_population,
+        threat: fullPoint.threat
+      })
+    } else {
+      console.warn('⚠️ 未找到完整数据，使用传入的部分数据')
+      // 尝试用传入的数据构建
+      currentFullPoint.value = {
+        name: props.point.name || '',
+        level: props.point.level || '中风险',
+        type: props.point.type || '滑坡',
+        slope: 0,
+        elevation: 0,
+        velocity: 0,
+        risk_probability: 0,
+        actual_population: 0,
+        threat: '',
+        curvature: 0,
+        aspect: 0,
+        longitude: props.point.lng || 0,
+        latitude: props.point.lat || 0
+      } as RiskPoint
+    }
+  } catch (error) {
+    console.error('❌ 加载完整数据失败:', error)
+  } finally {
+    isLoadingData.value = false
+  }
+}
+
+// ========== 加载数据（使用完整数据） ==========
 const loadData = () => {
-  if (!props.point) return
+  const point = currentFullPoint.value
+  if (!point) {
+    console.log('❌ 没有完整数据，跳过加载')
+    return
+  }
   
   console.log('🔍 ===== 开始加载数据 =====')
-  console.log('🔍 完整 point 对象:', JSON.stringify(props.point, null, 2))
+  console.log('🔍 完整 point 对象:', point)
   
-  // 关键：读取 risk_probability
-  if (props.point.risk_probability !== undefined && props.point.risk_probability !== null) {
-    riskProbability.value = props.point.risk_probability
+  // 读取滑坡概率
+  if (point.risk_probability !== undefined && point.risk_probability !== null) {
+    riskProbability.value = point.risk_probability
     console.log('✅ 滑坡概率:', riskProbability.value)
   } else {
-    console.warn('⚠️ risk_probability 字段不存在或为空')
+    console.warn('⚠️ risk_probability 字段不存在')
     riskProbability.value = 0
   }
   
-  slope.value = props.point.slope || 0
-  deformationRate.value = props.point.velocity || 0
+  // 读取形变速率
+  if (point.velocity !== undefined && point.velocity !== null) {
+    deformationRate.value = Math.abs(point.velocity)
+    console.log('✅ 形变速率:', deformationRate.value)
+  } else {
+    deformationRate.value = 0
+  }
   
-  // 威胁人口
-  if (props.point.actual_population) {
-    population.value = props.point.actual_population
-  } else if (props.point.threat) {
-    const match = props.point.threat.match(/\d+/)
+  // 读取坡度
+  slope.value = point.slope || 0
+  
+  // 读取威胁人口
+  if (point.actual_population && point.actual_population > 0) {
+    population.value = point.actual_population
+  } else if (point.threat) {
+    const match = point.threat.match(/\d+/)
     population.value = match ? parseInt(match[0]) : 0
   }
   
   console.log('📊 加载完成:', {
     滑坡概率: riskProbability.value,
+    形变速率: deformationRate.value,
     坡度: slope.value,
     人口: population.value
   })
@@ -256,9 +331,6 @@ const loadRainfallData = async () => {
   if (!props.point?.lng || !props.point?.lat) return
   
   try {
-    const now = new Date()
-    const month = now.getMonth() + 1
-    
     const response = await axios.get(`/api/rainfall/point`, {
       params: {
         lon: props.point.lng,
@@ -268,26 +340,28 @@ const loadRainfallData = async () => {
     
     if (response.data?.data?.statistics) {
       const stats = response.data.data.statistics
+      historicalMean.value = stats.avg_annual / 12
+      historicalStd.value = historicalMean.value * 0.3
+      
+      // 获取当前月份降雨
+      const now = new Date()
+      const currentMonth = now.getMonth() + 1
       if (response.data.data.timeseries) {
         const currentMonthData = response.data.data.timeseries.filter((item: any) => {
           const date = new Date(item.date)
-          return date.getMonth() + 1 === month
+          return date.getMonth() + 1 === currentMonth
         })
         if (currentMonthData.length > 0) {
           monthlyRainfall.value = currentMonthData.reduce((sum: number, item: any) => sum + item.precip_mm, 0)
         }
       }
-      historicalMean.value = stats.avg_annual / 12
-      historicalStd.value = historicalMean.value * 0.3
     }
   } catch (error) {
     console.error('加载降雨数据失败:', error)
-    monthlyRainfall.value = 80
-    historicalMean.value = 80
-    historicalStd.value = 30
   }
 }
 
+// 加载周边设施数据
 const loadSurroundingData = async () => {
   if (!props.point?.lng || !props.point?.lat) {
     console.log('❌ 跳过周边设施加载：缺少经纬度')
@@ -301,17 +375,17 @@ const loadSurroundingData = async () => {
     const baseUrl = '/geodata'
     const center = { lng: props.point.lng, lat: props.point.lat }
     
-    // 扩大半径范围
-    const buildingRadius = 0.05   // 约5.5公里
-    const roadRadius = 0.05       // 约5.5公里
-    const railwayRadius = 0.08    // 约8.8公里
+    const buildingRadius = 0.05
+    const roadRadius = 0.05
+    const railwayRadius = 0.08
     
     console.log('📡 开始请求数据...')
     
-    // 分别请求，避免一个失败影响其他
-    const buildingsRes = await fetch(`${baseUrl}/building.geojson`).then(res => res.json())
-    const roadsRes = await fetch(`${baseUrl}/roads.geojson`).then(res => res.json())
-    const railwaysRes = await fetch(`${baseUrl}/railways.geojson`).then(res => res.json())
+    const [buildingsRes, roadsRes, railwaysRes] = await Promise.all([
+      fetch(`${baseUrl}/building.geojson`).then(res => res.json()),
+      fetch(`${baseUrl}/roads.geojson`).then(res => res.json()),
+      fetch(`${baseUrl}/railways.geojson`).then(res => res.json())
+    ])
     
     console.log('✅ 数据加载成功:', {
       建筑: buildingsRes.features?.length,
@@ -319,64 +393,34 @@ const loadSurroundingData = async () => {
       铁路: railwaysRes.features?.length
     })
     
-    // 调试：查看第一个要素的结构
-    if (roadsRes.features && roadsRes.features.length > 0) {
-      console.log('道路数据第一个要素:', roadsRes.features[0])
-      console.log('道路数据geometry:', roadsRes.features[0]?.geometry)
-      console.log('道路数据coordinates:', roadsRes.features[0]?.geometry?.coordinates)
-    }
-    
-    // 统计函数 - 直接使用传入的features数组
     const countInRange = (features: any[], radius: number, type: string) => {
-      console.log(`${type} 开始统计，features类型:`, typeof features, Array.isArray(features))
-      console.log(`${type} features长度:`, features?.length)
-      
       if (!features || !Array.isArray(features) || features.length === 0) {
-        console.log(`${type} 无数据，跳过统计`)
         return 0
       }
       
       let count = 0
       let minDistance = Infinity
-      let sampleCount = 0
       
       for (let i = 0; i < features.length; i++) {
         const feature = features[i]
         try {
           let lng = 0, lat = 0
           const geom = feature?.geometry
+          if (!geom || !geom.coordinates) continue
           
-          if (!geom || !geom.coordinates) {
-            continue
-          }
-          
-          // 提取坐标
           if (geom.type === 'Point') {
             lng = geom.coordinates[0]
             lat = geom.coordinates[1]
-          } else if (geom.type === 'LineString') {
-            // 取第一个点
-            if (geom.coordinates[0] && geom.coordinates[0][0]) {
-              lng = geom.coordinates[0][0]
-              lat = geom.coordinates[0][1]
-            } else if (geom.coordinates[0]) {
-              lng = geom.coordinates[0][0]
-              lat = geom.coordinates[0][1]
-            }
-          } else if (geom.type === 'Polygon') {
-            // 取第一个多边形的第一个点
-            if (geom.coordinates[0] && geom.coordinates[0][0]) {
-              lng = geom.coordinates[0][0][0]
-              lat = geom.coordinates[0][0][1]
-            }
+          } else if (geom.type === 'LineString' && geom.coordinates[0]) {
+            lng = geom.coordinates[0][0]
+            lat = geom.coordinates[0][1]
+          } else if (geom.type === 'Polygon' && geom.coordinates[0] && geom.coordinates[0][0]) {
+            lng = geom.coordinates[0][0][0]
+            lat = geom.coordinates[0][0][1]
           } else {
             continue
           }
           
-          // 检查坐标有效性
-          if (lng === 0 && lat === 0) continue
-          
-          // 计算距离（度）
           const dx = lng - center.lng
           const dy = lat - center.lat
           const distance = Math.sqrt(dx * dx + dy * dy)
@@ -387,38 +431,24 @@ const loadSurroundingData = async () => {
           
           if (distance <= radius) {
             count++
-            if (sampleCount < 3) {
-              console.log(`${type} 在范围内: 坐标(${lng}, ${lat}), 距离=${(distance * 111).toFixed(2)}km`)
-              sampleCount++
-            }
           }
         } catch (e) {
-          // 忽略解析错误
+          // 忽略
         }
       }
       
-      console.log(`${type} 统计结果: 范围内=${count}, 最近距离=${minDistance === Infinity ? '无' : (minDistance * 111).toFixed(2)}km`)
+      console.log(`${type}: 范围内=${count}, 最近距离=${minDistance === Infinity ? '无' : (minDistance * 111).toFixed(2)}km`)
       return count
     }
     
-    // 确保传入正确的features数组
-    const buildingFeatures = buildingsRes.features || []
-    const roadFeatures = roadsRes.features || []
-    const railwayFeatures = railwaysRes.features || []
-    
-    console.log('准备统计，建筑features数量:', buildingFeatures.length)
-    console.log('准备统计，道路features数量:', roadFeatures.length)
-    console.log('准备统计，铁路features数量:', railwayFeatures.length)
-    
-    buildingCount.value = countInRange(buildingFeatures, buildingRadius, '建筑')
-    roadCount.value = countInRange(roadFeatures, roadRadius, '道路')
-    railwayCount.value = countInRange(railwayFeatures, railwayRadius, '铁路')
+    buildingCount.value = countInRange(buildingsRes.features || [], buildingRadius, '建筑')
+    roadCount.value = countInRange(roadsRes.features || [], roadRadius, '道路')
+    railwayCount.value = countInRange(railwaysRes.features || [], railwayRadius, '铁路')
     
     console.log('🏗️ 最终统计:', {
       建筑: buildingCount.value,
       道路: roadCount.value,
-      铁路: railwayCount.value,
-      设施分: facilityScore.value
+      铁路: railwayCount.value
     })
     
   } catch (error) {
@@ -655,12 +685,12 @@ const callAI = async () => {
 
 // ========== 监听点位变化 ==========
 watch(() => props.point, async (newPoint) => {
-  if (newPoint) {
+  if (newPoint && newPoint.name) {
     console.log('📡 ===== 点位变化 =====')
     console.log('点位名称:', newPoint.name)
     console.log('点位经纬度:', newPoint.lng, newPoint.lat)
-    console.log('risk_probability:', newPoint.risk_probability)
     
+    await loadFullPointData()
     loadData()
     await loadRainfallData()
     await loadSurroundingData()
@@ -672,7 +702,6 @@ onMounted(() => {
   console.log('🚀 预警模块已加载，权重分配: 滑坡概率40% + 降雨25% + 人口20% + 设施15%')
 })
 </script>
-
 
 <style scoped>
 .warning-module {
