@@ -665,9 +665,9 @@ const warningScore = computed(() => {
 // 预警等级
 const warningLevel = computed(() => {
   const score = warningScore.value
-  if (score >= 70) return 'critical'
-  if (score >= 50) return 'high'
-  if (score >= 30) return 'medium'
+  if (score >= 90) return 'critical'
+  if (score >= 85) return 'high'
+  if (score >= 75) return 'medium'
   return 'low'
 })
 
