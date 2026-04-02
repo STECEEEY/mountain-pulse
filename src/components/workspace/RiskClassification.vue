@@ -222,8 +222,8 @@ import { computed, ref, watch, onMounted } from 'vue'
 import { 
   Cpu, ChatDotRound, Location, Opportunity, Warning, 
   WarningFilled, View, Monitor, User, DataAnalysis, 
-  TrendCharts, OfficeBuilding, Van, Train, Checked,
-  CloseBold, Bell
+  TrendCharts, OfficeBuilding, Van, Checked,
+  CloseBold, Bell, InfoFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAiStore } from '@/stores/ai'
@@ -268,6 +268,14 @@ interface RainfallData {
   }
 }
 
+interface GeoJSONFeature {
+  geometry: {
+    type: string
+    coordinates: number[] | number[][]
+  }
+  properties?: any
+}
+
 const props = defineProps<{
   point: {
     id?: number
@@ -291,7 +299,12 @@ const geologyLoading = ref(false)
 const rainfallData = ref<RainfallData | null>(null)
 
 // 周边设施数据
-const surroundingData = ref({
+const surroundingData = ref<{
+  buildings: GeoJSONFeature[]
+  roads: GeoJSONFeature[]
+  railways: GeoJSONFeature[]
+  loading: boolean
+}>({
   buildings: [],
   roads: [],
   railways: [],
@@ -367,7 +380,7 @@ const loadSurroundingData = async () => {
   
   try {
     const baseUrl = 'http://47.102.147.118:8080'
-    const [buildings, roads, railways] = await Promise.all([
+    const [buildingsRes, roadsRes, railwaysRes] = await Promise.all([
       fetch(`${baseUrl}/building.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
       fetch(`${baseUrl}/roads.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
       fetch(`${baseUrl}/railways.geojson`).then(res => res.json()).catch(() => ({ features: [] }))
@@ -377,9 +390,9 @@ const loadSurroundingData = async () => {
     const center = { lng: props.point.lng, lat: props.point.lat }
     
     surroundingData.value = {
-      buildings: filterFeaturesByDistance(buildings.features || [], center, radius),
-      roads: filterFeaturesByDistance(roads.features || [], center, radius),
-      railways: filterFeaturesByDistance(railways.features || [], center, radius),
+      buildings: filterFeaturesByDistance(buildingsRes.features || [], center, radius),
+      roads: filterFeaturesByDistance(roadsRes.features || [], center, radius),
+      railways: filterFeaturesByDistance(railwaysRes.features || [], center, radius),
       loading: false
     }
     
@@ -394,15 +407,21 @@ const loadSurroundingData = async () => {
   }
 }
 
-const filterFeaturesByDistance = (features: any[], center: { lng: number; lat: number }, radius: number) => {
+const filterFeaturesByDistance = (features: GeoJSONFeature[], center: { lng: number; lat: number }, radius: number): GeoJSONFeature[] => {
   return features.filter(feature => {
-    let coords
+    let coords: number[] = [0, 0]
     if (feature.geometry.type === 'Point') {
-      coords = feature.geometry.coordinates
-    } else if (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon') {
-      coords = feature.geometry.coordinates[0] || feature.geometry.coordinates
-    } else {
-      return false
+      coords = feature.geometry.coordinates as number[]
+    } else if (feature.geometry.type === 'LineString') {
+      const lineCoords = feature.geometry.coordinates as number[][]
+      if (lineCoords.length > 0) {
+        coords = lineCoords[0]
+      }
+    } else if (feature.geometry.type === 'Polygon') {
+      const polygonCoords = feature.geometry.coordinates as number[][][]
+      if (polygonCoords.length > 0 && polygonCoords[0].length > 0) {
+        coords = polygonCoords[0][0]
+      }
     }
     
     const lng = coords[0]
@@ -417,7 +436,6 @@ const filterFeaturesByDistance = (features: any[], center: { lng: number; lat: n
 const callAIDecision = async () => {
   if (!props.point) return
   
-  // 构建现场信息
   const dutyNote = generateDutyNote()
   
   const request: DecisionRequest = {
@@ -434,7 +452,7 @@ const callAIDecision = async () => {
   await aiStore.refreshDecision(request)
 }
 
-const generateDutyNote = () => {
+const generateDutyNote = (): string => {
   const velocity = fullPointData.value?.velocity
   const slope = fullPointData.value?.slope
   const stability = fullPointData.value?.geology?.stability
@@ -544,7 +562,7 @@ const computedSurroundingImpact = () => {
   }
 }
 
-// ========== 预警因子（结合 AI 置信度）==========
+// ========== 预警因子 ==========
 
 const warningFactors = computed(() => {
   const velocityScore = computedDeformationFactor()
@@ -557,7 +575,6 @@ const warningFactors = computed(() => {
   const hasAI = aiStore.decisions.length > 0
   const aiConfidenceWeight = hasAI ? (aiStore.decisions[0]?.confidence || 70) / 100 : 0.7
   
-  // 动态权重：AI 置信度高时，提高周边设施和人口暴露的权重
   const surroundingWeight = 0.08 + (aiConfidenceWeight * 0.04)
   const populationWeight = 0.08 + (aiConfidenceWeight * 0.03)
   const deformationWeight = 0.35
@@ -655,14 +672,13 @@ const warningLevelText = computed(() => {
   return map[level] || '正常监测'
 })
 
-// AI 置信度（使用真实 AI 的置信度）
+// AI 置信度
 const aiConfidence = computed(() => {
   if (aiStore.decisions.length > 0) {
     const avgConfidence = aiStore.decisions.reduce((sum, d) => sum + d.confidence, 0) / aiStore.decisions.length
     return Math.round(avgConfidence)
   }
   
-  // 降级：基于数据完整性计算
   let confidence = 60
   if (fullPointData.value?.velocity && fullPointData.value.velocity > 0) confidence += 10
   if (fullPointData.value?.slope && fullPointData.value.slope > 0) confidence += 10
@@ -673,22 +689,22 @@ const aiConfidence = computed(() => {
   return Math.min(confidence, 98)
 })
 
-// AI 洞察（使用真实 AI 的决策）
+// AI 洞察
 const aiInsight = computed(() => {
   if (aiStore.decisions.length > 0) {
     const topDecision = aiStore.decisions[0]
-    const score = currentWarning.value.score
-    
-    if (score >= 75) {
-      return `⚠️ ${topDecision.title} ${topDecision.action}`
+    if (topDecision) {
+      const score = currentWarning.value.score
+      if (score >= 75) {
+        return `⚠️ ${topDecision.title} ${topDecision.action}`
+      }
+      if (score >= 50) {
+        return `📊 ${topDecision.action}`
+      }
+      return `✅ ${topDecision.action}`
     }
-    if (score >= 50) {
-      return `📊 ${topDecision.action}`
-    }
-    return `✅ ${topDecision.action}`
   }
   
-  // 降级
   const score = currentWarning.value.score
   const deformationOriginal = warningFactors.value[0]?.original ?? 0
   
@@ -756,7 +772,7 @@ const surroundingImpact = computed(() => {
     },
     {
       type: 'railways',
-      icon: 'Train',
+      icon: 'Van',  // 使用 Van 图标替代 Train
       label: '铁路设施',
       count: surroundingData.value.railways.length,
       weight: Math.round(impact.details.railways.score),
@@ -769,13 +785,19 @@ const surroundingImpact = computed(() => {
 // 关键设施预警
 const criticalFacilities = computed(() => {
   const warningLevel = currentWarning.value.score
-  const facilities = []
+  const facilities: Array<{
+    id: string
+    type: string
+    icon: string
+    warningLevel: string
+    action: string
+  }> = []
   
   if (surroundingData.value.railways.length > 0 && warningLevel >= 50) {
     facilities.push({
       id: 'railway',
       type: '铁路',
-      icon: 'Train',
+      icon: 'Van',
       warningLevel: warningLevel >= 75 ? '红色' : '橙色',
       action: warningLevel >= 75 ? '建议立即停运' : '建议限速运行'
     })
@@ -810,7 +832,6 @@ const exposureItems = computed(() => {
   const velocity = fullPointData.value?.velocity ?? 0
   const buildingCount = surroundingData.value.buildings.length
   const currentScore = currentWarning.value.score
-  const aiRiskCount = aiStore.summary.highRiskCount
   
   return [
     {
@@ -844,13 +865,12 @@ const exposureItems = computed(() => {
   ]
 })
 
-// 建议措施（优先使用 AI 决策）
+// 建议措施
 const recommendation = computed(() => {
   const score = currentWarning.value.score
   
-  // 优先使用 AI 决策
   if (aiStore.decisions.length > 0) {
-    const items = aiStore.decisions.map((decision, idx) => ({
+    const items = aiStore.decisions.slice(0, 3).map((decision, idx) => ({
       type: decision.level === 'danger' ? 'urgent' : (decision.level === 'warning' ? 'warning' : 'normal'),
       icon: decision.level === 'danger' ? 'Warning' : (decision.level === 'warning' ? 'Bell' : 'View'),
       text: decision.action,
@@ -863,10 +883,9 @@ const recommendation = computed(() => {
     else if (score >= 50) level = 'Ⅱ级响应'
     else if (score >= 25) level = 'Ⅲ级响应'
     
-    return { level, items: items.slice(0, 3) }
+    return { level, items }
   }
   
-  // 降级使用规则引擎
   if (score >= 75) {
     return {
       level: 'Ⅰ级响应',
@@ -907,7 +926,7 @@ const getWeightClass = (score: number) => {
 const getLevelIcon = (level: string) => {
   if (level === 'danger') return 'Warning'
   if (level === 'warning') return 'Bell'
-  return 'Info'
+  return 'InfoFilled'
 }
 
 const getConfidenceColor = (confidence: number) => {
@@ -958,7 +977,7 @@ watch(() => props.point, async (newPoint) => {
     await loadFullPointData()
     await fetchRainfallData()
     await loadSurroundingData()
-    await callAIDecision()  // 调用真实 AI
+    await callAIDecision()
   }
 }, { immediate: true, deep: true })
 
