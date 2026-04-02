@@ -1,10 +1,11 @@
 <template>
   <div class="risk-analysis">
-    <div class="section-title">风险统计概览</div>
+    <!-- ==================== 监测点信息 ==================== -->
+    <div class="section-title">📍 监测点信息</div>
 
     <!-- 监测点选择器 -->
     <div class="point-selector">
-      <label>监测点：</label>
+      <label>选择监测点：</label>
       <input 
         type="text" 
         v-model="searchText" 
@@ -19,7 +20,7 @@
       </select>
     </div>
 
-    <!-- 当前监测点信息 -->
+    <!-- 当前监测点详情 -->
     <div v-if="currentPoint" class="point-summary">
       <div class="summary-item">
         <span class="summary-label">监测点</span>
@@ -27,9 +28,7 @@
       </div>
       <div class="summary-item">
         <span class="summary-label">风险等级</span>
-        <span class="summary-value" :class="getRiskLevelClass(currentPoint.level)">
-          {{ currentPoint.level }}
-        </span>
+        <span class="summary-value risk-extreme">{{ currentPoint.level }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">灾害类型</span>
@@ -39,328 +38,268 @@
         <span class="summary-label">威胁对象</span>
         <span class="summary-value">{{ currentPoint.threat }}</span>
       </div>
+      <div class="summary-item">
+        <span class="summary-label">模型预测概率</span>
+        <span class="summary-value risk-extreme">{{ ((currentPoint as any).risk_probability * 100).toFixed(1) }}%</span>
+      </div>
     </div>
 
-    <!-- 风险因子分析标题 -->
-    <div class="section-title">风险因子分析</div>
-
-    <!-- 加载状态 -->
-    <div v-if="isLoading" class="loading-state">
-      <div class="loading-spinner"></div>
-      <span>加载中...</span>
+    <!-- ==================== 模型介绍 ==================== -->
+    <div class="model-card">
+      <div class="section-title">🧠 滑坡风险评估模型</div>
+      <div class="model-stats">
+        <div class="stat-badge">
+          <span class="stat-label">模型架构</span>
+          <span class="stat-value">Stacking 集成学习</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-label">基学习器</span>
+          <span class="stat-value">RF + XGBoost + LightGBM</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-label">元学习器</span>
+          <span class="stat-value">Logistic Regression</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-label">训练样本</span>
+          <span class="stat-value">1113 个（滑坡 + 非滑坡）</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-label">模型精度</span>
+          <span class="stat-value highlight">AUC = 0.9637</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-label">召回率</span>
+          <span class="stat-value">0.95</span>
+        </div>
+      </div>
     </div>
-    
-    <!-- 风险因子列表 - 基于真实权重展示 -->
-    <div v-if="dynamicFactors" class="factors-list">
+
+    <!-- ==================== 特征重要性分析 ==================== -->
+    <div class="section-title">📊 特征重要性分析（Feature Importance）</div>
+    <div class="feature-desc">
+      基于 RandomForest 模型的特征重要性评估，反映各因子对滑坡预测的贡献程度。
+      重要性总和为 100%，数值越大表示该因子对模型决策越关键。
+    </div>
+
+    <!-- 特征重要性卡片 -->
+    <div class="factors-list">
       <div 
-        v-for="factor in dynamicFactors" 
+        v-for="factor in featureImportanceList" 
         :key="factor.name"
         class="factor-card"
-        :class="{ 
-          'primary-driver': factor.name === topRiskFactor,
-          [`risk-${factor.riskLevel}`]: true
-        }"
+        :class="{ 'primary-driver': factor.isTop }"
       >
         <div class="factor-header">
           <div class="factor-name">
             {{ factor.name }}
-            <span v-if="factor.name === topRiskFactor" class="driver-badge">
-              主要驱动因子
-            </span>
+            <span v-if="factor.isTop" class="driver-badge">🎯 最重要特征</span>
           </div>
           <div class="factor-weight">
-            风险权重
-            <strong :class="`weight-${factor.riskLevel}`">
-              {{ (factor.weight * 100).toFixed(1) }}%
+            特征重要性
+            <strong :style="{ color: factor.color }">
+              {{ (factor.importance * 100).toFixed(1) }}%
             </strong>
           </div>
         </div>
 
         <div class="factor-body">
-          <div class="actual-value" :class="`value-${factor.riskLevel}`">
-            <div class="value-label">实际测量值</div>
+          <!-- 当前点的实际测量值 -->
+          <div class="actual-value">
+            <div class="value-label">当前点实测值</div>
             <div class="value-number">{{ factor.displayValue }}</div>
           </div>
 
-          <div class="scale-container">
-            <div class="scale-labels">
-              <span>低风险</span>
-              <span>中风险</span>
-              <span>高风险</span>
-            </div>
-            <div class="scale-bar-bg">
+          <!-- 重要性进度条 -->
+          <div class="importance-bar-container">
+            <div class="importance-bar-bg">
               <div 
-                class="scale-fill" 
-                :style="{ width: factor.weight * 100 + '%' }"
-                :class="factor.riskLevel"
+                class="importance-bar-fill" 
+                :style="{ width: factor.importance * 100 + '%', background: factor.color }"
               ></div>
             </div>
-            <div class="risk-indicator" :style="{ left: factor.weight * 100 + '%' }">
-              {{ (factor.weight * 100).toFixed(0) }}%
-            </div>
+            <div class="importance-label">模型重要性占比</div>
           </div>
         </div>
 
+        <!-- 特征的科学解释 -->
         <div class="factor-desc">
-          <span class="desc-icon">📊</span>
-          {{ factor.description }}
+          <span class="desc-icon">📖</span>
+          <span>{{ factor.scientificDesc }}</span>
+        </div>
+
+        <!-- 当前点的具体分析 -->
+        <div class="factor-analysis">
+          <span class="analysis-icon">🔍</span>
+          <span>{{ factor.currentAnalysis }}</span>
         </div>
       </div>
     </div>
 
-    <!-- 风险贡献度分析 -->
-    <div v-if="dynamicFactors" class="contribution-analysis">
-      <div class="section-title">风险贡献度分析</div>
-      <div class="contribution-bars">
-        <div 
-          v-for="factor in dynamicFactors" 
-          :key="factor.name"
-          class="contribution-item"
-        >
-          <span class="contribution-name">{{ factor.name }}</span>
-          <div class="contribution-bar-bg">
-            <div 
-              class="contribution-bar" 
-              :style="{ width: factor.contribution * 100 + '%' }"
-              :class="factor.riskLevel"
-            ></div>
-          </div>
-          <span class="contribution-percent">{{ (factor.contribution * 100).toFixed(1) }}%</span>
+    <!-- ==================== 模型决策逻辑说明 ==================== -->
+    <div class="model-logic">
+      <div class="section-title">⚙️ 模型决策逻辑</div>
+      <div class="logic-content">
+        <div class="logic-step">
+          <div class="step-number">1</div>
+          <div class="step-text">输入 6 个特征：形变速率、坡度、高程、曲率、坡向、绝对形变速率</div>
+        </div>
+        <div class="logic-step">
+          <div class="step-number">2</div>
+          <div class="step-text">三个基学习器（RF、XGBoost、LightGBM）独立预测</div>
+        </div>
+        <div class="logic-step">
+          <div class="step-number">3</div>
+          <div class="step-text">元学习器（逻辑回归）综合三个基学习器的结果</div>
+        </div>
+        <div class="logic-step">
+          <div class="step-number">4</div>
+          <div class="step-text">输出滑坡概率（0-1），概率越高风险越大</div>
         </div>
       </div>
     </div>
 
-    <div v-else-if="!isLoading" class="empty-state">请选择一个监测点</div>
+    <!-- ==================== 风险解读 ==================== -->
+    <div class="risk-interpretation">
+      <div class="section-title">📖 风险等级解读</div>
+      <div class="interpretation-content">
+        <div class="level-item extreme">
+          <span class="level-badge">极高风险</span>
+          <span class="level-desc">概率 ≥ 80%：滑坡可能性极高，建议立即采取措施</span>
+        </div>
+        <div class="level-item high">
+          <span class="level-badge">高风险</span>
+          <span class="level-desc">概率 60%-80%：滑坡可能性较高，建议加密监测</span>
+        </div>
+        <div class="level-item medium">
+          <span class="level-badge">中风险</span>
+          <span class="level-desc">概率 40%-60%：存在一定风险，保持常规监测</span>
+        </div>
+        <div class="level-item low">
+          <span class="level-badge">低风险</span>
+          <span class="level-desc">概率 < 40%：风险较低，常规巡查即可</span>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="!currentPoint && !isLoading" class="empty-state">请选择一个监测点</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { riskService } from '@/services/riskService'
-import type { RiskPoint, RiskStatistics } from '@/types/risk'
+import type { RiskPoint } from '@/types/risk'
 
-// 真实特征权重（从你的RandomForest模型提取）
-const FEATURE_WEIGHTS = {
-  slope: 0.3540,      // 坡度 35.40%
-  elevation: 0.2205,  // 高程 22.05%
-  curvature: 0.1573,  // 曲率 15.73%
-  aspect: 0.0913,     // 坡向 9.13%
-  velocity: 0.0903,   // 形变速率 9.03%
-  abs_velocity: 0.0866 // 绝对形变速率 8.66%
-}
-
-// 特征归一化函数（将实际值映射到0-1风险贡献）
-const normalizeValue = (value: number, low: number, medium: number, high: number): number => {
-  const absVal = Math.abs(value)
-  if (absVal <= low) return 0.2
-  if (absVal <= medium) return 0.5
-  if (absVal <= high) return 0.8
-  return 1.0
-}
-
-// 获取风险等级样式
-const getRiskLevelClass = (level: string): string => {
-  const classMap: Record<string, string> = {
-    '极高风险': 'risk-extreme',
-    '高': 'risk-high',
-    '中': 'risk-medium',
-    '低': 'risk-low'
+// ==================== 特征重要性数据（从 RandomForest 模型提取） ====================
+const FEATURE_IMPORTANCE = [
+  { 
+    name: '坡度', 
+    importance: 0.3540,
+    color: '#ff4444',
+    scientificDesc: '坡度是滑坡发生的核心地形条件，坡度越陡，下滑力越大，滑坡风险越高。在宁镇地区，坡度 > 25° 的区域需要重点关注。',
+    getCurrentAnalysis: (point: RiskPoint) => {
+      const slope = point.slope
+      if (slope > 40) return `当前点坡度为 ${slope.toFixed(1)}°，属于极陡坡，是模型判断为高风险的最主要依据。`
+      if (slope > 25) return `当前点坡度为 ${slope.toFixed(1)}°，属于陡坡，对滑坡风险贡献显著。`
+      if (slope > 10) return `当前点坡度为 ${slope.toFixed(1)}°，属于缓坡，风险相对可控。`
+      return `当前点坡度为 ${slope.toFixed(1)}°，属于平缓坡，滑坡风险较低。`
+    },
+    getDisplayValue: (point: RiskPoint) => `${point.slope.toFixed(1)}°`
+  },
+  { 
+    name: '高程', 
+    importance: 0.2205,
+    color: '#ff8844',
+    scientificDesc: '宁镇地区滑坡主要发生在 50-200m 的低山丘陵区，高程过低（平原）或过高（高山）区域滑坡发育较少。',
+    getCurrentAnalysis: (point: RiskPoint) => {
+      const elevation = point.elevation
+      if (elevation >= 50 && elevation <= 200) return `当前点高程为 ${elevation.toFixed(0)}m，处于滑坡易发高程区间，风险较高。`
+      if (elevation < 50) return `当前点高程为 ${elevation.toFixed(0)}m，位于平原区，滑坡风险相对较低。`
+      return `当前点高程为 ${elevation.toFixed(0)}m，海拔较高，需综合其他因子判断。`
+    },
+    getDisplayValue: (point: RiskPoint) => `${point.elevation.toFixed(0)}m`
+  },
+  { 
+    name: '曲率', 
+    importance: 0.1573,
+    color: '#ffaa44',
+    scientificDesc: '曲率反映地表的凹凸程度，影响地表径流和应力分布。负曲率（凹坡）易汇水，正曲率（凸坡）易拉裂。',
+    getCurrentAnalysis: (point: RiskPoint) => {
+      const curvature = point.curvature || 0
+      if (Math.abs(curvature) > 0.5) return `当前点曲率为 ${curvature.toFixed(3)}，地形起伏明显，是模型的重要判断依据。`
+      if (Math.abs(curvature) > 0.1) return `当前点曲率为 ${curvature.toFixed(3)}，地形有一定起伏。`
+      return `当前点曲率为 ${curvature.toFixed(3)}，地形相对平缓。`
+    },
+    getDisplayValue: (point: RiskPoint) => `${(point.curvature || 0).toFixed(4)}`
+  },
+  { 
+    name: '坡向', 
+    importance: 0.0913,
+    color: '#44cc88',
+    scientificDesc: '坡向影响日照和降雨分布。迎风坡（东、东南）降雨较多，滑坡发育更活跃。',
+    getCurrentAnalysis: (point: RiskPoint) => {
+      const aspect = point.aspect || 0
+      if (aspect >= 45 && aspect <= 135) return `当前点坡向为 ${aspect.toFixed(0)}°（朝东），迎风坡，降雨较多，风险相对较高。`
+      if (aspect >= 225 && aspect <= 315) return `当前点坡向为 ${aspect.toFixed(0)}°（朝西），背风坡，风险相对较低。`
+      return `当前点坡向为 ${aspect.toFixed(0)}°，影响适中。`
+    },
+    getDisplayValue: (point: RiskPoint) => `${(point.aspect || 0).toFixed(0)}°`
+  },
+  { 
+    name: '形变速率', 
+    importance: 0.1769,  // 0.0903 + 0.0866 合并
+    color: '#ff6688',
+    scientificDesc: '形变速率是滑坡的直接前兆指标。形变速率越大（无论是下沉还是抬升），坡体越活跃，失稳风险越高。',
+    getCurrentAnalysis: (point: RiskPoint) => {
+      const velocity = Math.abs(point.velocity)
+      if (velocity > 30) return `当前点形变速率为 ${velocity.toFixed(2)}mm/年，形变剧烈，是模型判断高风险的关键因子。`
+      if (velocity > 15) return `当前点形变速率为 ${velocity.toFixed(2)}mm/年，形变明显，坡体处于活跃期。`
+      if (velocity > 5) return `当前点形变速率为 ${velocity.toFixed(2)}mm/年，形变较缓，处于稳定变形阶段。`
+      return `当前点形变速率为 ${velocity.toFixed(2)}mm/年，形变微弱，坡体基本稳定。`
+    },
+    getDisplayValue: (point: RiskPoint) => `${Math.abs(point.velocity).toFixed(2)}mm/年`
   }
-  return classMap[level] || 'risk-medium'
-}
+]
 
-// 根据分数获取风险等级样式
-const getRiskLevelClassByScore = (score: number): string => {
-  if (score >= 0.8) return 'risk-extreme'
-  if (score >= 0.6) return 'risk-high'
-  if (score >= 0.4) return 'risk-medium'
-  return 'risk-low'
-}
+// 计算排序后的特征重要性列表（重要性从高到低）
+const featureImportanceList = ref<any[]>([])
 
-// 获取风险等级文本
-const getRiskLevelText = (score: number): string => {
-  if (score >= 0.8) return '极高风险'
-  if (score >= 0.6) return '高风险'
-  if (score >= 0.4) return '中风险'
-  return '低风险'
-}
-
-// 描述函数
-const getSlopeDesc = (slope: number): string => {
-  if (slope > 40) return `坡度为 ${slope.toFixed(1)}°，坡度极陡，下滑力巨大，是本次评估的最主要驱动因子`
-  if (slope > 25) return `坡度为 ${slope.toFixed(1)}°，坡度较陡，下滑力较大，需重点关注`
-  if (slope > 10) return `坡度为 ${slope.toFixed(1)}°，坡度适中，相对稳定`
-  return `坡度为 ${slope.toFixed(1)}°，坡度平缓，稳定性较好`
-}
-
-const getElevationDesc = (elevation: number): string => {
-  if (elevation >= 50 && elevation <= 200) return `高程 ${elevation.toFixed(0)}m，处于滑坡易发高程范围（50-200m），风险较高`
-  if (elevation < 50) return `高程 ${elevation.toFixed(0)}m，高程较低，地形平坦，风险较低`
-  return `高程 ${elevation.toFixed(0)}m，高程较高，地形复杂，需综合评估`
-}
-
-const getVelocityDesc = (velocity: number): string => {
-  const absVal = Math.abs(velocity)
-  if (absVal > 30) return `形变速率为 ${absVal.toFixed(2)}mm/年，形变剧烈，处于加速变形阶段，需立即采取措施`
-  if (absVal > 15) return `形变速率为 ${absVal.toFixed(2)}mm/年，形变明显，处于活跃期，需加强监测`
-  if (absVal > 5) return `形变速率为 ${absVal.toFixed(2)}mm/年，形变较缓，处于稳定变形阶段`
-  return `形变速率为 ${absVal.toFixed(2)}mm/年，形变微弱，坡体基本稳定`
-}
-
-const getCurvatureDesc = (curvature: number): string => {
-  const absVal = Math.abs(curvature)
-  if (absVal > 0.5) return `曲率绝对值较大，地形起伏明显，易形成滑坡边界，贡献度较高`
-  if (absVal > 0.1) return `曲率适中，地形有一定起伏`
-  return `地形平缓，曲率较小`
-}
-
-const getAspectDesc = (aspect: number): string => {
-  if (aspect >= 45 && aspect <= 135) return `坡向朝东，迎风坡，降雨较多，风险相对较高`
-  if (aspect >= 225 && aspect <= 315) return `坡向朝西，背风坡，风险相对较低`
-  return `坡向影响适中`
-}
-
-// 计算动态风险因子
-const calculateDynamicFactors = (point: RiskPoint) => {
-  // 计算各特征的风险权重（归一化值）
-  const slopeRisk = normalizeValue(point.slope, 10, 25, 40)
-  const elevationRisk = normalizeValue(point.elevation, 20, 200, 500)
-  const velocityRisk = normalizeValue(point.velocity, 5, 15, 30)
-  const curvatureRisk = normalizeValue(point.curvature || 0, 0.1, 0.5, 1.0)
-  const aspectRisk = 0.5  // 坡向固定中等风险
-  
-  // 获取显示值
-  const absVelocity = Math.abs(point.velocity)
-  
-  // 计算加权综合风险评分（使用真实权重）
-  const weightedScore = 
-    slopeRisk * FEATURE_WEIGHTS.slope +
-    elevationRisk * FEATURE_WEIGHTS.elevation +
-    velocityRisk * (FEATURE_WEIGHTS.velocity + FEATURE_WEIGHTS.abs_velocity) +
-    curvatureRisk * FEATURE_WEIGHTS.curvature +
-    aspectRisk * FEATURE_WEIGHTS.aspect
-  
-  // 总权重归一化（因为权重之和为1）
-  const totalRiskScore = weightedScore
-  
-  // 计算每个因子的贡献度
-  const rawContributions = {
-    slope: slopeRisk * FEATURE_WEIGHTS.slope,
-    elevation: elevationRisk * FEATURE_WEIGHTS.elevation,
-    velocity: velocityRisk * (FEATURE_WEIGHTS.velocity + FEATURE_WEIGHTS.abs_velocity),
-    curvature: curvatureRisk * FEATURE_WEIGHTS.curvature,
-    aspect: aspectRisk * FEATURE_WEIGHTS.aspect
-  }
-  
-  const totalContribution = Object.values(rawContributions).reduce((a, b) => a + b, 0)
-  
-  // 找出主要驱动因子
-  let topFactorName = '坡度'
-  let maxWeight = slopeRisk
-  
-  const factorsList = [
-    { name: '坡度', risk: slopeRisk, contrib: rawContributions.slope, actual: point.slope, unit: '°', desc: getSlopeDesc(point.slope) },
-    { name: '高程', risk: elevationRisk, contrib: rawContributions.elevation, actual: point.elevation, unit: 'm', desc: getElevationDesc(point.elevation) },
-    { name: '形变速率', risk: velocityRisk, contrib: rawContributions.velocity, actual: absVelocity, unit: 'mm/年', desc: getVelocityDesc(point.velocity) },
-    { name: '曲率', risk: curvatureRisk, contrib: rawContributions.curvature, actual: point.curvature || 0, unit: '', desc: getCurvatureDesc(point.curvature || 0) },
-    { name: '坡向', risk: aspectRisk, contrib: rawContributions.aspect, actual: point.aspect || 0, unit: '°', desc: getAspectDesc(point.aspect || 0) }
-  ]
-  
-  // 找出最大权重因子
-  for (const f of factorsList) {
-    if (f.risk > maxWeight) {
-      maxWeight = f.risk
-      topFactorName = f.name
-    }
-  }
-  
-  // 构建动态因子数组
-  const dynamicFactors = factorsList.map(f => ({
-    name: f.name,
-    actualValue: f.actual,
-    displayValue: f.name === '形变速率' ? `${f.actual.toFixed(2)}${f.unit}` : `${f.actual.toFixed(2)}${f.unit}`,
-    weight: f.risk,
-    riskLevel: f.risk >= 0.7 ? 'high' : (f.risk >= 0.4 ? 'medium' : 'low'),
-    contribution: f.contrib / totalContribution,
-    description: f.desc,
-    unit: f.unit
-  }))
-  
-  return {
-    factors: dynamicFactors,
-    totalRiskScore,
-    topRiskFactor: topFactorName,
-    riskLevel: getRiskLevelText(totalRiskScore)
-  }
-}
-
-const stats = ref<RiskStatistics | null>(null)
+// 当前选中的点
 const pointsList = ref<RiskPoint[]>([])
 const selectedPointId = ref<string>('')
 const currentPoint = ref<RiskPoint | null>(null)
 const searchText = ref('')
 const searchResults = ref<RiskPoint[]>([])
 const isLoading = ref(false)
-const dynamicFactors = ref<any[] | null>(null)
-const totalRiskScore = ref<number | null>(null)
-const topRiskFactor = ref<string>('')
-const riskLevelText = ref<string>('')
 
-// 获取风险建议
-const getRiskSuggestion = () => {
-  const score = totalRiskScore.value || 0
-  
-  if (score >= 0.8) {
-    return `当前监测点综合风险极高（${(score * 100).toFixed(1)}分），主要驱动因子为"${topRiskFactor.value}"。建议立即启动应急预案，组织人员撤离，并加强监测频率至实时监测。`
-  }
-  
-  if (score >= 0.6) {
-    if (topRiskFactor.value === '形变速率') {
-      return `当前监测点形变速率较高，坡体处于活跃期。建议加密监测频次，每周至少监测2-3次，并关注降雨等诱发因素。`
-    }
-    if (topRiskFactor.value === '坡度') {
-      return `当前监测点坡度较陡，地形条件不利。建议进行坡面防护，设置截排水设施，并定期巡查。`
-    }
-    return `当前监测点风险较高（${(score * 100).toFixed(1)}分），主要受${topRiskFactor.value}影响。建议加强监测预警，制定防治方案。`
-  }
-  
-  if (score >= 0.4) {
-    return `当前监测点存在一定风险（${(score * 100).toFixed(1)}分），建议保持常规监测频率，定期巡查，关注形变速率变化趋势。`
-  }
-  
-  return `当前监测点风险较低（${(score * 100).toFixed(1)}分），保持常规监测即可，建议每季度进行一次全面评估。`
+// 生成带当前点数据的特征列表
+const updateFeatureList = (point: RiskPoint) => {
+  featureImportanceList.value = FEATURE_IMPORTANCE.map(f => ({
+    ...f,
+    displayValue: f.getDisplayValue(point),
+    currentAnalysis: f.getCurrentAnalysis(point),
+    isTop: f.name === '坡度' // 坡度永远是第一重要
+  }))
 }
 
-// 监测点切换事件
+// 监测点切换
 const onPointChange = async () => {
   const point = pointsList.value.find(p => p.name === selectedPointId.value)
   if (point) {
     isLoading.value = true
     currentPoint.value = point
-    
-    // 模拟异步加载（实际可以去掉setTimeout）
-    setTimeout(() => {
-      const result = calculateDynamicFactors(point)
-      dynamicFactors.value = result.factors
-      totalRiskScore.value = result.totalRiskScore
-      topRiskFactor.value = result.topRiskFactor
-      riskLevelText.value = result.riskLevel
-      isLoading.value = false
-    }, 100)
-    
+    updateFeatureList(point)
     searchText.value = point.name
     searchResults.value = []
+    isLoading.value = false
   }
 }
 
 // 加载数据
 const loadData = async () => {
   try {
-    const [statsRes, pointsRes] = await Promise.all([
-      riskService.loadRiskStatistics(),
-      riskService.loadRiskPoints()
-    ])
-    stats.value = statsRes
+    const pointsRes = await riskService.loadRiskPoints()
     pointsList.value = pointsRes.points
     
     if (pointsList.value && pointsList.value.length > 0 && pointsList.value[0]) {
@@ -368,11 +307,11 @@ const loadData = async () => {
       await onPointChange()
     }
   } catch (error) {
-    console.error('Risk analysis panel load failed:', error)
+    console.error('加载失败:', error)
   }
 }
 
-// 搜索方法
+// 搜索
 const onSearch = () => {
   if (!searchText.value.trim()) {
     searchResults.value = []
@@ -389,10 +328,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 样式保持与之前类似，需要我补充完整吗？ */
 .risk-analysis {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   padding: 4px;
 }
 
@@ -402,7 +342,7 @@ onMounted(() => {
   color: #00f0ff;
   border-left: 3px solid #00f0ff;
   padding-left: 10px;
-  margin-bottom: 4px;
+  margin-bottom: 12px;
 }
 
 /* 监测点选择器 */
@@ -419,10 +359,9 @@ onMounted(() => {
 .point-selector label {
   color: #9ec0d8;
   font-size: 13px;
-  font-weight: 500;
 }
 
-.search-input {
+.search-input, .result-select {
   flex: 1;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(0, 200, 255, 0.3);
@@ -430,22 +369,6 @@ onMounted(() => {
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 13px;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #00f0ff;
-}
-
-.result-select {
-  flex: 1;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(0, 200, 255, 0.3);
-  color: #e8f5ff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
 }
 
 /* 监测点摘要 */
@@ -480,88 +403,53 @@ onMounted(() => {
   color: #ff4444;
 }
 
-.summary-value.risk-high {
-  color: #ff8844;
-}
-
-.summary-value.risk-medium {
-  color: #ffaa44;
-}
-
-.summary-value.risk-low {
-  color: #44ff88;
-}
-
-/* 加载状态 */
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 40px;
-  background: rgba(8, 27, 44, 0.75);
-  border-radius: 12px;
-  color: #00f0ff;
-}
-
-.loading-spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid rgba(0, 240, 255, 0.3);
-  border-top-color: #00f0ff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 风险评分摘要 */
-.risk-score-summary {
-  background: linear-gradient(135deg, rgba(0, 200, 255, 0.1), rgba(0, 100, 150, 0.2));
+/* 模型卡片 */
+.model-card {
+  background: linear-gradient(135deg, rgba(0, 100, 150, 0.2), rgba(0, 50, 80, 0.3));
   border: 1px solid rgba(0, 200, 255, 0.3);
-  border-radius: 10px;
-  padding: 12px 16px;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.model-stats {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 16px;
+  margin-top: 12px;
 }
 
-.score-label {
-  font-size: 13px;
-  color: #9ec0d8;
+.stat-badge {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 120px;
 }
 
-.score-value {
-  font-size: 24px;
-  font-weight: 700;
+.stat-label {
+  font-size: 11px;
+  color: #88a0b0;
+  display: block;
+  margin-bottom: 4px;
 }
 
-.score-value.risk-extreme {
-  color: #ff4444;
+.stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8f5ff;
 }
 
-.score-value.risk-high {
-  color: #ff8844;
-}
-
-.score-value.risk-medium {
+.stat-value.highlight {
   color: #ffaa44;
 }
 
-.score-value.risk-low {
-  color: #44ff88;
-}
-
-.score-level {
-  font-size: 14px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.4);
-  color: #e8f5ff;
+/* 特征说明 */
+.feature-desc {
+  font-size: 12px;
+  color: #9ec0d8;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
 }
 
 /* 因子列表 */
@@ -569,23 +457,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: 500px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.factors-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.factors-list::-webkit-scrollbar-track {
-  background: rgba(0, 200, 255, 0.1);
-  border-radius: 4px;
-}
-
-.factors-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 200, 255, 0.4);
-  border-radius: 4px;
 }
 
 .factor-card {
@@ -593,29 +464,11 @@ onMounted(() => {
   border: 1px solid rgba(0, 200, 255, 0.2);
   border-radius: 12px;
   padding: 14px 16px;
-  transition: all 0.2s ease;
-}
-
-.factor-card:hover {
-  border-color: rgba(0, 200, 255, 0.5);
-  background: rgba(10, 35, 55, 0.85);
 }
 
 .factor-card.primary-driver {
   border-left: 4px solid #ff7b2f;
   background: rgba(255, 123, 47, 0.08);
-}
-
-.factor-card.risk-high {
-  border-left: 3px solid #ff4444;
-}
-
-.factor-card.risk-medium {
-  border-left: 3px solid #ffaa44;
-}
-
-.factor-card.risk-low {
-  border-left: 3px solid #44ff88;
 }
 
 .factor-header {
@@ -634,7 +487,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 .driver-badge {
@@ -643,7 +495,6 @@ onMounted(() => {
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 20px;
-  font-weight: 500;
 }
 
 .factor-weight {
@@ -652,46 +503,22 @@ onMounted(() => {
 }
 
 .factor-weight strong {
-  font-size: 14px;
-}
-
-.factor-weight strong.weight-high {
-  color: #ff4444;
-}
-
-.factor-weight strong.weight-medium {
-  color: #ffaa44;
-}
-
-.factor-weight strong.weight-low {
-  color: #44ff88;
+  font-size: 16px;
 }
 
 .factor-body {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
   margin-bottom: 12px;
 }
 
 .actual-value {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
-  padding: 8px 12px;
-  min-width: 100px;
+  padding: 8px 16px;
+  min-width: 120px;
   text-align: center;
-}
-
-.actual-value.value-high {
-  border: 1px solid #ff4444;
-}
-
-.actual-value.value-medium {
-  border: 1px solid #ffaa44;
-}
-
-.actual-value.value-low {
-  border: 1px solid #44ff88;
 }
 
 .value-label {
@@ -704,64 +531,35 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 700;
   color: #ffb47b;
-  font-family: monospace;
 }
 
-.scale-container {
+.importance-bar-container {
   flex: 2;
-  min-width: 160px;
-  position: relative;
+  min-width: 180px;
 }
 
-.scale-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-  font-size: 10px;
-  color: #88a0b0;
-}
-
-.scale-bar-bg {
+.importance-bar-bg {
   background: rgba(0, 0, 0, 0.4);
   border-radius: 10px;
-  height: 8px;
-  overflow: visible;
-  position: relative;
+  height: 12px;
+  overflow: hidden;
 }
 
-.scale-fill {
+.importance-bar-fill {
   height: 100%;
   border-radius: 10px;
   transition: width 0.3s ease;
 }
 
-.scale-fill.low {
-  background: linear-gradient(90deg, #3b8c5a, #6cb27c);
+.importance-label {
+  font-size: 10px;
+  color: #88a0b0;
+  margin-top: 4px;
+  text-align: right;
 }
 
-.scale-fill.medium {
-  background: linear-gradient(90deg, #e0a23b, #e8b45a);
-}
-
-.scale-fill.high {
-  background: linear-gradient(90deg, #e05a2a, #e87a4a);
-}
-
-.risk-indicator {
-  position: absolute;
-  top: 18px;
-  transform: translateX(-50%);
-  font-size: 9px;
-  color: #ffb47b;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 2px 4px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.factor-desc {
+.factor-desc, .factor-analysis {
   font-size: 11px;
-  color: #9ec0d8;
   line-height: 1.5;
   padding-top: 8px;
   border-top: 1px solid rgba(0, 200, 255, 0.15);
@@ -770,130 +568,129 @@ onMounted(() => {
   gap: 6px;
 }
 
-.desc-icon {
+.factor-analysis {
+  border-top: none;
+  padding-top: 4px;
+  color: #ffb47b;
+}
+
+.desc-icon, .analysis-icon {
   font-size: 12px;
 }
 
-/* 贡献度分析 */
-.contribution-analysis {
-  margin-top: 4px;
+/* 模型决策逻辑 */
+.model-logic {
+  background: rgba(8, 27, 44, 0.75);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 12px;
+  padding: 16px;
 }
 
-.contribution-bars {
+.logic-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background: rgba(8, 27, 44, 0.75);
-  border: 1px solid rgba(0, 200, 255, 0.2);
-  border-radius: 8px;
-  padding: 12px;
+  gap: 12px;
+  margin-top: 8px;
 }
 
-.contribution-item {
+.logic-step {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 12px;
-}
-
-.contribution-name {
-  width: 70px;
-  color: #9ec0d8;
-}
-
-.contribution-bar-bg {
-  flex: 1;
-  height: 20px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.contribution-bar {
-  height: 100%;
-  border-radius: 10px;
-  transition: width 0.3s ease;
-}
-
-.contribution-bar.low {
-  background: linear-gradient(90deg, #3b8c5a, #6cb27c);
-}
-
-.contribution-bar.medium {
-  background: linear-gradient(90deg, #e0a23b, #e8b45a);
-}
-
-.contribution-bar.high {
-  background: linear-gradient(90deg, #e05a2a, #e87a4a);
-}
-
-.contribution-percent {
-  width: 50px;
-  color: #ffb47b;
-  font-weight: 500;
-  text-align: right;
-}
-
-/* 风险建议 */
-.risk-suggestion {
-  margin-top: 4px;
-}
-
-.suggestion-content {
-  background: rgba(8, 27, 44, 0.75);
-  border: 1px solid rgba(0, 200, 255, 0.2);
-  border-radius: 8px;
-  padding: 14px;
-  display: flex;
   gap: 12px;
 }
 
-.suggestion-icon {
-  font-size: 20px;
+.step-number {
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 200, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #00f0ff;
 }
 
-.suggestion-text {
-  flex: 1;
+.step-text {
   font-size: 12px;
-  line-height: 1.6;
   color: #e8f5ff;
 }
 
-.empty-state {
-  color: #88a0b0;
-  font-size: 12px;
-  text-align: center;
-  padding: 20px;
+/* 风险解读 */
+.risk-interpretation {
+  background: rgba(8, 27, 44, 0.75);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 12px;
+  padding: 16px;
 }
 
-/* 响应式 */
+.interpretation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.level-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.level-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 20px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.level-item.extreme .level-badge {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff6666;
+}
+
+.level-item.high .level-badge {
+  background: rgba(255, 136, 68, 0.2);
+  color: #ffaa66;
+}
+
+.level-item.medium .level-badge {
+  background: rgba(255, 170, 68, 0.2);
+  color: #ffcc66;
+}
+
+.level-item.low .level-badge {
+  background: rgba(68, 255, 136, 0.2);
+  color: #66ffaa;
+}
+
+.level-desc {
+  font-size: 11px;
+  color: #9ec0d8;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #88a0b0;
+}
+
 @media (max-width: 600px) {
   .factor-body {
     flex-direction: column;
-  }
-  
-  .actual-value {
-    width: 100%;
-  }
-  
-  .factor-name {
-    font-size: 13px;
   }
   
   .point-summary {
     grid-template-columns: 1fr;
   }
   
-  .contribution-item {
-    flex-wrap: wrap;
-  }
-  
-  .contribution-name {
-    width: 100%;
-  }
-  
-  .contribution-percent {
-    width: auto;
+  .model-stats {
+    flex-direction: column;
+    gap: 8px;
   }
 }
 </style>
