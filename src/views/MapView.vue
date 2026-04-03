@@ -3,6 +3,7 @@
     <div class="main-content">
       <div class="map-underlay">
         <MainMap
+          ref="mainMapRef"
           :layer-state="layerState"
           :risk-map-opacity="riskMapOpacity"
           @select-point="handleSelectPoint"
@@ -27,10 +28,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'  // 添加 watch
 import MainMap from '@/components/workspace/MainMap.vue'
 import MapControls from '@/components/workspace/MapControls.vue'
 import SidePanel from '@/components/workspace/SidePanel.vue'
+
+// 获取 MainMap 组件的引用，以便访问地图实例
+const mainMapRef = ref<any>(null)
 
 const selectedPoint = ref<any>(null)
 const layerState = ref({
@@ -50,16 +54,26 @@ const surroundingFeatures = ref({
   roads: [] as any[],
   railways: [] as any[]
 })
-const showSurrounding = ref(false)
+
+// 获取地图实例的辅助函数
+const getMap = () => {
+  return mainMapRef.value?.getMap?.() || mainMapRef.value?.map
+}
 
 // 根据中心点和半径筛选周边设施
 const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
-  if (!map.value) return
+  const map = getMap()
+  if (!map) {
+    console.log('地图未就绪，稍后重试')
+    return
+  }
   
   const baseUrl = '/geodata'
   const center = { lng, lat }
   
   try {
+    console.log('开始加载周边设施...')
+    
     // 加载并筛选建筑
     const buildingsRes = await fetch(`${baseUrl}/building.geojson`).then(res => res.json())
     const nearbyBuildings = buildingsRes.features.filter((feature: any) => {
@@ -125,32 +139,33 @@ const getFeatureCoords = (feature: any) => {
 
 // 更新地图上的周边设施图层
 const updateSurroundingLayers = () => {
-  if (!map.value) return
+  const map = getMap()
+  if (!map) return
   
   // 移除旧图层
-  if (map.value.getSource('surrounding-buildings')) {
-    map.value.removeLayer('surrounding-buildings-layer')
-    map.value.removeSource('surrounding-buildings')
+  if (map.getSource('surrounding-buildings')) {
+    map.removeLayer('surrounding-buildings-layer')
+    map.removeSource('surrounding-buildings')
   }
-  if (map.value.getSource('surrounding-roads')) {
-    map.value.removeLayer('surrounding-roads-layer')
-    map.value.removeSource('surrounding-roads')
+  if (map.getSource('surrounding-roads')) {
+    map.removeLayer('surrounding-roads-layer')
+    map.removeSource('surrounding-roads')
   }
-  if (map.value.getSource('surrounding-railways')) {
-    map.value.removeLayer('surrounding-railways-layer')
-    map.value.removeSource('surrounding-railways')
+  if (map.getSource('surrounding-railways')) {
+    map.removeLayer('surrounding-railways-layer')
+    map.removeSource('surrounding-railways')
   }
   
   // 添加建筑图层（高亮显示）
   if (surroundingFeatures.value.buildings.length > 0) {
-    map.value.addSource('surrounding-buildings', {
+    map.addSource('surrounding-buildings', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.buildings
       }
     })
-    map.value.addLayer({
+    map.addLayer({
       id: 'surrounding-buildings-layer',
       type: 'fill',
       source: 'surrounding-buildings',
@@ -164,14 +179,14 @@ const updateSurroundingLayers = () => {
   
   // 添加道路图层（高亮显示）
   if (surroundingFeatures.value.roads.length > 0) {
-    map.value.addSource('surrounding-roads', {
+    map.addSource('surrounding-roads', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.roads
       }
     })
-    map.value.addLayer({
+    map.addLayer({
       id: 'surrounding-roads-layer',
       type: 'line',
       source: 'surrounding-roads',
@@ -185,14 +200,14 @@ const updateSurroundingLayers = () => {
   
   // 添加铁路图层（高亮显示）
   if (surroundingFeatures.value.railways.length > 0) {
-    map.value.addSource('surrounding-railways', {
+    map.addSource('surrounding-railways', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.railways
       }
     })
-    map.value.addLayer({
+    map.addLayer({
       id: 'surrounding-railways-layer',
       type: 'line',
       source: 'surrounding-railways',
@@ -208,19 +223,20 @@ const updateSurroundingLayers = () => {
 
 // 清除周边设施高亮
 const clearSurroundingLayers = () => {
-  if (!map.value) return
+  const map = getMap()
+  if (!map) return
   
   const layers = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
   const sources = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
   
   layers.forEach(layer => {
-    if (map.value.getLayer(layer)) {
-      map.value.removeLayer(layer)
+    if (map.getLayer(layer)) {
+      map.removeLayer(layer)
     }
   })
   sources.forEach(source => {
-    if (map.value.getSource(source)) {
-      map.value.removeSource(source)
+    if (map.getSource(source)) {
+      map.removeSource(source)
     }
   })
   
@@ -232,10 +248,10 @@ watch(() => selectedPoint.value, async (newPoint) => {
   if (newPoint && newPoint.lng && newPoint.lat) {
     // 清除旧的高亮
     clearSurroundingLayers()
-    // 加载新的周边设施
-    await loadSurroundingFeatures(newPoint.lng, newPoint.lat, 0.02)
-    // 可选：缩放地图到合适范围
-    // fitBoundsToSurroundings()
+    // 等待地图就绪
+    setTimeout(async () => {
+      await loadSurroundingFeatures(newPoint.lng, newPoint.lat, 0.02)
+    }, 500)
   } else {
     clearSurroundingLayers()
   }
