@@ -161,6 +161,7 @@ import type { DecisionRequest } from '@/services/aiService'
 import { riskService } from '@/services/riskService'
 import type { RiskPoint } from '@/types/risk'
 import axios from 'axios'
+import { calculateWarningLevel } from '@/utils/warningCalculator';
 
 const props = defineProps<{
   point: {
@@ -755,7 +756,7 @@ onMounted(() => {
 // 添加状态变量
 const isCalculating = ref(false);
 
-// 批量导出预警信息（包含风险等级、形变速率、威胁人口）
+// 批量导出预警数据
 const exportWarningData = async () => {
   if (isCalculating.value) {
     console.log('⏳ 正在导出中，请稍后再试...');
@@ -766,7 +767,6 @@ const exportWarningData = async () => {
   console.log('🚀 开始导出预警数据...');
   
   try {
-    // 1. 加载所有风险点
     const response = await fetch('/data/risk_points.json');
     const data = await response.json();
     const allPoints = data.points;
@@ -775,27 +775,29 @@ const exportWarningData = async () => {
     
     const results = [];
     
-    // 2. 逐个点获取预警等级
     for (let i = 0; i < allPoints.length; i++) {
       const point = allPoints[i];
       console.log(`  处理 ${i+1}/${allPoints.length}: ${point.name}`);
       
-      // 获取预警等级
-      const warningLevel = await getWarningLevelForPoint(point);
+      // 使用共享的计算函数
+      const warningLevel = calculateWarningLevel({
+        risk_probability: point.risk_probability,
+        actual_population: point.actual_population,
+        level: point.level,
+        velocity: point.velocity
+      });
       
       results.push({
         name: point.name,
-        risk_level: point.level,              // 风险等级：低风险/中风险/高风险/极高风险
-        deformation_rate: point.velocity || 0, // 形变速率 (mm/yr)
-        threat_population: point.actual_population || 0, // 威胁人口
-        warning_level: warningLevel            // 预警等级：红/橙/黄/蓝
+        risk_level: point.level,
+        deformation_rate: point.velocity || 0,
+        threat_population: point.actual_population || 0,
+        warning_level: warningLevel
       });
       
-      // 避免过快
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise(r => setTimeout(r, 50));
     }
     
-    // 3. 统计各预警等级数量
     const stats = {
       total: results.length,
       red: results.filter(p => p.warning_level === '红色预警').length,
@@ -810,7 +812,6 @@ const exportWarningData = async () => {
       points: results
     };
     
-    // 4. 下载 JSON 文件
     const blob = new Blob([JSON.stringify(outputData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
