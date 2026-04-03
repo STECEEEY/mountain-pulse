@@ -667,12 +667,6 @@ const updateSurroundingLayers = () => {
     })
   }
 }
-
-// 暴露方法给父组件调用
-defineExpose({
-  loadSurroundingFeatures,
-  clearSurroundingLayers
-})
 </script>
 
 <style scoped>
