@@ -18,68 +18,6 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
-// 周边设施
-const surroundingFeatures = ref({ buildings: [], roads: [], railways: [] })
-
-
-const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
-  if (!map) return
-  const center = { lng, lat }
-  try {
-    const [buildingsRes, roadsRes, railwaysRes] = await Promise.all([
-      fetch('/geodata/building.geojson').then(res => res.json()),
-      fetch('/geodata/roads.geojson').then(res => res.json()),
-      fetch('/geodata/railways.geojson').then(res => res.json())
-    ])
-    
-    const filterByDistance = (features: any[]) => features.filter((f: any) => {
-      const coords = getFeatureCoords(f)
-      if (!coords) return false
-      const dist = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
-      return dist <= radius
-    })
-    
-    surroundingFeatures.value = {
-      buildings: filterByDistance(buildingsRes.features),
-      roads: filterByDistance(roadsRes.features),
-      railways: filterByDistance(railwaysRes.features)
-    }
-    
-    // 清除旧图层
-    ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer'].forEach(layer => {
-      if (map?.getLayer(layer)) map?.removeLayer(layer)
-    })
-    ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways'].forEach(src => {
-      if (map?.getSource(src)) map?.removeSource(src)
-    })
-    
-    // 添加新图层
-    if (surroundingFeatures.value.buildings.length && map) {
-      map.addSource('surrounding-buildings', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.buildings } })
-      map.addLayer({ id: 'surrounding-buildings-layer', type: 'fill', source: 'surrounding-buildings', paint: { 'fill-color': '#ff4444', 'fill-opacity': 0.5 } })
-    }
-    if (surroundingFeatures.value.roads.length && map) {
-      map.addSource('surrounding-roads', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.roads } })
-      map.addLayer({ id: 'surrounding-roads-layer', type: 'line', source: 'surrounding-roads', paint: { 'line-color': '#ffaa44', 'line-width': 4, 'line-opacity': 0.8 } })
-    }
-    if (surroundingFeatures.value.railways.length && map) {
-      map.addSource('surrounding-railways', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.railways } })
-      map.addLayer({ id: 'surrounding-railways-layer', type: 'line', source: 'surrounding-railways', paint: { 'line-color': '#44aaff', 'line-width': 5, 'line-opacity': 0.8, 'line-dasharray': [4, 3] } })
-    }
-  } catch (e) { console.error(e) }
-}
-
-const clearSurroundingLayers = () => {
-  if (!map) return
-  ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer'].forEach(layer => {
-    if (map.getLayer(layer)) map.removeLayer(layer)
-  })
-  ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways'].forEach(src => {
-    if (map.getSource(src)) map.removeSource(src)
-  })
-}
-
-defineExpose({ loadSurroundingFeatures, clearSurroundingLayers })
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { riskService } from '@/services/riskService'
@@ -91,7 +29,7 @@ const emit = defineEmits(['select-point', 'select-disaster-site'])
 interface LayerState {
   riskMap: boolean
   disasterPoints: boolean
-  disasterSites?: boolean  // 新增受灾点图层状态
+  disasterSites?: boolean
 }
 
 const props = withDefaults(
@@ -104,7 +42,7 @@ const props = withDefaults(
     layerState: () => ({
       riskMap: true,
       disasterPoints: true,
-      disasterSites: true  // 默认显示
+      disasterSites: true
     })
   },
 )
@@ -115,12 +53,14 @@ const centerCoords = ref('119.0°E, 32.1°N')
 const mapHint = ref('')
 let map: mapboxgl.Map | null = null
 
+// 周边设施
+const surroundingFeatures = ref<{ buildings: any[], roads: any[], railways: any[] }>({ buildings: [], roads: [], railways: [] })
+
 // 图层ID常量
 const RISK_MAP_SOURCE_ID = 'risk-map-source'
 const RISK_MAP_LAYER_ID = 'risk-map-layer'
 const DISASTER_POINTS_SOURCE_ID = 'disaster-points-source'
 const DISASTER_POINTS_LAYER_ID = 'disaster-points-layer'
-// 新增受灾点图层ID
 const DISASTER_SITES_SOURCE_ID = 'disaster-sites-source'
 const DISASTER_SITES_LAYER_ID = 'disaster-sites-layer'
 
@@ -147,7 +87,182 @@ const fallbackMapConfig: MapConfig = {
 
 let mapConfig: MapConfig = fallbackMapConfig
 let monitoringPoints: RiskPoint[] = []
-let disasterSitesData: any = null  // 存储受灾点数据
+let disasterSitesData: any = null
+
+// 获取要素的坐标
+const getFeatureCoords = (feature: any): { lng: number, lat: number } | null => {
+  const geom = feature.geometry
+  if (!geom || !geom.coordinates) return null
+  
+  if (geom.type === 'Point') {
+    return { lng: geom.coordinates[0], lat: geom.coordinates[1] }
+  }
+  if (geom.type === 'LineString' && geom.coordinates[0]) {
+    return { lng: geom.coordinates[0][0], lat: geom.coordinates[0][1] }
+  }
+  if (geom.type === 'Polygon' && geom.coordinates[0] && geom.coordinates[0][0]) {
+    return { lng: geom.coordinates[0][0][0], lat: geom.coordinates[0][0][1] }
+  }
+  if (geom.type === 'MultiPolygon' && geom.coordinates[0] && geom.coordinates[0][0] && geom.coordinates[0][0][0]) {
+    return { lng: geom.coordinates[0][0][0][0], lat: geom.coordinates[0][0][0][1] }
+  }
+  return null
+}
+
+// 加载周边设施
+const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
+  if (!map) return
+  const center = { lng, lat }
+  try {
+    const [buildingsRes, roadsRes, railwaysRes] = await Promise.all([
+      fetch('/geodata/building.geojson').then(res => res.json()),
+      fetch('/geodata/roads.geojson').then(res => res.json()),
+      fetch('/geodata/railways.geojson').then(res => res.json())
+    ])
+    
+    const filterByDistance = (features: any[]) => features.filter((f: any) => {
+      const coords = getFeatureCoords(f)
+      if (!coords) return false
+      const dist = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
+      return dist <= radius
+    })
+    
+    surroundingFeatures.value = {
+      buildings: filterByDistance(buildingsRes.features),
+      roads: filterByDistance(roadsRes.features),
+      railways: filterByDistance(railwaysRes.features)
+    }
+    
+    // 清除旧图层
+    const layers = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
+    const sources = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
+    
+    layers.forEach(layer => {
+      if (map?.getLayer(layer)) map?.removeLayer(layer)
+    })
+    sources.forEach(src => {
+      if (map?.getSource(src)) map?.removeSource(src)
+    })
+    
+    // 添加新图层
+    if (surroundingFeatures.value.buildings.length && map) {
+      map.addSource('surrounding-buildings', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.buildings } })
+      map.addLayer({ id: 'surrounding-buildings-layer', type: 'fill', source: 'surrounding-buildings', paint: { 'fill-color': '#ff4444', 'fill-opacity': 0.5 } })
+    }
+    if (surroundingFeatures.value.roads.length && map) {
+      map.addSource('surrounding-roads', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.roads } })
+      map.addLayer({ id: 'surrounding-roads-layer', type: 'line', source: 'surrounding-roads', paint: { 'line-color': '#ffaa44', 'line-width': 4, 'line-opacity': 0.8 } })
+    }
+    if (surroundingFeatures.value.railways.length && map) {
+      map.addSource('surrounding-railways', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.railways } })
+      map.addLayer({ id: 'surrounding-railways-layer', type: 'line', source: 'surrounding-railways', paint: { 'line-color': '#44aaff', 'line-width': 5, 'line-opacity': 0.8, 'line-dasharray': [4, 3] } })
+    }
+  } catch (e) { console.error(e) }
+}
+
+// 清除周边设施图层
+const clearSurroundingLayers = () => {
+  if (!map) return
+  const layers = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
+  const sources = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
+  
+  layers.forEach(layer => {
+    if (map.getLayer(layer)) map.removeLayer(layer)
+  })
+  sources.forEach(source => {
+    if (map.getSource(source)) map.removeSource(source)
+  })
+}
+
+// 更新地图上的周边设施图层
+const updateSurroundingLayers = () => {
+  if (!map) return
+  
+  const layersToRemove = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
+  const sourcesToRemove = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
+  
+  layersToRemove.forEach(layer => {
+    if (map.getLayer(layer)) {
+      map.removeLayer(layer)
+    }
+  })
+  sourcesToRemove.forEach(source => {
+    if (map.getSource(source)) {
+      map.removeSource(source)
+    }
+  })
+  
+  if (surroundingFeatures.value.buildings.length > 0) {
+    map.addSource('surrounding-buildings', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: surroundingFeatures.value.buildings
+      }
+    })
+    map.addLayer({
+      id: 'surrounding-buildings-layer',
+      type: 'fill',
+      source: 'surrounding-buildings',
+      paint: {
+        'fill-color': '#ff4444',
+        'fill-opacity': 0.5,
+        'fill-outline-color': '#ff0000'
+      }
+    })
+  }
+  
+  if (surroundingFeatures.value.roads.length > 0) {
+    map.addSource('surrounding-roads', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: surroundingFeatures.value.roads
+      }
+    })
+    map.addLayer({
+      id: 'surrounding-roads-layer',
+      type: 'line',
+      source: 'surrounding-roads',
+      paint: {
+        'line-color': '#ffaa44',
+        'line-width': 4,
+        'line-opacity': 0.8
+      }
+    })
+  }
+  
+  if (surroundingFeatures.value.railways.length > 0) {
+    map.addSource('surrounding-railways', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: surroundingFeatures.value.railways
+      }
+    })
+    map.addLayer({
+      id: 'surrounding-railways-layer',
+      type: 'line',
+      source: 'surrounding-railways',
+      paint: {
+        'line-color': '#44aaff',
+        'line-width': 5,
+        'line-opacity': 0.8,
+        'line-dasharray': [4, 3]
+      }
+    })
+  }
+}
+
+// 只保留一个 defineExpose，合并所有需要暴露的方法
+defineExpose({ 
+  loadSurroundingFeatures, 
+  clearSurroundingLayers,
+  updateSurroundingLayers
+})
+
+// Mapbox Access Token
+mapboxgl.accessToken = 'pk.eyJ1IjoidGttNGoiLCJhIjoiY21obXplem8yMDAxNzJscTB0c2o1OHBsYiJ9.u9M-kBhBorWBEb_EAh6I4Q'
 
 const withinBounds = (point: RiskPoint, bounds: MapConfig['bounds']) => {
   return (
@@ -160,7 +275,6 @@ const withinBounds = (point: RiskPoint, bounds: MapConfig['bounds']) => {
   )
 }
 
-// 根据险情等级获取风险等级和颜色
 const getRiskLevelFromHazardLevel = (hazardLevel: string): { level: string, color: string, priority: number } => {
   const levelMap: Record<string, { level: string, color: string, priority: number }> = {
     '小型': { level: '低风险', color: '#52c41a', priority: 1 },
@@ -170,9 +284,6 @@ const getRiskLevelFromHazardLevel = (hazardLevel: string): { level: string, colo
   }
   return levelMap[hazardLevel] || { level: '中风险', color: '#faad14', priority: 2 }
 }
-
-// Mapbox Access Token
-mapboxgl.accessToken = 'pk.eyJ1IjoidGttNGoiLCJhIjoiY21obXplem8yMDAxNzJscTB0c2o1OHBsYiJ9.u9M-kBhBorWBEb_EAh6I4Q'
 
 const normalizeCenter = (center: [number, number]): [number, number] => {
   const [first, second] = center
@@ -210,7 +321,6 @@ const loadStaticData = async () => {
     mapHint.value = 'risk_points.json 加载失败或为空，当前暂无可展示监测点。'
   }
 
-  // 处理受灾点数据
   if (disasterSitesRes.status === 'fulfilled' && disasterSitesRes.value) {
     disasterSitesData = disasterSitesRes.value
     const featureCount = disasterSitesData.features?.length || 0
@@ -230,7 +340,6 @@ const addRiskMapLayer = () => {
 
   const { west, east, south, north } = mapConfig.bounds
   
-  // 坐标调整参数
   const scale = 1.35
   const rightShift = 0.21
   const downShift = -0.07
@@ -322,7 +431,7 @@ const addDisasterPointsLayer = () => {
     const feature = e.features?.[0]
     if (!feature || !feature.properties) return
 
-    const props = feature.properties as {
+    const propsData = feature.properties as {
       id: number
       name: string
       level: string
@@ -332,27 +441,27 @@ const addDisasterPointsLayer = () => {
     }
 
     emit('select-point', {
-      id: props.id,
-      name: props.name,
+      id: propsData.id,
+      name: propsData.name,
       lng: e.lngLat.lng,
       lat: e.lngLat.lat,
-      level: props.level,
-      deformation: props.velocity,
-      type: props.type,
-      threat: props.threat,
-      elevation: monitoringPoints[props.id - 1]?.elevation,
-      slope: monitoringPoints[props.id - 1]?.slope,
+      level: propsData.level,
+      deformation: propsData.velocity,
+      type: propsData.type,
+      threat: propsData.threat,
+      elevation: monitoringPoints[propsData.id - 1]?.elevation,
+      slope: monitoringPoints[propsData.id - 1]?.slope,
     })
 
     new mapboxgl.Popup({ offset: 18, className: 'dark-popup' })
       .setLngLat(e.lngLat)
       .setHTML(`
         <div class="popup-content">
-          <strong>${props.name}</strong><br/>
-          <span style="color:${getRiskLevelColor(props.level)}">类型：${props.type}</span><br/>
-          <span>风险等级：${props.level}</span><br/>
-          <span>形变速率：${Number(props.velocity).toFixed(2)} mm/yr</span><br/>
-          <span>威胁人口：${props.threat}</span>
+          <strong>${propsData.name}</strong><br/>
+          <span style="color:${getRiskLevelColor(propsData.level)}">类型：${propsData.type}</span><br/>
+          <span>风险等级：${propsData.level}</span><br/>
+          <span>形变速率：${Number(propsData.velocity).toFixed(2)} mm/yr</span><br/>
+          <span>威胁人口：${propsData.threat}</span>
         </div>
       `)
       .addTo(map!)
@@ -367,30 +476,26 @@ const addDisasterPointsLayer = () => {
   })
 }
 
-// 新增：添加受灾点图层 - 适配你的中文数据格式
 const addDisasterSitesLayer = () => {
   if (!map || !disasterSitesData || !disasterSitesData.features || map.getLayer(DISASTER_SITES_LAYER_ID)) return
 
-  // 处理GeoJSON数据，映射中文字段
   const processedFeatures = disasterSitesData.features.map((feature: any, index: number) => {
-    const props = feature.properties || {}
+    const propsData = feature.properties || {}
     
-    // 提取关键字段
-    const hazardName = props.灾害体名称 || props.灾害体编_1 || `受灾点${index + 1}`
-    const hazardType = props.灾害体类型 || '未知'
-    const hazardLevel = props.险情等级 || props.灾害等级 || '小型'
-    const threatPopulation = props.威胁人口 || 0
-    const threatProperty = props.威胁财产 || 0
-    const monitoringAdvice = props.监测建议 || ''
-    const location = props.地理位置 || ''
+    const hazardName = propsData.灾害体名称 || propsData.灾害体编_1 || `受灾点${index + 1}`
+    const hazardType = propsData.灾害体类型 || '未知'
+    const hazardLevel = propsData.险情等级 || propsData.灾害等级 || '小型'
+    const threatPopulation = propsData.威胁人口 || 0
+    const threatProperty = propsData.威胁财产 || 0
+    const monitoringAdvice = propsData.监测建议 || ''
+    const location = propsData.地理位置 || ''
     
-    // 获取风险等级
     const riskInfo = getRiskLevelFromHazardLevel(hazardLevel)
     
     return {
       type: 'Feature',
       properties: {
-        id: props.灾害体编号 || props.野外编号 || index + 1,
+        id: propsData.灾害体编号 || propsData.野外编号 || index + 1,
         name: hazardName,
         hazardType: hazardType,
         hazardLevel: hazardLevel,
@@ -400,10 +505,10 @@ const addDisasterSitesLayer = () => {
         threatProperty: threatProperty,
         monitoringAdvice: monitoringAdvice,
         location: location,
-        longitude: props.经度,
-        latitude: props.纬度,
-        indoorNumber: props.室内编号,
-        fieldNumber: props.野外编号
+        longitude: propsData.经度,
+        latitude: propsData.纬度,
+        indoorNumber: propsData.室内编号,
+        fieldNumber: propsData.野外编号
       },
       geometry: feature.geometry
     }
@@ -417,40 +522,38 @@ const addDisasterSitesLayer = () => {
     }
   })
 
-  // 根据风险等级设置不同样式
   map.addLayer({
     id: DISASTER_SITES_LAYER_ID,
     type: 'circle',
     source: DISASTER_SITES_SOURCE_ID,
     paint: {
       'circle-radius': 7,
-      'circle-color': '#9B59B6',  // 紫色
+      'circle-color': '#9B59B6',
       'circle-stroke-color': '#FFFFFF',
       'circle-stroke-width': 1.5,
       'circle-opacity': 0.85
     }
   })
-  // 添加点击事件显示详细信息
+
   map.on('click', DISASTER_SITES_LAYER_ID, (e) => {
     const feature = e.features?.[0]
     if (!feature || !feature.properties) return
 
-    const props = feature.properties
+    const propsData = feature.properties
     
-    // 构建弹窗内容
     const popupHTML = `
       <div class="popup-content disaster-popup">
-        <strong style="color:#ff6600; font-size:14px;">🏚️ ${props.name}</strong><br/>
+        <strong style="color:#ff6600; font-size:14px;">🏚️ ${propsData.name}</strong><br/>
         <hr style="margin:6px 0; border-color:#333;">
         <table style="width:100%; font-size:12px; line-height:1.6;">
-          <tr><td style="padding:2px 0;">灾害类型：</td><td><strong>${props.hazardType}</strong></td></tr>
-          <tr><td style="padding:2px 0;">险情等级：</td><td><span style="color:${props.riskColor}; font-weight:bold;">${props.hazardLevel}</span></td></tr>
-          <tr><td style="padding:2px 0;">风险等级：</td><td><span style="color:${props.riskColor};">${props.riskLevel}</span></td></tr>
-          <tr><td style="padding:2px 0;">威胁人口：</td><td>${props.threatPopulation} 人</td></tr>
-          <tr><td style="padding:2px 0;">威胁财产：</td><td>${props.threatProperty} 万元</td></tr>
-          ${props.monitoringAdvice ? `<tr><td style="padding:2px 0;">监测建议：</td><td>${props.monitoringAdvice}</td></tr>` : ''}
-          ${props.location ? `<tr><td style="padding:2px 0;">地理位置：</td><td>${props.location}</td></tr>` : ''}
-          ${props.fieldNumber ? `<tr><td style="padding:2px 0;">野外编号：</td><td>${props.fieldNumber}</td></tr>` : ''}
+          <tr><td style="padding:2px 0;">灾害类型：</td><td><strong>${propsData.hazardType}</strong></td></tr>
+          <tr><td style="padding:2px 0;">险情等级：</td><td><span style="color:${propsData.riskColor}; font-weight:bold;">${propsData.hazardLevel}</span></td></tr>
+          <tr><td style="padding:2px 0;">风险等级：</td><td><span style="color:${propsData.riskColor};">${propsData.riskLevel}</span></td></tr>
+          <tr><td style="padding:2px 0;">威胁人口：</td><td>${propsData.threatPopulation} 人</td></tr>
+          <tr><td style="padding:2px 0;">威胁财产：</td><td>${propsData.threatProperty} 万元</td></tr>
+          ${propsData.monitoringAdvice ? `<tr><td style="padding:2px 0;">监测建议：</td><td>${propsData.monitoringAdvice}</td></tr>` : ''}
+          ${propsData.location ? `<tr><td style="padding:2px 0;">地理位置：</td><td>${propsData.location}</td></tr>` : ''}
+          ${propsData.fieldNumber ? `<tr><td style="padding:2px 0;">野外编号：</td><td>${propsData.fieldNumber}</td></tr>` : ''}
         </table>
       </div>
     `
@@ -460,19 +563,18 @@ const addDisasterSitesLayer = () => {
       .setHTML(popupHTML)
       .addTo(map!)
     
-    // 发送选中事件给父组件
     emit('select-disaster-site', {
-      id: props.id,
-      name: props.name,
+      id: propsData.id,
+      name: propsData.name,
       lng: e.lngLat.lng,
       lat: e.lngLat.lat,
-      hazardType: props.hazardType,
-      hazardLevel: props.hazardLevel,
-      riskLevel: props.riskLevel,
-      threatPopulation: props.threatPopulation,
-      threatProperty: props.threatProperty,
-      monitoringAdvice: props.monitoringAdvice,
-      location: props.location
+      hazardType: propsData.hazardType,
+      hazardLevel: propsData.hazardLevel,
+      riskLevel: propsData.riskLevel,
+      threatPopulation: propsData.threatPopulation,
+      threatProperty: propsData.threatProperty,
+      monitoringAdvice: propsData.monitoringAdvice,
+      location: propsData.location
     })
   })
 
@@ -484,7 +586,6 @@ const addDisasterSitesLayer = () => {
     if (map) map.getCanvas().style.cursor = ''
   })
 
-  // 设置初始可见性
   map.setLayoutProperty(DISASTER_SITES_LAYER_ID, 'visibility', props.layerState.disasterSites ? 'visible' : 'none')
   
   console.log('受灾点图层已添加，共', processedFeatures.length, '个点')
@@ -528,14 +629,16 @@ const initMap = () => {
     map?.setFog(null)
     addRiskMapLayer()
     addDisasterPointsLayer()
-    addDisasterSitesLayer()  // 添加受灾点图层
+    addDisasterSitesLayer()
     syncLayerVisibility()
   })
 
   map.on('move', () => {
-    const center = map!.getCenter()
-    centerCoords.value = `${center.lng.toFixed(2)}°E, ${center.lat.toFixed(2)}°N`
-    zoomLevel.value = map!.getZoom()
+    if (map) {
+      const centerPoint = map.getCenter()
+      centerCoords.value = `${centerPoint.lng.toFixed(2)}°E, ${centerPoint.lat.toFixed(2)}°N`
+      zoomLevel.value = map.getZoom()
+    }
   })
 }
 
@@ -562,111 +665,6 @@ onMounted(async () => {
 onUnmounted(() => {
   map?.remove()
 })
-
-
-// 获取要素的坐标
-const getFeatureCoords = (feature: any) => {
-  const geom = feature.geometry
-  if (!geom || !geom.coordinates) return null
-  
-  if (geom.type === 'Point') {
-    return { lng: geom.coordinates[0], lat: geom.coordinates[1] }
-  }
-  if (geom.type === 'LineString' && geom.coordinates[0]) {
-    return { lng: geom.coordinates[0][0], lat: geom.coordinates[0][1] }
-  }
-  if (geom.type === 'Polygon' && geom.coordinates[0] && geom.coordinates[0][0]) {
-    return { lng: geom.coordinates[0][0][0], lat: geom.coordinates[0][0][1] }
-  }
-  if (geom.type === 'MultiPolygon' && geom.coordinates[0] && geom.coordinates[0][0] && geom.coordinates[0][0][0]) {
-    return { lng: geom.coordinates[0][0][0][0], lat: geom.coordinates[0][0][0][1] }
-  }
-  return null
-}
-
-// 更新地图上的周边设施图层
-const updateSurroundingLayers = () => {
-  if (!map) return
-  
-  // 移除旧图层
-  const layersToRemove = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
-  const sourcesToRemove = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
-  
-  layersToRemove.forEach(layer => {
-    if (map.getLayer(layer)) {
-      map.removeLayer(layer)
-    }
-  })
-  sourcesToRemove.forEach(source => {
-    if (map.getSource(source)) {
-      map.removeSource(source)
-    }
-  })
-  
-  // 添加建筑图层
-  if (surroundingFeatures.value.buildings.length > 0) {
-    map.addSource('surrounding-buildings', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: surroundingFeatures.value.buildings
-      }
-    })
-    map.addLayer({
-      id: 'surrounding-buildings-layer',
-      type: 'fill',
-      source: 'surrounding-buildings',
-      paint: {
-        'fill-color': '#ff4444',
-        'fill-opacity': 0.5,
-        'fill-outline-color': '#ff0000'
-      }
-    })
-  }
-  
-  // 添加道路图层
-  if (surroundingFeatures.value.roads.length > 0) {
-    map.addSource('surrounding-roads', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: surroundingFeatures.value.roads
-      }
-    })
-    map.addLayer({
-      id: 'surrounding-roads-layer',
-      type: 'line',
-      source: 'surrounding-roads',
-      paint: {
-        'line-color': '#ffaa44',
-        'line-width': 4,
-        'line-opacity': 0.8
-      }
-    })
-  }
-  
-  // 添加铁路图层
-  if (surroundingFeatures.value.railways.length > 0) {
-    map.addSource('surrounding-railways', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: surroundingFeatures.value.railways
-      }
-    })
-    map.addLayer({
-      id: 'surrounding-railways-layer',
-      type: 'line',
-      source: 'surrounding-railways',
-      paint: {
-        'line-color': '#44aaff',
-        'line-width': 5,
-        'line-opacity': 0.8,
-        'line-dasharray': [4, 3]
-      }
-    })
-  }
-}
 </script>
 
 <style scoped>
