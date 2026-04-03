@@ -95,6 +95,30 @@
         </div>
       </div>
     </div>
+
+    <div class="nearest-facilities">
+      <div class="nearest-title">📍 最近设施</div>
+      <div class="nearest-list">
+        <div class="nearest-item" v-if="nearestRoad">
+          <span class="nearest-icon">🛣️</span>
+          <span class="nearest-name">{{ nearestRoad.name }}</span>
+          <span class="nearest-distance">{{ nearestRoad.distance.toFixed(2) }}km</span>
+        </div>
+        <div class="nearest-item" v-if="nearestRailway">
+          <span class="nearest-icon">🚂</span>
+          <span class="nearest-name">{{ nearestRailway.name }}</span>
+          <span class="nearest-distance">{{ nearestRailway.distance.toFixed(2) }}km</span>
+        </div>
+        <div class="nearest-item" v-if="nearestBuilding">
+          <span class="nearest-icon">🏢</span>
+          <span class="nearest-name">{{ nearestBuilding.name }}</span>
+          <span class="nearest-distance">{{ nearestBuilding.distance.toFixed(2) }}km</span>
+        </div>
+        <div class="nearest-item" v-if="!nearestRoad && !nearestRailway && !nearestBuilding">
+          <span class="nearest-name">周边暂无设施</span>
+        </div>
+      </div>
+    </div>
       
       <!-- 综合影响评估 -->
       <div class="impact-summary" v-if="hasSignificantFacilities">
@@ -334,7 +358,12 @@ const loadRainfallData = async () => {
   }
 }
 
-// 加载周边设施数据 - 加强调试版
+// ========== 新增：最近设施信息 ==========
+const nearestRoad = ref<{ name: string; distance: number } | null>(null)
+const nearestRailway = ref<{ name: string; distance: number } | null>(null)
+const nearestBuilding = ref<{ name: string; distance: number } | null>(null)
+
+// 修改 loadSurroundingData 函数，增加最近设施查找
 const loadSurroundingData = async () => {
   if (!props.point?.lng || !props.point?.lat) {
     console.log('❌ 跳过周边设施加载：缺少经纬度')
@@ -348,155 +377,168 @@ const loadSurroundingData = async () => {
     const baseUrl = '/geodata'
     const center = { lng: props.point.lng, lat: props.point.lat }
     
-    const buildingRadius = 0.1   // 扩大到 0.1（约11公里）测试
-    const roadRadius = 0.1
-    const railwayRadius = 0.1
+    const buildingRadius = 0.05
+    const roadRadius = 0.05
+    const railwayRadius = 0.05
     
     console.log('📡 开始请求数据...')
     
     const [buildingsRes, roadsRes, railwaysRes] = await Promise.all([
-      fetch(`${baseUrl}/building.geojson`).then(res => res.json()),
-      fetch(`${baseUrl}/roads.geojson`).then(res => res.json()),
-      fetch(`${baseUrl}/railways.geojson`).then(res => res.json())
+      fetch(`${baseUrl}/building.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
+      fetch(`${baseUrl}/roads.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
+      fetch(`${baseUrl}/railways.geojson`).then(res => res.json()).catch(() => ({ features: [] }))
     ])
     
-    console.log('✅ 数据加载成功:', {
-      建筑: buildingsRes.features?.length,
-      道路: roadsRes.features?.length,
-      铁路: railwaysRes.features?.length
-    })
-    
-    // 调试：打印前3个道路数据的坐标
-    if (roadsRes.features && roadsRes.features.length > 0) {
-      console.log('=== 道路数据样例 ===')
-      for (let i = 0; i < Math.min(3, roadsRes.features.length); i++) {
-        const f = roadsRes.features[i]
-        console.log(`道路${i+1}:`, {
-          type: f.geometry?.type,
-          coordinates: f.geometry?.coordinates,
-          // 尝试提取第一个点
-          firstPoint: f.geometry?.type === 'LineString' ? f.geometry.coordinates[0] : 
-                     f.geometry?.type === 'MultiLineString' ? f.geometry.coordinates[0]?.[0] : 
-                     f.geometry?.coordinates
-        })
-      }
-    }
-    
-    // 调试：打印前3个建筑数据的坐标
-    if (buildingsRes.features && buildingsRes.features.length > 0) {
-      console.log('=== 建筑数据样例 ===')
-      for (let i = 0; i < Math.min(3, buildingsRes.features.length); i++) {
-        const f = buildingsRes.features[i]
-        console.log(`建筑${i+1}:`, {
-          type: f.geometry?.type,
-          coordinates: f.geometry?.coordinates,
-          // 如果是多边形，取第一个环的第一个点
-          firstPoint: f.geometry?.type === 'Polygon' ? f.geometry.coordinates[0]?.[0] : 
-                     f.geometry?.coordinates
-        })
-      }
-    }
-    
-    // 调试：打印中心点坐标
-    console.log('中心点坐标:', center)
-    
-    const countInRange = (features: any[], radius: number, type: string) => {
-    if (!features || !Array.isArray(features) || features.length === 0) {
-      console.log(`${type}: 无数据`)
-      return 0
-    }
-    
-    let count = 0
-    let minDistance = Infinity
-    let validCoordCount = 0
-    
-    // 只检查前2000个，提高性能
-    const limit = Math.min(features.length, 2000)
-    
-    for (let i = 0; i < limit; i++) {
-      const feature = features[i]
+    // 查找最近的道路
+    let minRoadDistance = Infinity
+    let closestRoad = null
+    for (const feature of roadsRes.features || []) {
       try {
         let lng = 0, lat = 0
         const geom = feature?.geometry
-        if (!geom || !geom.coordinates) continue
+        if (!geom?.coordinates) continue
         
-        // 根据几何类型提取坐标
-        if (geom.type === 'Point') {
+        if (geom.type === 'LineString' && geom.coordinates[0]) {
+          lng = geom.coordinates[0][0]
+          lat = geom.coordinates[0][1]
+        } else if (geom.type === 'Point') {
           lng = geom.coordinates[0]
           lat = geom.coordinates[1]
-          validCoordCount++
-        } 
-        else if (geom.type === 'LineString') {
-          if (geom.coordinates && geom.coordinates.length > 0) {
-            const midIndex = Math.floor(geom.coordinates.length / 2)
-            lng = geom.coordinates[midIndex][0]
-            lat = geom.coordinates[midIndex][1]
-            validCoordCount++
-          }
-        } 
-        else if (geom.type === 'Polygon') {
-          if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0].length > 0) {
-            const midIndex = Math.floor(geom.coordinates[0].length / 2)
-            lng = geom.coordinates[0][midIndex][0]
-            lat = geom.coordinates[0][midIndex][1]
-            validCoordCount++
-          }
-        } 
-        else if (geom.type === 'MultiPolygon') {
-          // 修复：处理 MultiPolygon 类型
-          if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0][0] && geom.coordinates[0][0].length > 0) {
-            // MultiPolygon 结构: [[[lng, lat], ...]]
-            const midIndex = Math.floor(geom.coordinates[0][0].length / 2)
-            lng = geom.coordinates[0][0][midIndex][0]
-            lat = geom.coordinates[0][0][midIndex][1]
-            validCoordCount++
-          }
-        }
-        else if (geom.type === 'MultiLineString') {
-          if (geom.coordinates && geom.coordinates[0] && geom.coordinates[0].length > 0) {
-            const midIndex = Math.floor(geom.coordinates[0].length / 2)
-            lng = geom.coordinates[0][midIndex][0]
-            lat = geom.coordinates[0][midIndex][1]
-            validCoordCount++
-          }
-        }
-        else {
+        } else {
           continue
         }
         
-        // 检查坐标有效性
-        if (lng === 0 && lat === 0) continue
-        if (isNaN(lng) || isNaN(lat)) continue
-        
-        // 计算距离（度）
         const dx = lng - center.lng
         const dy = lat - center.lat
-        const distance = Math.sqrt(dx * dx + dy * dy)
+        const distance = Math.sqrt(dx * dx + dy * dy) * 111 // 转换为公里
         
-        if (distance < minDistance) {
-          minDistance = distance
+        if (distance < minRoadDistance) {
+          minRoadDistance = distance
+          closestRoad = {
+            name: feature.properties?.name || feature.properties?.道路名称 || '未知道路',
+            distance: distance
+          }
+        }
+      } catch (e) {}
+    }
+    nearestRoad.value = closestRoad
+    
+    // 查找最近的铁路
+    let minRailwayDistance = Infinity
+    let closestRailway = null
+    for (const feature of railwaysRes.features || []) {
+      try {
+        let lng = 0, lat = 0
+        const geom = feature?.geometry
+        if (!geom?.coordinates) continue
+        
+        if (geom.type === 'LineString' && geom.coordinates[0]) {
+          lng = geom.coordinates[0][0]
+          lat = geom.coordinates[0][1]
+        } else if (geom.type === 'Point') {
+          lng = geom.coordinates[0]
+          lat = geom.coordinates[1]
+        } else {
+          continue
         }
         
-        if (distance <= radius) {
-          count++
+        const dx = lng - center.lng
+        const dy = lat - center.lat
+        const distance = Math.sqrt(dx * dx + dy * dy) * 111
+        
+        if (distance < minRailwayDistance) {
+          minRailwayDistance = distance
+          closestRailway = {
+            name: feature.properties?.name || feature.properties?.铁路名称 || '铁路',
+            distance: distance
+          }
         }
-      } catch (e) {
-        // 忽略解析错误
+      } catch (e) {}
+    }
+    nearestRailway.value = closestRailway
+    
+    // 查找最近的建筑
+    let minBuildingDistance = Infinity
+    let closestBuilding = null
+    for (const feature of buildingsRes.features || []) {
+      try {
+        let lng = 0, lat = 0
+        const geom = feature?.geometry
+        if (!geom?.coordinates) continue
+        
+        if (geom.type === 'Point') {
+          lng = geom.coordinates[0]
+          lat = geom.coordinates[1]
+        } else if (geom.type === 'Polygon' && geom.coordinates[0]?.[0]) {
+          lng = geom.coordinates[0][0][0]
+          lat = geom.coordinates[0][0][1]
+        } else if (geom.type === 'MultiPolygon' && geom.coordinates[0]?.[0]?.[0]) {
+          lng = geom.coordinates[0][0][0][0]
+          lat = geom.coordinates[0][0][0][1]
+        } else {
+          continue
+        }
+        
+        const dx = lng - center.lng
+        const dy = lat - center.lat
+        const distance = Math.sqrt(dx * dx + dy * dy) * 111
+        
+        if (distance < minBuildingDistance) {
+          minBuildingDistance = distance
+          closestBuilding = {
+            name: feature.properties?.name || '建筑',
+            distance: distance
+          }
+        }
+      } catch (e) {}
+    }
+    nearestBuilding.value = closestBuilding
+    
+    // 统计范围内的数量
+    const countInRange = (features: any[], radius: number) => {
+      let count = 0
+      for (const feature of features) {
+        try {
+          let lng = 0, lat = 0
+          const geom = feature?.geometry
+          if (!geom?.coordinates) continue
+          
+          if (geom.type === 'Point') {
+            lng = geom.coordinates[0]
+            lat = geom.coordinates[1]
+          } else if (geom.type === 'LineString' && geom.coordinates[0]) {
+            lng = geom.coordinates[0][0]
+            lat = geom.coordinates[0][1]
+          } else if (geom.type === 'Polygon' && geom.coordinates[0]?.[0]) {
+            lng = geom.coordinates[0][0][0]
+            lat = geom.coordinates[0][0][1]
+          } else if (geom.type === 'MultiPolygon' && geom.coordinates[0]?.[0]?.[0]) {
+            lng = geom.coordinates[0][0][0][0]
+            lat = geom.coordinates[0][0][0][1]
+          } else {
+            continue
+          }
+          
+          const dx = lng - center.lng
+          const dy = lat - center.lat
+          const distance = Math.sqrt(dx * dx + dy * dy)
+          if (distance <= radius) count++
+        } catch (e) {}
       }
+      return count
     }
     
-    console.log(`${type}: 有效坐标数=${validCoordCount}, 范围内=${count}, 最近距离=${minDistance === Infinity ? '无' : (minDistance * 111).toFixed(2)}km`)
-    return count
-  }
-    
-    buildingCount.value = countInRange(buildingsRes.features || [], buildingRadius, '建筑')
-    roadCount.value = countInRange(roadsRes.features || [], roadRadius, '道路')
-    railwayCount.value = countInRange(railwaysRes.features || [], railwayRadius, '铁路')
+    buildingCount.value = countInRange(buildingsRes.features || [], buildingRadius)
+    roadCount.value = countInRange(roadsRes.features || [], roadRadius)
+    railwayCount.value = countInRange(railwaysRes.features || [], railwayRadius)
     
     console.log('🏗️ 最终统计:', {
       建筑: buildingCount.value,
       道路: roadCount.value,
-      铁路: railwayCount.value
+      铁路: railwayCount.value,
+      最近道路: nearestRoad.value,
+      最近铁路: nearestRailway.value,
+      最近建筑: nearestBuilding.value
     })
     
   } catch (error) {
@@ -1079,5 +1121,44 @@ onMounted(() => {
 .batch-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+.nearest-facilities {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(102, 204, 255, 0.15);
+}
+
+.nearest-title {
+  font-size: 11px;
+  color: #66ccff;
+  margin-bottom: 8px;
+}
+
+.nearest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nearest-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.nearest-icon {
+  font-size: 14px;
+}
+
+.nearest-name {
+  flex: 1;
+  color: #e0e5ff;
+}
+
+.nearest-distance {
+  color: #ffaa66;
+  font-family: monospace;
 }
 </style>
