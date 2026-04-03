@@ -18,6 +18,77 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+// 周边设施
+const surroundingFeatures = ref({ buildings: [], roads: [], railways: [] })
+
+const getFeatureCoords = (feature: any) => {
+  const geom = feature.geometry
+  if (!geom || !geom.coordinates) return null
+  if (geom.type === 'Point') return { lng: geom.coordinates[0], lat: geom.coordinates[1] }
+  if (geom.type === 'LineString' && geom.coordinates[0]) return { lng: geom.coordinates[0][0], lat: geom.coordinates[0][1] }
+  if (geom.type === 'Polygon' && geom.coordinates[0]?.[0]) return { lng: geom.coordinates[0][0][0], lat: geom.coordinates[0][0][1] }
+  if (geom.type === 'MultiPolygon' && geom.coordinates[0]?.[0]?.[0]) return { lng: geom.coordinates[0][0][0][0], lat: geom.coordinates[0][0][0][1] }
+  return null
+}
+
+const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
+  if (!map) return
+  const center = { lng, lat }
+  try {
+    const [buildingsRes, roadsRes, railwaysRes] = await Promise.all([
+      fetch('/geodata/building.geojson').then(res => res.json()),
+      fetch('/geodata/roads.geojson').then(res => res.json()),
+      fetch('/geodata/railways.geojson').then(res => res.json())
+    ])
+    
+    const filterByDistance = (features: any[]) => features.filter((f: any) => {
+      const coords = getFeatureCoords(f)
+      if (!coords) return false
+      const dist = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
+      return dist <= radius
+    })
+    
+    surroundingFeatures.value = {
+      buildings: filterByDistance(buildingsRes.features),
+      roads: filterByDistance(roadsRes.features),
+      railways: filterByDistance(railwaysRes.features)
+    }
+    
+    // 清除旧图层
+    ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer'].forEach(layer => {
+      if (map?.getLayer(layer)) map?.removeLayer(layer)
+    })
+    ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways'].forEach(src => {
+      if (map?.getSource(src)) map?.removeSource(src)
+    })
+    
+    // 添加新图层
+    if (surroundingFeatures.value.buildings.length && map) {
+      map.addSource('surrounding-buildings', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.buildings } })
+      map.addLayer({ id: 'surrounding-buildings-layer', type: 'fill', source: 'surrounding-buildings', paint: { 'fill-color': '#ff4444', 'fill-opacity': 0.5 } })
+    }
+    if (surroundingFeatures.value.roads.length && map) {
+      map.addSource('surrounding-roads', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.roads } })
+      map.addLayer({ id: 'surrounding-roads-layer', type: 'line', source: 'surrounding-roads', paint: { 'line-color': '#ffaa44', 'line-width': 4, 'line-opacity': 0.8 } })
+    }
+    if (surroundingFeatures.value.railways.length && map) {
+      map.addSource('surrounding-railways', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.railways } })
+      map.addLayer({ id: 'surrounding-railways-layer', type: 'line', source: 'surrounding-railways', paint: { 'line-color': '#44aaff', 'line-width': 5, 'line-opacity': 0.8, 'line-dasharray': [4, 3] } })
+    }
+  } catch (e) { console.error(e) }
+}
+
+const clearSurroundingLayers = () => {
+  if (!map) return
+  ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer'].forEach(layer => {
+    if (map.getLayer(layer)) map.removeLayer(layer)
+  })
+  ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways'].forEach(src => {
+    if (map.getSource(src)) map.removeSource(src)
+  })
+}
+
+defineExpose({ loadSurroundingFeatures, clearSurroundingLayers })
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { riskService } from '@/services/riskService'
@@ -500,8 +571,6 @@ onMounted(async () => {
 onUnmounted(() => {
   map?.remove()
 })
-
-import { ref, watch } from 'vue'
 
 // 周边设施高亮相关
 const surroundingFeatures = ref({
