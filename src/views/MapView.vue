@@ -31,7 +31,27 @@ import { ref } from 'vue'
 import MainMap from '@/components/workspace/MainMap.vue'
 import MapControls from '@/components/workspace/MapControls.vue'
 import SidePanel from '@/components/workspace/SidePanel.vue'
+import { ref, watch } from 'vue'
+import MainMap from '@/components/workspace/MainMap.vue'
 
+
+const mainMapRef = ref<any>(null)
+
+// 监听选中点变化，调用 MainMap 的方法
+watch(() => selectedPoint.value, async (newPoint) => {
+  if (newPoint && newPoint.lng && newPoint.lat) {
+    // 调用 MainMap 的方法加载周边设施
+    if (mainMapRef.value) {
+      // 先清除旧的高亮
+      mainMapRef.value.clearSurroundingLayers?.()
+      // 加载新的周边设施（半径约2公里）
+      await mainMapRef.value.loadSurroundingFeatures?.(newPoint.lng, newPoint.lat, 0.02)
+    }
+  } else {
+    // 清除高亮
+    mainMapRef.value?.clearSurroundingLayers?.()
+  }
+})
 const selectedPoint = ref<any>(null)
 const layerState = ref({
   riskMap: true,
