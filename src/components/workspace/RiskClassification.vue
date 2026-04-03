@@ -377,9 +377,9 @@ const loadSurroundingData = async () => {
     const baseUrl = '/geodata'
     const center = { lng: props.point.lng, lat: props.point.lat }
     
-    const buildingRadius = 0.05
-    const roadRadius = 0.05
-    const railwayRadius = 0.05
+    const buildingRadius = 0.05   // 约5.5公里
+    const roadRadius = 0.1        // 约11公里（调大）
+    const railwayRadius = 0.15    // 约16公里（调大）
     
     console.log('📡 开始请求数据...')
     
