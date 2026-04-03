@@ -756,7 +756,7 @@ onMounted(() => {
 // 添加状态变量
 const isCalculating = ref(false);
 
-// 批量导出预警数据
+// 批量导出预警数据（使用完整版计算）
 const exportWarningData = async () => {
   if (isCalculating.value) {
     console.log('⏳ 正在导出中，请稍后再试...');
@@ -764,46 +764,118 @@ const exportWarningData = async () => {
   }
   
   isCalculating.value = true;
-  console.log('🚀 开始导出预警数据...');
+  console.log('🚀 开始导出预警数据（完整版）...');
   
   try {
-    const response = await fetch('/data/risk_points.json');
-    const data = await response.json();
-    const allPoints = data.points;
+    // 确保所有点数据已加载
+    if (fullPointsList.value.length === 0) {
+      const response = await riskService.loadRiskPoints();
+      fullPointsList.value = response.points;
+      console.log('✅ 风险点列表加载完成，共', fullPointsList.value.length, '个点');
+    }
     
-    console.log(`📊 共加载 ${allPoints.length} 个风险点`);
-    
+    const allPoints = fullPointsList.value;
     const results = [];
     
+    // 逐个点计算（使用组件内的完整计算逻辑）
     for (let i = 0; i < allPoints.length; i++) {
       const point = allPoints[i];
-      console.log(`  处理 ${i+1}/${allPoints.length}: ${point.name}`);
+      console.log(`  计算 ${i+1}/${allPoints.length}: ${point.name}`);
       
-      // 使用共享的计算函数
-      const warningLevel = calculateWarningLevel({
-        risk_probability: point.risk_probability,
-        actual_population: point.actual_population,
-        level: point.level,
-        velocity: point.velocity
-      });
+      // 临时设置当前点为该点
+      currentFullPoint.value = point;
+      
+      // 加载该点的降雨和设施数据
+      // 临时保存原始的 props.point 值
+      const originalLng = props.point?.lng;
+      const originalLat = props.point?.lat;
+      
+      // 临时修改 props 的经纬度（通过创建一个新对象）
+      // 注意：props 是只读的，我们需要直接调用 loadRainfallData 和 loadSurroundingData
+      // 这些函数使用的是 props.point.lng/lat，所以需要临时改变 props 的值
+      
+      // 直接调用数据加载函数，传入当前点的坐标
+      await loadRainfallDataForPoint(point.longitude, point.latitude);
+      await loadSurroundingDataForPoint(point.longitude, point.latitude);
+      
+      // 计算各因子得分
+      // 滑坡概率评分
+      const probScore = (point.risk_probability || 0) * 40;
+      
+      // 人口评分
+      const pop = point.actual_population || 0;
+      let popScore = 0;
+      if (pop >= 1000) popScore = 20;
+      else if (pop >= 500) popScore = 15;
+      else if (pop >= 200) popScore = 12;
+      else if (pop >= 100) popScore = 8;
+      else if (pop >= 50) popScore = 5;
+      else if (pop >= 10) popScore = 3;
+      
+      // 降雨评分（使用刚加载的数据）
+      let rainScore = 0;
+      const anomaly = rainfallAnomaly.value;
+      if (anomaly >= 2) rainScore = 25;
+      else if (anomaly >= 1.5) rainScore = 20;
+      else if (anomaly >= 1) rainScore = 15;
+      else if (anomaly >= 0.5) rainScore = 10;
+      else if (anomaly > 0) rainScore = 5;
+      
+      // 设施评分（使用刚加载的数据）
+      const facilityScoreValue = facilityScore.value;
+      
+      // 总分
+      const total = probScore + rainScore + popScore + facilityScoreValue;
+      const finalScore = Math.min(Math.round(total), 100);
+      
+      // 预警等级
+      let warningLevel = '蓝色预警';
+      if (finalScore >= 90) warningLevel = '红色预警';
+      else if (finalScore >= 85) warningLevel = '橙色预警';
+      else if (finalScore >= 75) warningLevel = '黄色预警';
       
       results.push({
         name: point.name,
         risk_level: point.level,
         deformation_rate: point.velocity || 0,
         threat_population: point.actual_population || 0,
-        warning_level: warningLevel
+        warning_score: finalScore,
+        warning_level: warningLevel,
+        components: {
+          prob_score: Math.round(probScore),
+          rain_score: rainScore,
+          pop_score: popScore,
+          facility_score: facilityScoreValue
+        }
       });
       
-      await new Promise(r => setTimeout(r, 50));
+      // 恢复原始点（如果有）
+      if (props.point?.lng && props.point?.lat) {
+        await loadRainfallDataForPoint(props.point.lng, props.point.lat);
+        await loadSurroundingDataForPoint(props.point.lng, props.point.lat);
+      }
+      
+      // 避免请求过快
+      await new Promise(r => setTimeout(r, 200));
     }
+    
+    // 恢复原始当前点
+    const originalPoint = fullPointsList.value.find(p => p.name === props.point?.name);
+    if (originalPoint) {
+      currentFullPoint.value = originalPoint;
+      await loadRainfallDataForPoint(originalPoint.longitude, originalPoint.latitude);
+      await loadSurroundingDataForPoint(originalPoint.longitude, originalPoint.latitude);
+    }
+    
+    results.sort((a, b) => b.warning_score - a.warning_score);
     
     const stats = {
       total: results.length,
       red: results.filter(p => p.warning_level === '红色预警').length,
       orange: results.filter(p => p.warning_level === '橙色预警').length,
       yellow: results.filter(p => p.warning_level === '黄色预警').length,
-      blue: results.filter(p => p.warning_level === '蓝色预警').length
+      blue: results.filter(p => p.warning_level === '蓝色预警').length,
+      avgScore: Math.round(results.reduce((s, p) => s + p.warning_score, 0) / results.length)
     };
     
     const outputData = {
@@ -816,7 +888,7 @@ const exportWarningData = async () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'risk_points_warning_data.json';
+    a.download = 'risk_points_warning_complete.json';
     a.click();
     URL.revokeObjectURL(url);
     
@@ -825,6 +897,88 @@ const exportWarningData = async () => {
     console.error('导出失败:', error);
   } finally {
     isCalculating.value = false;
+  }
+};
+
+// 为指定坐标加载降雨数据
+const loadRainfallDataForPoint = async (lng: number, lat: number) => {
+  try {
+    const response = await axios.get(`/api/rainfall/point`, {
+      params: { lon: lng, lat: lat }
+    });
+    
+    if (response.data?.data?.statistics) {
+      const stats = response.data.data.statistics;
+      historicalMean.value = stats.avg_annual / 12;
+      historicalStd.value = historicalMean.value * 0.3;
+      
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      if (response.data.data.timeseries) {
+        const currentMonthData = response.data.data.timeseries.filter((item: any) => {
+          const date = new Date(item.date);
+          return date.getMonth() + 1 === currentMonth;
+        });
+        if (currentMonthData.length > 0) {
+          monthlyRainfall.value = currentMonthData.reduce((sum: number, item: any) => sum + item.precip_mm, 0);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('加载降雨数据失败:', error);
+  }
+};
+
+// 为指定坐标加载周边设施数据
+const loadSurroundingDataForPoint = async (lng: number, lat: number) => {
+  try {
+    const baseUrl = '/geodata';
+    const center = { lng, lat };
+    const radius = 0.1;
+    
+    const [buildingsRes, roadsRes, railwaysRes] = await Promise.all([
+      fetch(`${baseUrl}/building.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
+      fetch(`${baseUrl}/roads.geojson`).then(res => res.json()).catch(() => ({ features: [] })),
+      fetch(`${baseUrl}/railways.geojson`).then(res => res.json()).catch(() => ({ features: [] }))
+    ]);
+    
+    const countInRange = (features: any[], radius: number) => {
+      let count = 0;
+      for (const feature of features) {
+        try {
+          let lng2 = 0, lat2 = 0;
+          const geom = feature?.geometry;
+          if (!geom?.coordinates) continue;
+          if (geom.type === 'Point') {
+            lng2 = geom.coordinates[0];
+            lat2 = geom.coordinates[1];
+          } else if (geom.type === 'LineString' && geom.coordinates[0]) {
+            lng2 = geom.coordinates[0][0];
+            lat2 = geom.coordinates[0][1];
+          } else if (geom.type === 'Polygon' && geom.coordinates[0]?.[0]) {
+            lng2 = geom.coordinates[0][0][0];
+            lat2 = geom.coordinates[0][0][1];
+          } else if (geom.type === 'MultiPolygon' && geom.coordinates[0]?.[0]?.[0]) {
+            lng2 = geom.coordinates[0][0][0][0];
+            lat2 = geom.coordinates[0][0][0][1];
+          } else continue;
+          const distance = Math.sqrt(Math.pow(lng2 - center.lng, 2) + Math.pow(lat2 - center.lat, 2));
+          if (distance <= radius) count++;
+        } catch (e) {}
+      }
+      return count;
+    };
+    
+    const buildingCountVal = countInRange(buildingsRes.features || [], radius);
+    const roadCountVal = countInRange(roadsRes.features || [], radius);
+    const railwayCountVal = countInRange(railwaysRes.features || [], radius);
+    
+    buildingCount.value = buildingCountVal;
+    roadCount.value = roadCountVal;
+    railwayCount.value = railwayCountVal;
+    
+  } catch (error) {
+    console.error('加载周边设施失败:', error);
   }
 };
 
