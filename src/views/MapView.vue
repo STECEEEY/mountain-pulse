@@ -3,6 +3,7 @@
     <div class="main-content">
       <div class="map-underlay">
         <MainMap
+          ref="mainMapRef"
           :layer-state="layerState"
           :risk-map-opacity="riskMapOpacity"
           @select-point="handleSelectPoint"
@@ -15,7 +16,6 @@
           @update:risk-map-opacity="riskMapOpacity = $event"
         />
       </div>
-<MainMap ref="mainMapRef" ... />
       <div class="overlay-grid">
         <div class="right-panel panel-animate">
           <SidePanel :selected-point="selectedPoint" />
