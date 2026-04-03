@@ -27,7 +27,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import MainMap from '@/components/workspace/MainMap.vue'
 import MapControls from '@/components/workspace/MapControls.vue'
 import SidePanel from '@/components/workspace/SidePanel.vue'
