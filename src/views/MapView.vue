@@ -31,7 +31,6 @@ import MainMap from '@/components/workspace/MainMap.vue'
 import MapControls from '@/components/workspace/MapControls.vue'
 import SidePanel from '@/components/workspace/SidePanel.vue'
 import { ref, watch } from 'vue'
-import MainMap from '@/components/workspace/MainMap.vue'
 
 const mainMapRef = ref<any>(null)
 
