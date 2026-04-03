@@ -500,6 +500,207 @@ onMounted(async () => {
 onUnmounted(() => {
   map?.remove()
 })
+
+import { ref, watch } from 'vue'
+
+// ========== 周边设施高亮 ==========
+const surroundingFeatures = ref({
+  buildings: [] as any[],
+  roads: [] as any[],
+  railways: [] as any[]
+})
+
+// 获取地图实例（假设你的 MainMap 中有 map 实例）
+const getMap = () => {
+  // 根据你 MainMap 中实际的地图变量名修改
+  // 可能是 map、mapInstance、mapboxMap 等
+  return map.value // 或者你的地图变量名
+}
+
+// 根据中心点和半径筛选周边设施
+const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
+  const mapInstance = getMap()
+  if (!mapInstance) {
+    console.log('地图未就绪')
+    return
+  }
+  
+  const baseUrl = '/geodata'
+  const center = { lng, lat }
+  
+  try {
+    // 加载并筛选建筑
+    const buildingsRes = await fetch(`${baseUrl}/building.geojson`).then(res => res.json())
+    const nearbyBuildings = buildingsRes.features.filter((feature: any) => {
+      const coords = getFeatureCoords(feature)
+      if (!coords) return false
+      const distance = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
+      return distance <= radius
+    })
+    
+    // 加载并筛选道路
+    const roadsRes = await fetch(`${baseUrl}/roads.geojson`).then(res => res.json())
+    const nearbyRoads = roadsRes.features.filter((feature: any) => {
+      const coords = getFeatureCoords(feature)
+      if (!coords) return false
+      const distance = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
+      return distance <= radius
+    })
+    
+    // 加载并筛选铁路
+    const railwaysRes = await fetch(`${baseUrl}/railways.geojson`).then(res => res.json())
+    const nearbyRailways = railwaysRes.features.filter((feature: any) => {
+      const coords = getFeatureCoords(feature)
+      if (!coords) return false
+      const distance = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
+      return distance <= radius
+    })
+    
+    surroundingFeatures.value = {
+      buildings: nearbyBuildings,
+      roads: nearbyRoads,
+      railways: nearbyRailways
+    }
+    
+    // 更新地图图层
+    updateSurroundingLayers()
+    
+    console.log(`周边设施: 建筑${nearbyBuildings.length}个, 道路${nearbyRoads.length}条, 铁路${nearbyRailways.length}条`)
+    
+  } catch (error) {
+    console.error('加载周边设施失败:', error)
+  }
+}
+
+// 获取要素的坐标
+const getFeatureCoords = (feature: any) => {
+  const geom = feature.geometry
+  if (!geom || !geom.coordinates) return null
+  
+  if (geom.type === 'Point') {
+    return { lng: geom.coordinates[0], lat: geom.coordinates[1] }
+  }
+  if (geom.type === 'LineString' && geom.coordinates[0]) {
+    return { lng: geom.coordinates[0][0], lat: geom.coordinates[0][1] }
+  }
+  if (geom.type === 'Polygon' && geom.coordinates[0] && geom.coordinates[0][0]) {
+    return { lng: geom.coordinates[0][0][0], lat: geom.coordinates[0][0][1] }
+  }
+  if (geom.type === 'MultiPolygon' && geom.coordinates[0] && geom.coordinates[0][0] && geom.coordinates[0][0][0]) {
+    return { lng: geom.coordinates[0][0][0][0], lat: geom.coordinates[0][0][0][1] }
+  }
+  return null
+}
+
+// 更新地图上的周边设施图层
+const updateSurroundingLayers = () => {
+  const mapInstance = getMap()
+  if (!mapInstance) return
+  
+  // 移除旧图层
+  if (mapInstance.getSource('surrounding-buildings')) {
+    mapInstance.removeLayer('surrounding-buildings-layer')
+    mapInstance.removeSource('surrounding-buildings')
+  }
+  if (mapInstance.getSource('surrounding-roads')) {
+    mapInstance.removeLayer('surrounding-roads-layer')
+    mapInstance.removeSource('surrounding-roads')
+  }
+  if (mapInstance.getSource('surrounding-railways')) {
+    mapInstance.removeLayer('surrounding-railways-layer')
+    mapInstance.removeSource('surrounding-railways')
+  }
+  
+  // 添加建筑图层
+  if (surroundingFeatures.value.buildings.length > 0) {
+    mapInstance.addSource('surrounding-buildings', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: surroundingFeatures.value.buildings
+      }
+    })
+    mapInstance.addLayer({
+      id: 'surrounding-buildings-layer',
+      type: 'fill',
+      source: 'surrounding-buildings',
+      paint: {
+        'fill-color': '#ff4444',
+        'fill-opacity': 0.5,
+        'fill-outline-color': '#ff0000'
+      }
+    })
+  }
+  
+  // 添加道路图层
+  if (surroundingFeatures.value.roads.length > 0) {
+    mapInstance.addSource('surrounding-roads', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: surroundingFeatures.value.roads
+      }
+    })
+    mapInstance.addLayer({
+      id: 'surrounding-roads-layer',
+      type: 'line',
+      source: 'surrounding-roads',
+      paint: {
+        'line-color': '#ffaa44',
+        'line-width': 4,
+        'line-opacity': 0.8
+      }
+    })
+  }
+  
+  // 添加铁路图层
+  if (surroundingFeatures.value.railways.length > 0) {
+    mapInstance.addSource('surrounding-railways', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: surroundingFeatures.value.railways
+      }
+    })
+    mapInstance.addLayer({
+      id: 'surrounding-railways-layer',
+      type: 'line',
+      source: 'surrounding-railways',
+      paint: {
+        'line-color': '#44aaff',
+        'line-width': 5,
+        'line-opacity': 0.8,
+        'line-dasharray': [4, 3]
+      }
+    })
+  }
+}
+
+// 清除周边设施高亮
+const clearSurroundingLayers = () => {
+  const mapInstance = getMap()
+  if (!mapInstance) return
+  
+  const layers = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
+  const sources = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
+  
+  layers.forEach(layer => {
+    if (mapInstance.getLayer(layer)) {
+      mapInstance.removeLayer(layer)
+    }
+  })
+  sources.forEach(source => {
+    if (mapInstance.getSource(source)) {
+      mapInstance.removeSource(source)
+    }
+  })
+}
+
+// 暴露方法给父组件调用
+defineExpose({
+  loadSurroundingFeatures,
+  clearSurroundingLayers
+})
 </script>
 
 <style scoped>
