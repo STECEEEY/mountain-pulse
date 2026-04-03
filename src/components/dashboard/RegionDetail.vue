@@ -3,33 +3,7 @@
     <div class="card-header">
       <h3 class="card-title">区域详情</h3>
     </div>
-    
-    <!-- 风险点搜索框 -->
-    <div class="risk-search">
-      <input 
-        type="text" 
-        v-model="searchKeyword" 
-        placeholder="搜索风险点名称..." 
-        class="search-input"
-        @input="handleSearch"
-      />
-      <button class="search-btn" @click="handleSearch">🔍 搜索</button>
-    </div>
-    
-    <!-- 搜索结果列表 -->
-    <div v-if="searchResults.length > 0" class="search-results">
-      <div 
-        v-for="point in searchResults" 
-        :key="point.id" 
-        class="search-result-item"
-        @click="selectRiskPoint(point)"
-      >
-        <span class="result-name">{{ point.name }}</span>
-        <span class="result-level" :class="getLevelClass(point.level)">{{ point.level }}</span>
-      </div>
-    </div>
-    
-    <div class="region-info">
+      <div class="region-info">
       <div class="region-name">
         <span class="region-icon">REGION</span>
         <span>{{ selectedRegion.name || '暂无数据' }}</span>
@@ -52,6 +26,30 @@
           <span class="info-label">预警等级</span>
           <span class="info-value warning">{{ selectedRegion.warningLevel || '暂无数据' }}</span>
         </div>
+      </div>
+    </div>
+    <!-- 风险点搜索框 -->
+    <div class="risk-search">
+      <input 
+        type="text" 
+        v-model="searchKeyword" 
+        placeholder="搜索风险点名称..." 
+        class="search-input"
+        @input="handleSearch"
+      />
+      <button class="search-btn" @click="handleSearch">🔍 搜索</button>
+    </div>
+    
+    <!-- 搜索结果列表 -->
+    <div v-if="searchResults.length > 0" class="search-results">
+      <div 
+        v-for="point in searchResults" 
+        :key="point.id" 
+        class="search-result-item"
+        @click="selectRiskPoint(point)"
+      >
+        <span class="result-name">{{ point.name }}</span>
+        <span class="result-level" :class="getLevelClass(point.level)">{{ point.level }}</span>
       </div>
     </div>
     
