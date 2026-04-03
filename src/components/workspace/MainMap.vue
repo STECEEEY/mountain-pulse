@@ -110,6 +110,7 @@ const getFeatureCoords = (feature: any): { lng: number, lat: number } | null => 
 }
 
 // 加载周边设施
+// 加载周边设施
 const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
   if (!map) return
   const center = { lng, lat }
@@ -146,20 +147,21 @@ const loadSurroundingFeatures = async (lng: number, lat: number, radius: number 
     
     // 添加新图层
     if (surroundingFeatures.value.buildings.length && map) {
-      map.addSource('surrounding-buildings', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.buildings } })
-      map.addLayer({ id: 'surrounding-buildings-layer', type: 'fill', source: 'surrounding-buildings', paint: { 'fill-color': '#ff4444', 'fill-opacity': 0.5 } })
+      map!.addSource('surrounding-buildings', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.buildings } })
+      map!.addLayer({ id: 'surrounding-buildings-layer', type: 'fill', source: 'surrounding-buildings', paint: { 'fill-color': '#ff4444', 'fill-opacity': 0.5 } })
     }
     if (surroundingFeatures.value.roads.length && map) {
-      map.addSource('surrounding-roads', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.roads } })
-      map.addLayer({ id: 'surrounding-roads-layer', type: 'line', source: 'surrounding-roads', paint: { 'line-color': '#ffaa44', 'line-width': 4, 'line-opacity': 0.8 } })
+      map!.addSource('surrounding-roads', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.roads } })
+      map!.addLayer({ id: 'surrounding-roads-layer', type: 'line', source: 'surrounding-roads', paint: { 'line-color': '#ffaa44', 'line-width': 4, 'line-opacity': 0.8 } })
     }
     if (surroundingFeatures.value.railways.length && map) {
-      map.addSource('surrounding-railways', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.railways } })
-      map.addLayer({ id: 'surrounding-railways-layer', type: 'line', source: 'surrounding-railways', paint: { 'line-color': '#44aaff', 'line-width': 5, 'line-opacity': 0.8, 'line-dasharray': [4, 3] } })
+      map!.addSource('surrounding-railways', { type: 'geojson', data: { type: 'FeatureCollection', features: surroundingFeatures.value.railways } })
+      map!.addLayer({ id: 'surrounding-railways-layer', type: 'line', source: 'surrounding-railways', paint: { 'line-color': '#44aaff', 'line-width': 5, 'line-opacity': 0.8, 'line-dasharray': [4, 3] } })
     }
   } catch (e) { console.error(e) }
 }
 
+// 清除周边设施图层
 // 清除周边设施图层
 const clearSurroundingLayers = () => {
   if (!map) return
@@ -167,13 +169,14 @@ const clearSurroundingLayers = () => {
   const sources = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
   
   layers.forEach(layer => {
-    if (map.getLayer(layer)) map.removeLayer(layer)
+    if (map!.getLayer(layer)) map!.removeLayer(layer)
   })
   sources.forEach(source => {
-    if (map.getSource(source)) map.removeSource(source)
+    if (map!.getSource(source)) map!.removeSource(source)
   })
 }
 
+// 更新地图上的周边设施图层
 // 更新地图上的周边设施图层
 const updateSurroundingLayers = () => {
   if (!map) return
@@ -182,25 +185,25 @@ const updateSurroundingLayers = () => {
   const sourcesToRemove = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
   
   layersToRemove.forEach(layer => {
-    if (map.getLayer(layer)) {
-      map.removeLayer(layer)
+    if (map!.getLayer(layer)) {
+      map!.removeLayer(layer)
     }
   })
   sourcesToRemove.forEach(source => {
-    if (map.getSource(source)) {
-      map.removeSource(source)
+    if (map!.getSource(source)) {
+      map!.removeSource(source)
     }
   })
   
   if (surroundingFeatures.value.buildings.length > 0) {
-    map.addSource('surrounding-buildings', {
+    map!.addSource('surrounding-buildings', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.buildings
       }
     })
-    map.addLayer({
+    map!.addLayer({
       id: 'surrounding-buildings-layer',
       type: 'fill',
       source: 'surrounding-buildings',
@@ -213,14 +216,14 @@ const updateSurroundingLayers = () => {
   }
   
   if (surroundingFeatures.value.roads.length > 0) {
-    map.addSource('surrounding-roads', {
+    map!.addSource('surrounding-roads', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.roads
       }
     })
-    map.addLayer({
+    map!.addLayer({
       id: 'surrounding-roads-layer',
       type: 'line',
       source: 'surrounding-roads',
@@ -233,14 +236,14 @@ const updateSurroundingLayers = () => {
   }
   
   if (surroundingFeatures.value.railways.length > 0) {
-    map.addSource('surrounding-railways', {
+    map!.addSource('surrounding-railways', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.railways
       }
     })
-    map.addLayer({
+    map!.addLayer({
       id: 'surrounding-railways-layer',
       type: 'line',
       source: 'surrounding-railways',
