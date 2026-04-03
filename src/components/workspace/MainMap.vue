@@ -503,24 +503,16 @@ onUnmounted(() => {
 
 import { ref, watch } from 'vue'
 
-// ========== 周边设施高亮 ==========
+// 周边设施高亮相关
 const surroundingFeatures = ref({
   buildings: [] as any[],
   roads: [] as any[],
   railways: [] as any[]
 })
 
-// 获取地图实例（假设你的 MainMap 中有 map 实例）
-const getMap = () => {
-  // 根据你 MainMap 中实际的地图变量名修改
-  // 可能是 map、mapInstance、mapboxMap 等
-  return map.value // 或者你的地图变量名
-}
-
 // 根据中心点和半径筛选周边设施
 const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
-  const mapInstance = getMap()
-  if (!mapInstance) {
+  if (!map) {
     console.log('地图未就绪')
     return
   }
@@ -529,6 +521,8 @@ const loadSurroundingFeatures = async (lng: number, lat: number, radius: number 
   const center = { lng, lat }
   
   try {
+    console.log('开始加载周边设施...', center)
+    
     // 加载并筛选建筑
     const buildingsRes = await fetch(`${baseUrl}/building.geojson`).then(res => res.json())
     const nearbyBuildings = buildingsRes.features.filter((feature: any) => {
@@ -594,33 +588,33 @@ const getFeatureCoords = (feature: any) => {
 
 // 更新地图上的周边设施图层
 const updateSurroundingLayers = () => {
-  const mapInstance = getMap()
-  if (!mapInstance) return
+  if (!map) return
   
   // 移除旧图层
-  if (mapInstance.getSource('surrounding-buildings')) {
-    mapInstance.removeLayer('surrounding-buildings-layer')
-    mapInstance.removeSource('surrounding-buildings')
-  }
-  if (mapInstance.getSource('surrounding-roads')) {
-    mapInstance.removeLayer('surrounding-roads-layer')
-    mapInstance.removeSource('surrounding-roads')
-  }
-  if (mapInstance.getSource('surrounding-railways')) {
-    mapInstance.removeLayer('surrounding-railways-layer')
-    mapInstance.removeSource('surrounding-railways')
-  }
+  const layersToRemove = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
+  const sourcesToRemove = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
+  
+  layersToRemove.forEach(layer => {
+    if (map.getLayer(layer)) {
+      map.removeLayer(layer)
+    }
+  })
+  sourcesToRemove.forEach(source => {
+    if (map.getSource(source)) {
+      map.removeSource(source)
+    }
+  })
   
   // 添加建筑图层
   if (surroundingFeatures.value.buildings.length > 0) {
-    mapInstance.addSource('surrounding-buildings', {
+    map.addSource('surrounding-buildings', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.buildings
       }
     })
-    mapInstance.addLayer({
+    map.addLayer({
       id: 'surrounding-buildings-layer',
       type: 'fill',
       source: 'surrounding-buildings',
@@ -634,14 +628,14 @@ const updateSurroundingLayers = () => {
   
   // 添加道路图层
   if (surroundingFeatures.value.roads.length > 0) {
-    mapInstance.addSource('surrounding-roads', {
+    map.addSource('surrounding-roads', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.roads
       }
     })
-    mapInstance.addLayer({
+    map.addLayer({
       id: 'surrounding-roads-layer',
       type: 'line',
       source: 'surrounding-roads',
@@ -655,14 +649,14 @@ const updateSurroundingLayers = () => {
   
   // 添加铁路图层
   if (surroundingFeatures.value.railways.length > 0) {
-    mapInstance.addSource('surrounding-railways', {
+    map.addSource('surrounding-railways', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
         features: surroundingFeatures.value.railways
       }
     })
-    mapInstance.addLayer({
+    map.addLayer({
       id: 'surrounding-railways-layer',
       type: 'line',
       source: 'surrounding-railways',
@@ -678,22 +672,23 @@ const updateSurroundingLayers = () => {
 
 // 清除周边设施高亮
 const clearSurroundingLayers = () => {
-  const mapInstance = getMap()
-  if (!mapInstance) return
+  if (!map) return
   
   const layers = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
   const sources = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
   
   layers.forEach(layer => {
-    if (mapInstance.getLayer(layer)) {
-      mapInstance.removeLayer(layer)
+    if (map.getLayer(layer)) {
+      map.removeLayer(layer)
     }
   })
   sources.forEach(source => {
-    if (mapInstance.getSource(source)) {
-      mapInstance.removeSource(source)
+    if (map.getSource(source)) {
+      map.removeSource(source)
     }
   })
+  
+  surroundingFeatures.value = { buildings: [], roads: [], railways: [] }
 }
 
 // 暴露方法给父组件调用
