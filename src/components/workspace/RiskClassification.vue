@@ -404,7 +404,15 @@ const loadSurroundingData = async () => {
         } else if (geom.type === 'Point') {
           lng = geom.coordinates[0]
           lat = geom.coordinates[1]
-        } else {
+        } else if (geom.type === 'MultiLineString') {
+            if (geom.coordinates && geom.coordinates.length > 0 && geom.coordinates[0].length > 0) {
+              // 取第一条线的中点
+              const line = geom.coordinates[0]
+              const midIndex = Math.floor(line.length / 2)
+              lng = line[midIndex][0]
+              lat = line[midIndex][1]
+            }
+          }else {
           continue
         }
         
@@ -438,7 +446,15 @@ const loadSurroundingData = async () => {
         } else if (geom.type === 'Point') {
           lng = geom.coordinates[0]
           lat = geom.coordinates[1]
-        } else {
+        } else if (geom.type === 'MultiLineString') {
+            if (geom.coordinates && geom.coordinates.length > 0 && geom.coordinates[0].length > 0) {
+              // 取第一条线的中点
+              const line = geom.coordinates[0]
+              const midIndex = Math.floor(line.length / 2)
+              lng = line[midIndex][0]
+              lat = line[midIndex][1]
+            }
+          }else {
           continue
         }
         
@@ -516,7 +532,6 @@ const loadSurroundingData = async () => {
               const midIndex = Math.floor(line.length / 2)
               lng = line[midIndex][0]
               lat = line[midIndex][1]
-              validCoordCount++
             }
           }else if (geom.type === 'Polygon' && geom.coordinates[0]?.[0]) {
             lng = geom.coordinates[0][0][0]
