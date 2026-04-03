@@ -668,27 +668,6 @@ const updateSurroundingLayers = () => {
   }
 }
 
-// 清除周边设施高亮
-const clearSurroundingLayers = () => {
-  if (!map) return
-  
-  const layers = ['surrounding-buildings-layer', 'surrounding-roads-layer', 'surrounding-railways-layer']
-  const sources = ['surrounding-buildings', 'surrounding-roads', 'surrounding-railways']
-  
-  layers.forEach(layer => {
-    if (map.getLayer(layer)) {
-      map.removeLayer(layer)
-    }
-  })
-  sources.forEach(source => {
-    if (map.getSource(source)) {
-      map.removeSource(source)
-    }
-  })
-  
-  surroundingFeatures.value = { buildings: [], roads: [], railways: [] }
-}
-
 // 暴露方法给父组件调用
 defineExpose({
   loadSurroundingFeatures,
