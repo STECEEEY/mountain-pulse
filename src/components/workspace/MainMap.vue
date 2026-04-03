@@ -21,15 +21,6 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 // 周边设施
 const surroundingFeatures = ref({ buildings: [], roads: [], railways: [] })
 
-const getFeatureCoords = (feature: any) => {
-  const geom = feature.geometry
-  if (!geom || !geom.coordinates) return null
-  if (geom.type === 'Point') return { lng: geom.coordinates[0], lat: geom.coordinates[1] }
-  if (geom.type === 'LineString' && geom.coordinates[0]) return { lng: geom.coordinates[0][0], lat: geom.coordinates[0][1] }
-  if (geom.type === 'Polygon' && geom.coordinates[0]?.[0]) return { lng: geom.coordinates[0][0][0], lat: geom.coordinates[0][0][1] }
-  if (geom.type === 'MultiPolygon' && geom.coordinates[0]?.[0]?.[0]) return { lng: geom.coordinates[0][0][0][0], lat: geom.coordinates[0][0][0][1] }
-  return null
-}
 
 const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
   if (!map) return
@@ -572,68 +563,6 @@ onUnmounted(() => {
   map?.remove()
 })
 
-// 周边设施高亮相关
-const surroundingFeatures = ref({
-  buildings: [] as any[],
-  roads: [] as any[],
-  railways: [] as any[]
-})
-
-// 根据中心点和半径筛选周边设施
-const loadSurroundingFeatures = async (lng: number, lat: number, radius: number = 0.02) => {
-  if (!map) {
-    console.log('地图未就绪')
-    return
-  }
-  
-  const baseUrl = '/geodata'
-  const center = { lng, lat }
-  
-  try {
-    console.log('开始加载周边设施...', center)
-    
-    // 加载并筛选建筑
-    const buildingsRes = await fetch(`${baseUrl}/building.geojson`).then(res => res.json())
-    const nearbyBuildings = buildingsRes.features.filter((feature: any) => {
-      const coords = getFeatureCoords(feature)
-      if (!coords) return false
-      const distance = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
-      return distance <= radius
-    })
-    
-    // 加载并筛选道路
-    const roadsRes = await fetch(`${baseUrl}/roads.geojson`).then(res => res.json())
-    const nearbyRoads = roadsRes.features.filter((feature: any) => {
-      const coords = getFeatureCoords(feature)
-      if (!coords) return false
-      const distance = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
-      return distance <= radius
-    })
-    
-    // 加载并筛选铁路
-    const railwaysRes = await fetch(`${baseUrl}/railways.geojson`).then(res => res.json())
-    const nearbyRailways = railwaysRes.features.filter((feature: any) => {
-      const coords = getFeatureCoords(feature)
-      if (!coords) return false
-      const distance = Math.sqrt(Math.pow(coords.lng - center.lng, 2) + Math.pow(coords.lat - center.lat, 2))
-      return distance <= radius
-    })
-    
-    surroundingFeatures.value = {
-      buildings: nearbyBuildings,
-      roads: nearbyRoads,
-      railways: nearbyRailways
-    }
-    
-    // 更新地图图层
-    updateSurroundingLayers()
-    
-    console.log(`周边设施: 建筑${nearbyBuildings.length}个, 道路${nearbyRoads.length}条, 铁路${nearbyRailways.length}条`)
-    
-  } catch (error) {
-    console.error('加载周边设施失败:', error)
-  }
-}
 
 // 获取要素的坐标
 const getFeatureCoords = (feature: any) => {
