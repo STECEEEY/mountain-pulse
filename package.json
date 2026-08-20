@@ -18,7 +18,7 @@
     "@echarts-component/vue": "^0.10.2",
     "@element-plus/icons-vue": "^2.3.2",
     "axios": "^1.13.6",
-    "echarts": "^6.0.0",
+    "echarts": "^5.6.0",
     "element-plus": "^2.13.5",
     "ol": "^10.8.0",
     "pinia": "^3.0.4",
