@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>路由测试</title>
+  <style>
+    body { font-family: sans-serif; padding: 30px; background: #f0f0f0; }
+    .box { background: white; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .pass { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
+    code { background: #eee; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>🧪 Render 路由回退测试</h1>
+    <p><strong>当前页面 URL：</strong> <code id="currentUrl"></code></p>
+    <p><strong>页面来源：</strong> <span id="pageSource">检测中...</span></p>
+    <hr>
+    <h3>测试结果：</h3>
+    <ul>
+      <li>✅ 静态文件（test.html）可以正常访问 → 说明服务器工作正常</li>
+      <li id="testResult">⏳ 正在检测路由回退...</li>
+    </ul>
+    <hr>
+    <p><strong>点击下面链接测试路由回退：</strong></p>
+    <ul>
+      <li><a href="/map">访问 /map</a> （应该显示主页面，而不是 404）</li>
+      <li><a href="/dashboard">访问 /dashboard</a> （应该显示主页面）</li>
+      <li><a href="/_redirects">查看 _redirects 文件</a></li>
+    </ul>
+    <p style="margin-top: 20px; font-size: 14px; color: #666;">
+      如果点击上面的链接后出现 404，说明路由回退没有生效。
+    </p>
+  </div>
+  <script>
+    // 显示当前 URL
+    document.getElementById('currentUrl').textContent = window.location.href;
+    
+    // 检测页面是否是通过路由回退加载的（通过检查是否被重写过）
+    // 如果直接访问 /test.html，说明是静态文件
+    // 如果访问 /map 能显示页面，说明路由回退生效
+    fetch('/map', { method: 'HEAD' })
+      .then(res => {
+        const el = document.getElementById('testResult');
+        if (res.status === 200) {
+          el.innerHTML = '✅ <span class="pass">路由回退生效！</span> 访问 /map 返回状态码 200';
+        } else if (res.status === 404) {
+          el.innerHTML = '❌ <span class="fail">路由回退未生效！</span> 访问 /map 返回 404';
+        } else {
+          el.innerHTML = `⚠️ 访问 /map 返回状态码：${res.status}`;
+        }
+      })
+      .catch(() => {
+        document.getElementById('testResult').innerHTML = '❌ <span class="fail">网络请求失败，请检查网络</span>';
+      });
+  </script>
+</body>
+</html>
