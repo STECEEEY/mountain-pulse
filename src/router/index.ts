@@ -35,7 +35,7 @@ const router = createRouter({
   ]
 })
 
-// 路由守卫
+// 修改后的路由守卫
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   
@@ -44,11 +44,13 @@ router.beforeEach(async (to, from, next) => {
     await userStore.fetchUserInfo().catch(() => {})
   }
   
+  // ✅ 改这里：直接检查 token 是否存在
+  const hasToken = !!userStore.token || !!sessionStorage.getItem('token')
   const requiresAuth = to.meta.requiresAuth !== false
   
-  if (requiresAuth && !userStore.isLoggedIn) {
+  if (requiresAuth && !hasToken) {
     next('/login')
-  } else if ((to.path === '/login' || to.path === '/register') && userStore.isLoggedIn) {
+  } else if ((to.path === '/login' || to.path === '/register') && hasToken) {
     next('/dashboard')
   } else {
     next()
