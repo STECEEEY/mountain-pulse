@@ -274,7 +274,7 @@ const handleLogin = async () => {
     // 登录成功
     clearSavedFormState()  // 清除保存的草稿
     ElMessage.success('登录成功')
-    router.push('/dashboard')
+   router.push('/#/dashboard')
     
   } catch (error: any) {
     const errorMsg = error.message || ''
