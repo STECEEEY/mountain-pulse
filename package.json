@@ -12,8 +12,7 @@
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/",
-    "build": "vite build && cp public/_redirects dist/_redirects"
+    "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
     "@vercel/node": "^3.0.0",
