@@ -2,19 +2,11 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { copy } from 'vite-plugin-copy' // 需要安装这个插件
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    copy({
-      targets: [
-        { src: 'public/_redirects', dest: 'dist' }
-      ]
-    })
-  ],
+  plugins: [vue()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
