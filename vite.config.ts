@@ -69,7 +69,6 @@ export default defineConfig({
   },
   // ⭐ 新增：生产环境 SPA 路由回退
   preview: {
-    historyApiFallback: true,
     port: 4173
   }
 })
