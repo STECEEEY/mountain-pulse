@@ -14,13 +14,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // 地质灾害系统后端代理（端口3000）
       '/disaster-api': {
         target: 'http://47.102.147.118:3000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/disaster-api/, '/api')
       },
-      // 原有服务代理（端口8000）
       '/api': {
         target: 'http://47.102.147.118:8000',
         changeOrigin: true,
@@ -68,5 +66,10 @@ export default defineConfig({
         }
       }
     }
+  },
+  // ⭐ 新增：生产环境 SPA 路由回退
+  preview: {
+    historyApiFallback: true,
+    port: 4173
   }
 })
