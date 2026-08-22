@@ -1,7 +1,8 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import router from './router'
+import router from './router'、
+import '@geoscene/core/assets/esri/themes/dark/main.css';
 
 // 引入 Element Plus 和样式
 import ElementPlus from 'element-plus'
