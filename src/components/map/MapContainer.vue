@@ -1,59 +1,54 @@
 <template>
-  <div ref="mapRef" class="map-container"></div>
+  <div ref="mapContainer" id="viewDiv" class="map-container"></div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import Map from 'ol/Map'
-import View from 'ol/View'
-import TileLayer from 'ol/layer/Tile'
-import XYZ from 'ol/source/XYZ'
-import { fromLonLat } from 'ol/proj'
+import { ref, onMounted } from 'vue';
+import Map from '@arcgis/core/Map';
+import MapView from '@arcgis/core/views/MapView';
+import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 
-const mapRef = ref<HTMLElement>()
+// 用于存储地图视图实例
+const mapContainer = ref<HTMLDivElement>();
+let view: MapView | null = null;
+
+// 从 store 获取设置地图的方法
+// 如果你没有使用 map store，可以移除这部分
+// import { useMapStore } from '@/stores/map';
+// const mapStore = useMapStore();
 
 onMounted(() => {
-  // 使用卫星图 + 标注叠加
+  // 1. 创建地图，底图使用天地图（符合参赛要求）
   const map = new Map({
-    target: mapRef.value,
-    layers: [
-      // 底图：卫星图
-      new TileLayer({
-        source: new XYZ({
-          url: 'https://p3.map.gtimg.com/sateTiles/{z}/{Math.floor(x/16)}/{Math.floor(y/16)}/{x}_{y}.jpg?version=230',
-          maxZoom: 18,
-        }),
-        opacity: 0.9,
-      }),
-      // 叠加层：道路标注（透明）
-      new TileLayer({
-        source: new XYZ({
-          url: 'https://rt0.map.gtimg.com/realtimerender?z={z}&x={x}&y={y}&type=vector&style=0&v=1.1.2',
-        }),
-        opacity: 0.6,
-      }),
-    ],
-    view: new View({
-      projection: 'EPSG:3857',
-      center: fromLonLat([119.0, 32.1]),
-      zoom: 10,
-      extent: fromLonLat([118.5, 31.8, 119.8, 32.5]),
-    }),
-  })
+    basemap: "tianditu-vector" // 天地图矢量底图
+  });
 
-  // 科技蓝滤镜
-  setTimeout(() => {
-    const canvas = mapRef.value?.querySelector('canvas')
-    if (canvas) {
-      canvas.style.filter = `
-        contrast(1.3)
-        brightness(0.8)
-        saturate(1.5)
-        hue-rotate(10deg)
-      `
-    }
-  }, 500)
-})
+  // 2. 加载你发布的风险图服务 (MapServer)
+  const riskLayer = new MapImageLayer({
+    url: "https://geosever.geosceneenterprise.cn:6443/geoscene/rest/services/landslide_risk_map_final__1__tif/MapServer"
+  });
+  map.add(riskLayer);
+
+  // 3. 加载地质隐患点服务（假设它是一个要素服务）
+  // 注意：如果这个服务是 MapServer 而非 FeatureServer，请使用 MapImageLayer
+  // 如果是 FeatureServer，可以使用 FeatureLayer
+  // 这里以 MapImageLayer 为例：
+  const hazardLayer = new MapImageLayer({
+    url: "https://geosever.geosceneenterprise.cn:6443/geoscene/rest/services/地质隐患点/MapServer" // 请替换为实际服务名
+  });
+  map.add(hazardLayer);
+
+  // 4. 创建地图视图
+  view = new MapView({
+    container: mapContainer.value!,
+    map: map,
+    center: [119.0, 32.0], // 研究区中心点
+    zoom: 10
+  });
+
+  // 如果需要将地图实例存入 store，可以取消注释以下代码
+  // mapStore.setMap(view.map);
+});
 </script>
 
 <style scoped>
