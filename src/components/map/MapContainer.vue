@@ -4,50 +4,84 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import Map from '@arcgis/core/Map';
-import MapView from '@arcgis/core/views/MapView';
-import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 
-// 用于存储地图视图实例
 const mapContainer = ref<HTMLDivElement>();
-let view: MapView | null = null;
 
-// 从 store 获取设置地图的方法
-// 如果你没有使用 map store，可以移除这部分
-// import { useMapStore } from '@/stores/map';
-// const mapStore = useMapStore();
+declare const esri: any;
 
 onMounted(() => {
-  // 1. 创建地图，底图使用天地图（符合参赛要求）
-  const map = new Map({
-    basemap: "tianditu-vector" // 天地图矢量底图
-  });
+  if (typeof esri === 'undefined') {
+    console.error('GeoScene SDK 未加载，请检查 index.html 中的 CDN 引用');
+    return;
+  }
 
-  // 2. 加载你发布的风险图服务 (MapServer)
-  const riskLayer = new MapImageLayer({
-    url: "https://geosever.geosceneenterprise.cn:6443/geoscene/rest/services/landslide_risk_map_final__1__tif/MapServer"
-  });
-  map.add(riskLayer);
+  esri.require([
+    'esri/Map',
+    'esri/views/MapView',
+    'esri/layers/MapImageLayer'
+  ], (Map: any, MapView: any, MapImageLayer: any) => {
+    // 创建地图，底图使用天地图
+    const map = new Map({
+      basemap: "tianditu-vector"
+    });
 
-  // 3. 加载地质隐患点服务（假设它是一个要素服务）
-  // 注意：如果这个服务是 MapServer 而非 FeatureServer，请使用 MapImageLayer
-  // 如果是 FeatureServer，可以使用 FeatureLayer
-  // 这里以 MapImageLayer 为例：
-  const hazardLayer = new MapImageLayer({
-    url: "https://geosever.geosceneenterprise.cn:6443/geoscene/rest/services/地质隐患点/MapServer" // 请替换为实际服务名
-  });
-  map.add(hazardLayer);
+    // =============================================
+    // 1. 滑坡风险概率图（核心图层）
+    // =============================================
+    const riskLayer = new MapImageLayer({
+      url: "https://geosever.geosceneenterprise.cn:6443/geoscene/rest/services/landslide_risk_map_final__1__tif/MapServer",
+      opacity: 0.8,
+      title: "滑坡风险概率图"
+    });
+    map.add(riskLayer);
 
-  // 4. 创建地图视图
-  view = new MapView({
-    container: mapContainer.value!,
-    map: map,
-    center: [119.0, 32.0], // 研究区中心点
-    zoom: 10
-  });
+    // =============================================
+    // 2. 人口格网数据
+    // =============================================
+    const populationLayer = new MapImageLayer({
+      url: "https://geosever.geosceneenterprise.cn:6443/geoscene/rest/services/PopSE_China2020_100m_jpg_Band_1/MapServer",
+      opacity: 0.6,
+      title: "人口分布格网",
+      visible: false  // 默认关闭
+    });
+    map.add(populationLayer);
 
-  // 如果需要将地图实例存入 store，可以取消注释以下代码
-  // mapStore.setMap(view.map);
+    // =============================================
+    // 3. 全国水系
+    // =============================================
+    const waterLayer = new MapImageLayer({
+      url: "https://geosever.geosceneenterprise.cn:6443/geoscene/rest/services/全国水系/MapServer",
+      title: "全国水系",
+      visible: false  // 默认关闭
+    });
+    map.add(waterLayer);
+
+    // =============================================
+    // 4. 地质隐患点
+    // =============================================
+    const hazardLayer = new MapImageLayer({
+      url: "https://geosever.geosceneenterprise.cn:6443/geoscene/rest/services/地质隐患点/MapServer",
+      opacity: 0.9,
+      title: "地质隐患点"
+    });
+    map.add(hazardLayer);
+
+    // =============================================
+    // 创建地图视图
+    // =============================================
+    const view = new MapView({
+      container: mapContainer.value!,
+      map: map,
+      center: [119.0, 32.0],
+      zoom: 10
+    });
+
+    // 将 view 暴露到全局，方便调试
+    (window as any).view = view;
+
+    console.log('✅ 所有服务加载完成！');
+    console.log('已加载服务列表：', map.layers.toArray().map((l: any) => l.title || l.url));
+  });
 });
 </script>
 
